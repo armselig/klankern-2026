@@ -3,8 +3,8 @@ import { subscribeToHouseholdChanges } from './household-realtime'
 /**
  * Keeps one Realtime channel open for the signed-in user's household and
  * routes its changes into the stores. Mounted once in the default layout
- * rather than inside a feature component, so later features (shopping) share
- * the channel instead of opening their own.
+ * rather than inside a feature component, so every list (to-dos, shopping)
+ * shares the channel instead of opening its own.
  *
  * Keyed on the user as well as the household: sign-out doesn't clear the
  * household store, so watching the household alone would leave the channel
@@ -16,6 +16,7 @@ export function useHouseholdRealtime() {
   const user = useSupabaseUser()
   const householdStore = useHouseholdStore()
   const todoStore = useTodoStore()
+  const shoppingStore = useShoppingStore()
 
   const householdId = computed(() => (user.value ? (householdStore.household?.id ?? null) : null))
 
@@ -25,7 +26,11 @@ export function useHouseholdRealtime() {
       if (!id) return
       const unsubscribe = subscribeToHouseholdChanges(client, id, {
         onTodoItemChange: (event) => todoStore.applyRealtimeEvent(event),
-        onSubscribed: () => void todoStore.resync(),
+        onShoppingItemChange: (event) => shoppingStore.applyRealtimeEvent(event),
+        onSubscribed: () => {
+          void todoStore.resync()
+          void shoppingStore.resync()
+        },
       })
       onCleanup(unsubscribe)
     },

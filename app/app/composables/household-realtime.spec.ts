@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '~/types/database.types'
+import type { ShoppingItem } from '~/types/shopping'
 import type { TodoItem } from '~/types/todo'
 import { subscribeToHouseholdChanges } from './household-realtime'
 
@@ -51,8 +52,22 @@ const row: TodoItem = {
   deleted_at: null,
 }
 
+const shoppingRow: ShoppingItem = {
+  id: 'item-2',
+  list_id: 'list-2',
+  household_id: 'house-1',
+  title: 'Apples',
+  quantity: '6',
+  checked: false,
+  position: 1,
+  created_by: 'user-1',
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
+  deleted_at: null,
+}
+
 function listeners() {
-  return { onTodoItemChange: vi.fn(), onSubscribed: vi.fn() }
+  return { onTodoItemChange: vi.fn(), onShoppingItemChange: vi.fn(), onSubscribed: vi.fn() }
 }
 
 describe('subscribeToHouseholdChanges', () => {
@@ -62,45 +77,68 @@ describe('subscribeToHouseholdChanges', () => {
     expect(fake.channelFactory).toHaveBeenCalledWith('household:house-1')
   })
 
-  it('listens to INSERT and UPDATE on todo_items, filtered to the household -- never DELETE', () => {
+  it('listens to INSERT and UPDATE on both item tables, filtered to the household -- never DELETE', () => {
     const fake = fakeRealtimeClient()
     subscribeToHouseholdChanges(fake.client, 'house-1', listeners())
 
-    expect(fake.registrations.map((r) => [r.type, r.filter])).toEqual([
-      [
+    const expected = ['todo_items', 'shopping_items'].flatMap((table) =>
+      ['INSERT', 'UPDATE'].map((event) => [
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'todo_items',
-          filter: 'household_id=eq.house-1',
-        },
-      ],
-      [
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'todo_items',
-          filter: 'household_id=eq.house-1',
-        },
-      ],
-    ])
+        { event, schema: 'public', table, filter: 'household_id=eq.house-1' },
+      ]),
+    )
+    expect(fake.registrations.map((r) => [r.type, r.filter])).toEqual(expected)
   })
+
+  /** Finds the callback registered for a table/event pair, independent of registration order. */
+  function callbackFor(fake: ReturnType<typeof fakeRealtimeClient>, table: string, event: string) {
+    const registration = fake.registrations.find(
+      (r) => r.filter.table === table && r.filter.event === event,
+    )
+    if (!registration) throw new Error(`no listener for ${event} on ${table}`)
+    return registration.callback
+  }
 
   it('passes to-do changes on as ListRealtimeEvents', () => {
     const fake = fakeRealtimeClient()
     const l = listeners()
     subscribeToHouseholdChanges(fake.client, 'house-1', l)
 
-    fake.registrations[0]?.callback({ eventType: 'INSERT', new: row })
-    fake.registrations[1]?.callback({ eventType: 'UPDATE', new: { ...row, done: true } })
+    callbackFor(fake, 'todo_items', 'INSERT')({ eventType: 'INSERT', new: row })
+    callbackFor(fake, 'todo_items', 'UPDATE')({ eventType: 'UPDATE', new: { ...row, done: true } })
 
     expect(l.onTodoItemChange).toHaveBeenNthCalledWith(1, { eventType: 'INSERT', new: row })
     expect(l.onTodoItemChange).toHaveBeenNthCalledWith(2, {
       eventType: 'UPDATE',
       new: { ...row, done: true },
     })
+    expect(l.onShoppingItemChange).not.toHaveBeenCalled()
+  })
+
+  it('passes shopping changes on to the shopping listener', () => {
+    const fake = fakeRealtimeClient()
+    const l = listeners()
+    subscribeToHouseholdChanges(fake.client, 'house-1', l)
+
+    callbackFor(fake, 'shopping_items', 'INSERT')({ eventType: 'INSERT', new: shoppingRow })
+    callbackFor(
+      fake,
+      'shopping_items',
+      'UPDATE',
+    )({
+      eventType: 'UPDATE',
+      new: { ...shoppingRow, checked: true },
+    })
+
+    expect(l.onShoppingItemChange).toHaveBeenNthCalledWith(1, {
+      eventType: 'INSERT',
+      new: shoppingRow,
+    })
+    expect(l.onShoppingItemChange).toHaveBeenNthCalledWith(2, {
+      eventType: 'UPDATE',
+      new: { ...shoppingRow, checked: true },
+    })
+    expect(l.onTodoItemChange).not.toHaveBeenCalled()
   })
 
   it('asks for a resync on every SUBSCRIBED, including reconnects, and on nothing else', () => {

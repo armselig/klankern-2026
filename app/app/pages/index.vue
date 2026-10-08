@@ -19,6 +19,7 @@ onMounted(() => householdStore.fetchMine())
       </q-card-section>
       <q-card-section>
         <q-btn :to="ROUTES.todos" color="primary" label="To-dos" unelevated />
+        <q-btn :to="ROUTES.shopping" color="primary" label="Shopping" unelevated class="q-ml-sm" />
       </q-card-section>
     </q-card>
   </q-page>

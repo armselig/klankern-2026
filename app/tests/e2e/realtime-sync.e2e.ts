@@ -10,8 +10,9 @@ import {
   type TestUser,
 } from '../support/supabase-fixtures'
 
-// Milestone 5: two members in two browser contexts see each other's to-do
-// changes live, including after a dropped Realtime connection.
+// Milestones 5 and 6: two members in two browser contexts see each other's
+// to-do and shopping changes live, including after a dropped Realtime
+// connection.
 
 const REALTIME_SOCKET = /\/realtime\/v1\/websocket/
 
@@ -72,15 +73,16 @@ async function signIn(page: Page, user: TestUser) {
   await expect(page.getByText(user.email)).toBeVisible()
 }
 
-function todo(page: Page, title: string) {
-  return page.getByRole('checkbox', { name: title })
+/** Both lists render an item as a checkbox labelled with its text. */
+function listItem(page: Page, label: string) {
+  return page.getByRole('checkbox', { name: label, exact: true })
 }
 
 /** Remove buttons all share one label, so find the one in the item's row. */
-async function removeTodo(page: Page, title: string) {
+async function removeListItem(page: Page, label: string) {
   await page
     .locator('.q-item')
-    .filter({ has: todo(page, title) })
+    .filter({ has: listItem(page, label) })
     .getByRole('button', { name: 'Remove' })
     .click()
 }
@@ -90,7 +92,27 @@ async function addTodo(page: Page, title: string) {
   await page.keyboard.press('Enter')
 }
 
-test.describe('to-do realtime sync between two members', () => {
+async function addShoppingItem(page: Page, title: string, quantity = '') {
+  await page.getByLabel('Item', { exact: true }).fill(title)
+  await page.getByLabel('Quantity (optional)').fill(quantity)
+  await page.keyboard.press('Enter')
+}
+
+/**
+ * Signs both members in and opens the same list page on each. Navigation is
+ * in-app like a user's: a full page load right after verifying can race the
+ * session being persisted and land back on the login page.
+ */
+async function openListForBoth(pages: Page[], users: TestUser[], linkName: string, path: string) {
+  for (const [index, page] of pages.entries()) {
+    await signIn(page, users[index]!)
+    await page.getByRole('link', { name: linkName }).click()
+    await expect(page).toHaveURL(new RegExp(`${path}$`))
+    await expect(page.getByText('Nothing on the list yet.')).toBeVisible()
+  }
+}
+
+test.describe('realtime sync between two members', () => {
   let userA: TestUser
   let userB: TestUser
   let householdId: string
@@ -105,7 +127,7 @@ test.describe('to-do realtime sync between two members', () => {
     await deleteTestData([householdId], [userA, userB])
   })
 
-  test('changes appear live on the other member, including after a reconnect', async ({
+  test('to-do changes appear live on the other member, including after a reconnect', async ({
     browser,
   }) => {
     const contextA = await browser.newContext()
@@ -114,52 +136,43 @@ test.describe('to-do realtime sync between two members', () => {
     const pageA = await contextA.newPage()
     const pageB = await contextB.newPage()
 
-    await signIn(pageA, userA)
-    await signIn(pageB, userB)
-    // Navigate in-app like a user: a full page load right after verifying
-    // can race the session being persisted and land back on the login page.
-    for (const page of [pageA, pageB]) {
-      await page.getByRole('link', { name: 'To-dos' }).click()
-      await expect(page).toHaveURL(new RegExp(`${ROUTES.todos}$`))
-    }
-    await expect(pageA.getByText('Nothing on the list yet.')).toBeVisible()
-    await expect(pageB.getByText('Nothing on the list yet.')).toBeVisible()
+    await openListForBoth([pageA, pageB], [userA, userB], 'To-dos', ROUTES.todos)
 
     await test.step('an item added by B appears on A', async () => {
       await addTodo(pageB, 'Milk from B')
-      await expect(todo(pageA, 'Milk from B')).toBeVisible()
+      await expect(listItem(pageA, 'Milk from B')).toBeVisible()
     })
 
     await test.step("A's own add appears once on A (echo deduplicated) and on B", async () => {
       await addTodo(pageA, 'Bread from A')
-      await expect(todo(pageB, 'Bread from A')).toBeVisible()
-      await expect(todo(pageA, 'Bread from A')).toHaveCount(1)
+      await expect(listItem(pageB, 'Bread from A')).toBeVisible()
+      await expect(listItem(pageA, 'Bread from A')).toHaveCount(1)
     })
 
     await test.step('a toggle by B shows on A', async () => {
-      await todo(pageB, 'Milk from B').click()
-      await expect(todo(pageA, 'Milk from B')).toBeChecked()
+      await listItem(pageB, 'Milk from B').click()
+      await expect(listItem(pageA, 'Milk from B')).toBeChecked()
     })
 
     await test.step('a delete by B removes the item on A', async () => {
-      await removeTodo(pageB, 'Bread from A')
-      await expect(todo(pageA, 'Bread from A')).toHaveCount(0)
+      await removeListItem(pageB, 'Bread from A')
+      await expect(listItem(pageA, 'Bread from A')).toHaveCount(0)
     })
 
     await test.step('changes made while A was disconnected show up after the reconnect', async () => {
       socketA.goOffline()
       await addTodo(pageB, 'Eggs while A was offline')
-      await removeTodo(pageB, 'Milk from B')
-      await expect(todo(pageB, 'Milk from B')).toHaveCount(0)
+      await removeListItem(pageB, 'Milk from B')
+      await expect(listItem(pageB, 'Milk from B')).toHaveCount(0)
       // Neither change may reach A while it is cut off, or this step proves
       // nothing about the resync. Live events arrive well within this wait.
       await pageA.waitForTimeout(3_000)
-      await expect(todo(pageA, 'Eggs while A was offline')).toHaveCount(0)
-      await expect(todo(pageA, 'Milk from B')).toBeVisible()
+      await expect(listItem(pageA, 'Eggs while A was offline')).toHaveCount(0)
+      await expect(listItem(pageA, 'Milk from B')).toBeVisible()
 
       socketA.goOnline()
-      await expect(todo(pageA, 'Eggs while A was offline')).toBeVisible({ timeout: 30_000 })
-      await expect(todo(pageA, 'Milk from B')).toHaveCount(0)
+      await expect(listItem(pageA, 'Eggs while A was offline')).toBeVisible({ timeout: 30_000 })
+      await expect(listItem(pageA, 'Milk from B')).toHaveCount(0)
     })
 
     await test.step("signing out leaves the household's channel", async () => {
@@ -172,6 +185,37 @@ test.describe('to-do realtime sync between two members', () => {
           ),
         )
         .toBe(true)
+    })
+
+    await contextA.close()
+    await contextB.close()
+  })
+
+  test('shopping changes appear live on the other member, checked items last', async ({
+    browser,
+  }) => {
+    const contextA = await browser.newContext()
+    const contextB = await browser.newContext()
+    const pageA = await contextA.newPage()
+    const pageB = await contextB.newPage()
+
+    await openListForBoth([pageA, pageB], [userA, userB], 'Shopping', ROUTES.shopping)
+
+    await test.step('items added by B appear on A, with their quantity', async () => {
+      await addShoppingItem(pageB, 'Apples', '6')
+      await addShoppingItem(pageB, 'Bread')
+      await expect(pageA.getByRole('checkbox')).toHaveText(['Apples (6)', 'Bread'])
+    })
+
+    await test.step('an item checked by B is checked on A and moves to the bottom', async () => {
+      await listItem(pageB, 'Apples (6)').click()
+      await expect(listItem(pageA, 'Apples (6)')).toBeChecked()
+      await expect(pageA.getByRole('checkbox')).toHaveText(['Bread', 'Apples (6)'])
+    })
+
+    await test.step('an item removed by B disappears on A', async () => {
+      await removeListItem(pageB, 'Bread')
+      await expect(pageA.getByRole('checkbox')).toHaveText(['Apples (6)'])
     })
 
     await contextA.close()

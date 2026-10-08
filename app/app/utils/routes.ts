@@ -6,6 +6,7 @@ export const ROUTES = {
   login: '/login',
   confirm: '/confirm',
   todos: '/todos',
+  shopping: '/shopping',
   joinPrefix: '/join/',
   join: (code: string) => `/join/${code}`,
 } as const
