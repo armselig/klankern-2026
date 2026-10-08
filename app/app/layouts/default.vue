@@ -4,6 +4,8 @@ const client = useSupabaseClient()
 const router = useRouter()
 const route = useRoute()
 
+useHouseholdRealtime()
+
 /** Hidden on pages that already contain their own sign-in form: on /join a
  * detour to /login would drop the invite code, so the user would sign in
  * without joining the household. */
