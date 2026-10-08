@@ -2,7 +2,7 @@
 /**
  * Email OTP login (not magic links): a magic link opens the system browser
  * instead of this installed PWA and would leave it looking logged out, so
- * the user instead types the 6-digit code back into the app itself.
+ * the user instead types the emailed code back into the app itself.
  */
 const client = useSupabaseClient()
 const router = useRouter()
@@ -69,11 +69,11 @@ async function verifyCode() {
       </q-card-section>
 
       <q-card-section v-else>
-        <p>We sent a 6-digit code to {{ email }}.</p>
+        <p>We sent a login code to {{ email }}.</p>
         <q-form @submit.prevent="verifyCode">
           <q-input
             v-model="code"
-            label="6-digit code"
+            label="Code from the email"
             inputmode="numeric"
             autocomplete="one-time-code"
             autofocus

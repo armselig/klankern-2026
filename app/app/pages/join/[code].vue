@@ -84,11 +84,11 @@ async function join() {
       </q-card-section>
 
       <q-card-section v-else-if="step === 'code'">
-        <p>We sent a 6-digit code to {{ email }}.</p>
+        <p>We sent a login code to {{ email }}.</p>
         <q-form @submit.prevent="verifyCode">
           <q-input
             v-model="otp"
-            label="6-digit code"
+            label="Code from the email"
             inputmode="numeric"
             autocomplete="one-time-code"
             autofocus

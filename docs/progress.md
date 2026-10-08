@@ -2,7 +2,7 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of the commit that recorded the milestone 3–4 browser click-through (2026-10-08) (`main`, working tree clean, nothing uncommitted). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of the commit that fixed the click-through issues and added migration 0010 (2026-10-08) (`main`, working tree clean, nothing uncommitted). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
@@ -33,13 +33,13 @@ app/app/
   pages/            login.vue, confirm.vue, index.vue, todos.vue, join/[code].vue
   components/       household/{CreateHouseholdForm,InviteDialog}.vue, todo/{TodoList,TodoItem}.vue
   layouts/          default.vue
-app/supabase/migrations/   0001_households.sql … 0009_restrict_function_execute.sql
+app/supabase/migrations/   0001_households.sql … 0010_redeem_invite_count_new_members.sql
 app/tests/rls/              household-isolation.spec.ts (two-JWT RLS proof against Supabase Cloud)
 ```
 
 **Design pattern used throughout**: business logic lives in plain `composables/*-actions.ts` functions that take a `SupabaseClient` as a parameter, unit-tested with a mocked client (no Nuxt runtime needed). Pinia stores are thin — they call `useSupabaseClient()`/`useSupabaseUser()` and delegate to those functions. State-transition logic that needs testing on its own (optimistic add/dedup, soft-delete, sort order) is further extracted into pure reducer functions in `utils/`. This is the pattern to continue for the shopping list (milestone 6) and whiteboard/recipes (later phases).
 
-**Testing**: Vitest, 38 tests passing (including the RLS suite) (`npm test`). Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
+**Testing**: Vitest, 39 tests passing (including the RLS suite) (`npm test`). Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
 
 **Database types**: generated from the live schema via `supabase gen types typescript`, saved to `app/app/types/database.types.ts`, picked up automatically by `@nuxtjs/supabase`'s default `types` path. Re-run after any migration changes:
 ```
@@ -83,11 +83,13 @@ Done in Chrome against the user's `nuxt dev` on `localhost:3000`. Every step wor
 
 **Bug found and fixed**: adding a to-do always failed with `not_authenticated`. In `@nuxtjs/supabase` v2, `useSupabaseUser()` holds the JWT **claims** (`Ref<JwtPayload | null>`, filled via `auth.getClaims()`), not a `User` — the user id is `.sub`, and `.id` is always `undefined`. The type check didn't catch it because `JwtPayload` allows arbitrary keys. **Rule going forward**: read the id as `useSupabaseUser().value?.sub`, or use `getCurrentUserId(client)` in `*-actions.ts`.
 
-Smaller issues found (to be fixed next):
-1. The cloud project sends **8-digit** codes, but the login and join pages said "6-digit code".
-2. `redeem_invite` increments `use_count` even when the caller is already a member (`on conflict do nothing` skips the insert, the update still runs).
-3. The add-to-do input loses focus after each add.
-4. To-do checkboxes have no accessible name (announced as "on" instead of the item title).
+Smaller issues found, all fixed afterwards:
+1. The cloud project sends **8-digit** codes, but the login and join pages said "6-digit code" → the text no longer names a length ("We sent a login code", "Code from the email").
+2. `redeem_invite` incremented `use_count` even when the caller was already a member → `0010_redeem_invite_count_new_members.sql` only counts a redemption that inserted a member (also switches the function to `search_path = ''`); covered by a new RLS test.
+3. The add-to-do input lost focus after each add → `TodoList` refocuses it on submit.
+4. To-do checkboxes had no accessible name (announced as "on") → the title is now the `q-checkbox` `label`, which Quasar also sets as `aria-label`.
+
+Fixes 1, 3 and 4 are covered only by type check/lint, not yet re-checked in a browser.
 
 Leftover test data in the cloud project: to-dos "Test 1–3" and invite `b005ab07` in household "Neumann".
 
@@ -96,7 +98,7 @@ Leftover test data in the cloud project: to-dos "Test 1–3" and invite `b005ab0
 Pre-checks already done (2026-10-08): the live `supabase_realtime` publication is **empty**; there is **no trigger** maintaining `updated_at`, so don't use it to order/last-write-wins Realtime events. Supabase changelog checked — nothing breaking for this design (the `realtime` schema lock-down doesn't affect `alter publication`).
 
 Test-first, same pattern as milestone 4:
-1. `0010_realtime_publication.sql`: `alter publication supabase_realtime add table public.todo_items, public.shopping_items;` — apply via MCP `apply_migration`, then rename the version to `0010` in a separate `execute_sql` call.
+1. `0011_realtime_publication.sql`: `alter publication supabase_realtime add table public.todo_items, public.shopping_items;` — apply via MCP `apply_migration`, then rename the version to `0011` in a separate `execute_sql` call.
 2. Pure reducer `applyTodoRealtimeEvent` in `utils/todo-state.ts` (spec first): INSERT echo of an optimistic id doesn't duplicate; remote soft-delete hides the item; a late INSERT/UPDATE can't resurrect a locally deleted item; events for another `list_id` are ignored.
 3. Reconnect resync **merges** rather than replaces: `fetchTodoItems` excludes deleted rows, so replacing `itemsById` would wipe in-flight optimistic adds — track pending ids in the store and keep them across the refetch.
 4. Plain, mock-testable `subscribeToHouseholdChanges(client, householdId, listeners)` returning an unsubscribe fn — one channel per household, `postgres_changes` filtered on `household_id=eq.<id>`, refetch on every `SUBSCRIBED`. Thin `useHouseholdRealtime` composable on top, mounted where the household id is known (not inside `TodoList`, so shopping can reuse the channel), torn down on scope dispose and sign-out.
@@ -104,7 +106,6 @@ Test-first, same pattern as milestone 4:
 
 ## Next steps
 
-1. Fix the four click-through issues listed above.
-2. Milestone 5 per the plan above — accounts A and B are already in one household for the manual two-session sync test.
-3. Milestone 6: mirror the to-do store/component/actions pattern for shopping lists.
-4. Before milestone 8: smoke-test a minimal Podman dev compose early, given the local-stack networking issue found here.
+1. Milestone 5 per the plan above — accounts A and B are already in one household for the manual two-session sync test.
+2. Milestone 6: mirror the to-do store/component/actions pattern for shopping lists.
+3. Before milestone 8: smoke-test a minimal Podman dev compose early, given the local-stack networking issue found here.

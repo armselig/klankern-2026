@@ -187,6 +187,28 @@ describe('household RLS isolation', () => {
     expect(data).toEqual([{ title: 'Buy milk (household A)' }])
   })
 
+  it('redeem_invite does not count a redemption by an existing member', async () => {
+    const { data: code, error: inviteError } = await userA.client.rpc('create_invite', {
+      p_household_id: householdAId,
+    })
+    expect(inviteError).toBeNull()
+
+    const { data: joinedHouseholdId, error: redeemError } = await userA.client.rpc(
+      'redeem_invite',
+      { p_code: code },
+    )
+    expect(redeemError).toBeNull()
+    expect(joinedHouseholdId).toBe(householdAId)
+
+    const { data: invite, error } = await admin
+      .from('household_invites')
+      .select('use_count')
+      .eq('code', code!)
+      .single()
+    expect(error).toBeNull()
+    expect(invite!.use_count).toBe(0)
+  })
+
   it('redeem_invite rejects an expired code', async () => {
     const { data: invite } = await admin
       .from('household_invites')

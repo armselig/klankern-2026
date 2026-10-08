@@ -5,11 +5,15 @@ const todoStore = useTodoStore()
 onMounted(() => todoStore.init(props.householdId))
 
 const newTitle = ref('')
+const titleInput = useTemplateRef<{ focus: () => void }>('titleInput')
 
+/** Adds the typed to-do and puts focus back in the input, so several items
+ * can be entered in a row without clicking the field again. */
 async function add() {
   const title = newTitle.value.trim()
   if (!title) return
   newTitle.value = ''
+  titleInput.value?.focus()
   await todoStore.add(title)
 }
 </script>
@@ -17,7 +21,7 @@ async function add() {
 <template>
   <div>
     <q-form class="row q-gutter-sm q-mb-md" @submit.prevent="add">
-      <q-input v-model="newTitle" label="Add a to-do" class="col" autofocus />
+      <q-input ref="titleInput" v-model="newTitle" label="Add a to-do" class="col" autofocus />
       <q-btn type="submit" color="primary" label="Add" unelevated />
     </q-form>
 
