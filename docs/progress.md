@@ -10,7 +10,7 @@ Tracks what's been built against the milestones in [`plan.md`](./plan.md), sessi
 |---|---|
 | 1. Scaffold + tooling + git hooks | ✅ Done |
 | 2. Schema + RLS + two-JWT test | ✅ Done — RLS test passing against Supabase Cloud |
-| 3. Auth + household join flow | ✅ Built; DB paths verified by the RLS test, UI not yet clicked through in a browser |
+| 3. Auth + household join flow | ✅ Built; DB paths verified by the RLS test. Browser click-through **blocked at login** — see "Blocker: login emails contain no OTP code" |
 | 4. Shared to-do list CRUD | ✅ Built; DB paths verified by the RLS test, UI not yet clicked through in a browser |
 | 5. Realtime sync for to-dos | ⬜ Not started |
 | 6. Shared shopping list | ⬜ Not started |
@@ -71,9 +71,33 @@ Fixed by `0007_create_household_rpc.sql` (`create_household` / `create_invite` S
 
 `app/.env` (gitignored) holds: `SUPABASE_URL`, `SUPABASE_KEY` (publishable), `SUPABASE_DB_PASSWORD`, `SUPABASE_SECRET_KEY`. The DB password and secret key are **server-side/test-tooling only** — never read by `nuxt.config.ts`'s public runtime config, never shipped to the browser. The secret key in particular should stay out of anything client-facing permanently; it's only used by `tests/rls/` to provision disposable test users via the Admin API.
 
+## Blocker: login emails contain no OTP code (2026-10-08)
+
+Found on the first browser click-through attempt. The login page works up to the code-entry step (signed-out `/` correctly redirects to `/login`; "Send code" succeeds), but the email Supabase sends contains **only a magic link, no 6-digit code**: the project still uses Supabase's default email templates, which don't include `{{ .Token }}`. The app code (`signInWithOtp` + `verifyOtp`) is fine — this is project configuration only.
+
+Editing the email templates requires **custom SMTP** in the Supabase dashboard. That's needed regardless: the built-in email service is test-only (heavily rate-limited, and as far as known delivers only to the Supabase organization's team members), so a second household member — or a `+b` test address — likely wouldn't receive anything.
+
+To unblock (dashboard, done by the user since it involves SMTP credentials and DNS records for a sending domain):
+1. Authentication → Emails → SMTP settings: configure a custom SMTP provider.
+2. Authentication → Emails → Templates: add `{{ .Token }}` to **both** "Magic link" (sent to existing users) and "Confirm signup" (sent to new users on their first `signInWithOtp`). Drop `{{ .ConfirmationURL }}` — the link would open the system browser instead of the installed PWA.
+
+Click-through accounts agreed: A = `hndrk.nmnn@gmail.com`, B = `hndrk.nmnn+b@gmail.com`. Codes are pasted into chat by the user — the agent doesn't read the inbox.
+
+## Milestone 5 plan (agreed, not started)
+
+Pre-checks already done (2026-10-08): the live `supabase_realtime` publication is **empty**; there is **no trigger** maintaining `updated_at`, so don't use it to order/last-write-wins Realtime events. Supabase changelog checked — nothing breaking for this design (the `realtime` schema lock-down doesn't affect `alter publication`).
+
+Test-first, same pattern as milestone 4:
+1. `0010_realtime_publication.sql`: `alter publication supabase_realtime add table public.todo_items, public.shopping_items;` — apply via MCP `apply_migration`, then rename the version to `0010` in a separate `execute_sql` call.
+2. Pure reducer `applyTodoRealtimeEvent` in `utils/todo-state.ts` (spec first): INSERT echo of an optimistic id doesn't duplicate; remote soft-delete hides the item; a late INSERT/UPDATE can't resurrect a locally deleted item; events for another `list_id` are ignored.
+3. Reconnect resync **merges** rather than replaces: `fetchTodoItems` excludes deleted rows, so replacing `itemsById` would wipe in-flight optimistic adds — track pending ids in the store and keep them across the refetch.
+4. Plain, mock-testable `subscribeToHouseholdChanges(client, householdId, listeners)` returning an unsubscribe fn — one channel per household, `postgres_changes` filtered on `household_id=eq.<id>`, refetch on every `SUBSCRIBED`. Thin `useHouseholdRealtime` composable on top, mounted where the household id is known (not inside `TodoList`, so shopping can reuse the channel), torn down on scope dispose and sign-out.
+5. **Listen to `INSERT` and `UPDATE` only, not `*`**: per the Realtime docs, DELETE events can't be filtered and RLS isn't applied to them. The app never hard-deletes (soft delete = UPDATE), so nothing is lost. Leave replica identity at its default.
+
 ## Next steps
 
-1. Click through milestones 3–4 in a browser (magic-link login, create household, invite + join, to-do CRUD).
-2. Milestone 5: Realtime sync for to-dos (`alter publication supabase_realtime add table ...`, `useHouseholdRealtime` composable, reconcile-on-reconnect).
-3. Milestone 6: mirror the to-do store/component/actions pattern for shopping lists.
-4. Before milestone 8: smoke-test a minimal Podman dev compose early, given the local-stack networking issue found here.
+1. **User**: set up custom SMTP + OTP email templates (see blocker above).
+2. Click through milestones 3–4 in a browser (OTP login, create household, invite + join, to-do CRUD) with the two accounts above — this also leaves two accounts in one household, ready for milestone 5's manual two-session sync test.
+3. Milestone 5 per the plan above.
+4. Milestone 6: mirror the to-do store/component/actions pattern for shopping lists.
+5. Before milestone 8: smoke-test a minimal Podman dev compose early, given the local-stack networking issue found here.
