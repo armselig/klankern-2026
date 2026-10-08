@@ -18,7 +18,7 @@ onMounted(() => householdStore.fetchMine())
         <InviteDialog />
       </q-card-section>
       <q-card-section>
-        <q-btn to="/todos" color="primary" label="To-dos" unelevated />
+        <q-btn :to="ROUTES.todos" color="primary" label="To-dos" unelevated />
       </q-card-section>
     </q-card>
   </q-page>

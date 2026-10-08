@@ -5,7 +5,7 @@
 // time this page renders, the module has already exchanged the URL for a
 // session; just move on to the dashboard.
 const router = useRouter()
-onMounted(() => router.replace('/'))
+onMounted(() => router.replace(ROUTES.home))
 </script>
 
 <template>

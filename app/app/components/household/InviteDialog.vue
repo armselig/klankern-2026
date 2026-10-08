@@ -8,7 +8,7 @@ const code = ref<string | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-const inviteUrl = computed(() => (code.value ? `${location.origin}/join/${code.value}` : ''))
+const inviteUrl = computed(() => (code.value ? `${location.origin}${ROUTES.join(code.value)}` : ''))
 
 async function show() {
   open.value = true

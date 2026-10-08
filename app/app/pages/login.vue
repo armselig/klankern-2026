@@ -41,7 +41,7 @@ async function verifyCode() {
     error.value = verifyError.message
     return
   }
-  await router.push('/')
+  await router.push(ROUTES.home)
 }
 </script>
 

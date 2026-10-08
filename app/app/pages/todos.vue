@@ -15,7 +15,7 @@ onMounted(async () => {
     </div>
     <p v-else>
       You need a household first -- go to
-      <NuxtLink to="/">the dashboard</NuxtLink>
+      <NuxtLink :to="ROUTES.home">the dashboard</NuxtLink>
       to create or join one.
     </p>
   </q-page>

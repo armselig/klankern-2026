@@ -52,7 +52,7 @@ async function join() {
   step.value = 'joining'
   try {
     await householdStore.redeem(code)
-    await router.push('/')
+    await router.push(ROUTES.home)
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'unknown_error'
     step.value = 'error'

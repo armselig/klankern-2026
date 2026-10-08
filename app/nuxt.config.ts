@@ -1,4 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { ROUTES } from './app/utils/routes'
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
@@ -7,9 +9,9 @@ export default defineNuxtConfig({
   components: [{ path: '~/components', pathPrefix: false }],
   supabase: {
     redirectOptions: {
-      login: '/login',
-      callback: '/confirm',
-      exclude: ['/join/**', '/login', '/confirm'],
+      login: ROUTES.login,
+      callback: ROUTES.confirm,
+      exclude: [`${ROUTES.joinPrefix}**`, ROUTES.login, ROUTES.confirm],
     },
   },
   quasar: {

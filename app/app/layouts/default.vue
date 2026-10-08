@@ -8,13 +8,13 @@ const route = useRoute()
  * detour to /login would drop the invite code, so the user would sign in
  * without joining the household. */
 const showLoginButton = computed(
-  () => !user.value && route.path !== '/login' && !route.path.startsWith('/join/'),
+  () => !user.value && route.path !== ROUTES.login && !route.path.startsWith(ROUTES.joinPrefix),
 )
 
 /** Signs the user out and returns them to the login screen. */
 async function signOut() {
   await client.auth.signOut()
-  await router.push('/login')
+  await router.push(ROUTES.login)
 }
 </script>
 
@@ -27,7 +27,7 @@ async function signOut() {
           <span>{{ user.email }}</span>
           <q-btn flat label="Sign out" @click="signOut" />
         </template>
-        <q-btn v-else-if="showLoginButton" flat label="Log in" to="/login" />
+        <q-btn v-else-if="showLoginButton" flat label="Log in" :to="ROUTES.login" />
       </q-toolbar>
     </q-header>
 
