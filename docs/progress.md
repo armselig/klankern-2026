@@ -2,7 +2,7 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of the commit that added migrations 0007/0008 (2026-10-08) (`main`, working tree clean, nothing uncommitted). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of the commit that added migration 0009 (2026-10-08) (`main`, working tree clean, nothing uncommitted). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
@@ -33,7 +33,7 @@ app/app/
   pages/            login.vue, confirm.vue, index.vue, todos.vue, join/[code].vue
   components/       household/{CreateHouseholdForm,InviteDialog}.vue, todo/{TodoList,TodoItem}.vue
   layouts/          default.vue
-app/supabase/migrations/   0001_households.sql … 0008_service_role_grants.sql
+app/supabase/migrations/   0001_households.sql … 0009_restrict_function_execute.sql
 app/tests/rls/              household-isolation.spec.ts (two-JWT RLS proof against Supabase Cloud)
 ```
 
@@ -55,7 +55,9 @@ Fixed by `0007_create_household_rpc.sql` (`create_household` / `create_invite` S
 
 **Rule going forward**: any `.insert/.update/.upsert(...).select()` needs the resulting row to be visible under the table's SELECT policy at that moment; otherwise drop the `.select()` or use a SECURITY DEFINER RPC.
 
-**Migrations workflow**: the Supabase MCP server (`.mcp.json`) works in fresh sessions and was used to apply 0007/0008 (`apply_migration`). It records a timestamp version, so the `supabase_migrations.schema_migrations` row was renamed to `0007`/`0008` afterwards to keep remote history matching the local `NNNN_` filenames — do the same for future migrations applied that way.
+**Function privileges**: Postgres grants `EXECUTE` on every new function to `PUBLIC`, i.e. callable by signed-out clients via `/rest/v1/rpc/...`. Every new function in `public` needs `revoke execute ... from public, anon` plus an explicit `grant ... to authenticated` (see 0007, 0009). The security advisor's remaining "signed-in users can execute SECURITY DEFINER function" warnings for `create_household`, `create_invite`, `redeem_invite` and `is_household_member` are intentional: the first three are the app's RPCs, and RLS policies need `authenticated` to be able to execute `is_household_member`.
+
+**Migrations workflow**: the Supabase MCP server (`.mcp.json`) works in fresh sessions and was used to apply 0007–0009 (`apply_migration`). It records a timestamp version, so the `supabase_migrations.schema_migrations` row was renamed to `0007`–`0009` afterwards (in its own `execute_sql` call — don't batch it with a `begin … rollback` probe, the rollback undoes it) to keep remote history matching the local `NNNN_` filenames — do the same for future migrations applied that way.
 
 ## Other notable decisions / deviations from the plan
 
@@ -72,7 +74,6 @@ Fixed by `0007_create_household_rpc.sql` (`create_household` / `create_invite` S
 ## Next steps
 
 1. Click through milestones 3–4 in a browser (magic-link login, create household, invite + join, to-do CRUD).
-2. Pre-existing security advisor warnings, not yet addressed: `redeem_invite`, `is_household_member` and `rls_auto_enable` (not from our migrations) are executable by `anon` (no `revoke ... from public, anon` like 0007 does).
-3. Milestone 5: Realtime sync for to-dos (`alter publication supabase_realtime add table ...`, `useHouseholdRealtime` composable, reconcile-on-reconnect).
-4. Milestone 6: mirror the to-do store/component/actions pattern for shopping lists.
-5. Before milestone 8: smoke-test a minimal Podman dev compose early, given the local-stack networking issue found here.
+2. Milestone 5: Realtime sync for to-dos (`alter publication supabase_realtime add table ...`, `useHouseholdRealtime` composable, reconcile-on-reconnect).
+3. Milestone 6: mirror the to-do store/component/actions pattern for shopping lists.
+4. Before milestone 8: smoke-test a minimal Podman dev compose early, given the local-stack networking issue found here.
