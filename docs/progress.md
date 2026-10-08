@@ -2,7 +2,7 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of the commit that added the header user display and the shared `ROUTES` constant (2026-10-08) (`main`, working tree clean, nothing uncommitted). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of the commit that finished milestone 5 (Realtime sync + Playwright e2e test, 2026-10-08) (`main`, working tree clean, nothing uncommitted). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
@@ -12,7 +12,7 @@ Tracks what's been built against the milestones in [`plan.md`](./plan.md), sessi
 | 2. Schema + RLS + two-JWT test | ✅ Done — RLS test passing against Supabase Cloud |
 | 3. Auth + household join flow | ✅ Done — clicked through in a browser (OTP login, invite, join) |
 | 4. Shared to-do list CRUD | ✅ Done — clicked through in a browser (add, toggle, remove, reload, second member sees the list) |
-| 5. Realtime sync for to-dos | ⬜ Not started |
+| 5. Realtime sync for to-dos | ✅ Done — proven by the Playwright e2e test (two browsers, incl. reconnect) |
 | 6. Shared shopping list | ⬜ Not started |
 | 7. PWA installability pass | 🟡 Manifest/icons/Workbox config in place from milestone 1; Lighthouse audit not run |
 | 8. Containerize (Podman) + deploy | ⬜ Not started |
@@ -27,19 +27,22 @@ Tracks what's been built against the milestones in [`plan.md`](./plan.md), sessi
 ```
 app/app/
   types/            database.types.ts (generated), household.ts, todo.ts
-  composables/      current-user.ts, household-actions.ts, todo-actions.ts (+ .spec.ts siblings)
+  composables/      current-user.ts, household-actions.ts, todo-actions.ts, household-realtime.ts (+ .spec.ts siblings),
+                    use-household-realtime.ts
   utils/            position.ts, todo-state.ts (+ .spec.ts siblings), routes.ts
   stores/           household.ts, todos.ts
   pages/            login.vue, confirm.vue, index.vue, todos.vue, join/[code].vue
   components/       household/{CreateHouseholdForm,InviteDialog}.vue, todo/{TodoList,TodoItem}.vue
   layouts/          default.vue
-app/supabase/migrations/   0001_households.sql … 0010_redeem_invite_count_new_members.sql
+app/supabase/migrations/   0001_households.sql … 0011_realtime_publication.sql
+app/tests/support/          supabase-fixtures.ts (disposable users/households via the Admin API, shared by RLS + e2e)
 app/tests/rls/              household-isolation.spec.ts (two-JWT RLS proof against Supabase Cloud)
+app/tests/e2e/              realtime-sync.e2e.ts (Playwright, two browser contexts)
 ```
 
 **Design pattern used throughout**: business logic lives in plain `composables/*-actions.ts` functions that take a `SupabaseClient` as a parameter, unit-tested with a mocked client (no Nuxt runtime needed). Pinia stores are thin — they call `useSupabaseClient()`/`useSupabaseUser()` and delegate to those functions. State-transition logic that needs testing on its own (optimistic add/dedup, soft-delete, sort order) is further extracted into pure reducer functions in `utils/`. This is the pattern to continue for the shopping list (milestone 6) and whiteboard/recipes (later phases).
 
-**Testing**: Vitest, 39 tests passing (including the RLS suite) (`npm test`). Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
+**Testing**: Vitest, 56 tests passing (including the RLS suite) (`npm test`). Playwright e2e (`npm run test:e2e`, see the milestone 5 section) is separate and not in the pre-push hook. Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
 
 **Database types**: generated from the live schema via `supabase gen types typescript`, saved to `app/app/types/database.types.ts`, picked up automatically by `@nuxtjs/supabase`'s default `types` path. Re-run after any migration changes:
 ```
@@ -57,7 +60,7 @@ Fixed by `0007_create_household_rpc.sql` (`create_household` / `create_invite` S
 
 **Function privileges**: Postgres grants `EXECUTE` on every new function to `PUBLIC`, i.e. callable by signed-out clients via `/rest/v1/rpc/...`. Every new function in `public` needs `revoke execute ... from public, anon` plus an explicit `grant ... to authenticated` (see 0007, 0009). The security advisor's remaining "signed-in users can execute SECURITY DEFINER function" warnings for `create_household`, `create_invite`, `redeem_invite` and `is_household_member` are intentional: the first three are the app's RPCs, and RLS policies need `authenticated` to be able to execute `is_household_member`.
 
-**Migrations workflow**: the Supabase MCP server (`.mcp.json`) works in fresh sessions and was used to apply 0007–0009 (`apply_migration`). It records a timestamp version, so the `supabase_migrations.schema_migrations` row was renamed to `0007`–`0009` afterwards (in its own `execute_sql` call — don't batch it with a `begin … rollback` probe, the rollback undoes it) to keep remote history matching the local `NNNN_` filenames — do the same for future migrations applied that way.
+**Migrations workflow**: the Supabase MCP server (`.mcp.json`) works in fresh sessions and was used to apply 0007–0009 (`apply_migration`). It records a timestamp version, so the `supabase_migrations.schema_migrations` row was renamed to `0007`–`0009` afterwards (in its own `execute_sql` call — don't batch it with a `begin … rollback` probe, the rollback undoes it) to keep remote history matching the local `NNNN_` filenames — do the same for future migrations applied that way. **Since 0011, the agent's auto-mode classifier blocks that rename** (`update supabase_migrations.schema_migrations ...`), so it's now a manual step for the user in the dashboard SQL editor; the agent hands over the exact statement. 0011's rename (`20261008145013` → `0011`) was handed over on 2026-10-08 — check `select version from supabase_migrations.schema_migrations` if unsure it was run.
 
 ## Other notable decisions / deviations from the plan
 
@@ -98,19 +101,23 @@ Leftover test data in the cloud project: to-dos "Test 1–3" and invite `b005ab0
 
 The layout header shows the signed-in user's email next to "Sign out". Signed out, it shows a "Log in" link, except on `/login` and `/join/<code>` (a detour from the join page to `/login` would drop the invite code). Tested in a browser by the user.
 
-## Milestone 5 plan (agreed, not started)
+## Milestone 5: Realtime sync (done 2026-10-08)
 
-Pre-checks already done (2026-10-08): the live `supabase_realtime` publication is **empty**; there is **no trigger** maintaining `updated_at`, so don't use it to order/last-write-wins Realtime events. Supabase changelog checked — nothing breaking for this design (the `realtime` schema lock-down doesn't affect `alter publication`).
+- `0011_realtime_publication.sql` adds `todo_items` and `shopping_items` to `supabase_realtime` (applied to the cloud project).
+- `utils/todo-state.ts`: `applyTodoRealtimeEvent` (upsert by id so the echo of an optimistic add dedups; ignores other lists and everything before the list is loaded; nothing undoes a local soft delete) and `mergeTodoResync` (refetch result + items with a write in flight + local tombstones; anything else missing from the fetch was deleted remotely and is dropped). Event shape is the app's own `TodoRealtimeEvent` (`types/todo.ts`), not realtime-js types.
+- `stores/todos.ts`: `pendingIds` (wrapped around every server write via `withPending`), `applyRealtimeEvent`, `resync()` (no-op until `init()` has loaded the list).
+- `composables/household-realtime.ts`: `subscribeToHouseholdChanges` — one channel per household, `postgres_changes` INSERT + UPDATE only (never DELETE: unfilterable and RLS-free; the app only soft-deletes), filter `household_id=eq.<id>`, `onSubscribed` on every `SUBSCRIBED` (first join and every automatic rejoin) → resync.
+- `composables/use-household-realtime.ts`: `useHouseholdRealtime()`, called once in `layouts/default.vue`. Keyed on user **and** household id, because sign-out doesn't clear the household store. **Milestone 6 adds `shopping_items` listeners to this same channel** rather than opening a new one.
+- No `updated_at` trigger exists, so events are last-arrival-wins; don't use `updated_at` for ordering.
 
-Test-first, same pattern as milestone 4:
-1. `0011_realtime_publication.sql`: `alter publication supabase_realtime add table public.todo_items, public.shopping_items;` — apply via MCP `apply_migration`, then rename the version to `0011` in a separate `execute_sql` call.
-2. Pure reducer `applyTodoRealtimeEvent` in `utils/todo-state.ts` (spec first): INSERT echo of an optimistic id doesn't duplicate; remote soft-delete hides the item; a late INSERT/UPDATE can't resurrect a locally deleted item; events for another `list_id` are ignored.
-3. Reconnect resync **merges** rather than replaces: `fetchTodoItems` excludes deleted rows, so replacing `itemsById` would wipe in-flight optimistic adds — track pending ids in the store and keep them across the refetch.
-4. Plain, mock-testable `subscribeToHouseholdChanges(client, householdId, listeners)` returning an unsubscribe fn — one channel per household, `postgres_changes` filtered on `household_id=eq.<id>`, refetch on every `SUBSCRIBED`. Thin `useHouseholdRealtime` composable on top, mounted where the household id is known (not inside `TodoList`, so shopping can reuse the channel), torn down on scope dispose and sign-out.
-5. **Listen to `INSERT` and `UPDATE` only, not `*`**: per the Realtime docs, DELETE events can't be filtered and RLS isn't applied to them. The app never hard-deletes (soft delete = UPDATE), so nothing is lost. Leave replica identity at its default.
+**E2E test** (`npm run test:e2e`, Playwright 1.64, uses the installed Google Chrome via `channel: 'chrome'`, reuses a running `nuxt dev` on :3000 or starts one): two disposable users in one household, two browser contexts. Covers add/toggle/delete arriving live, echo dedup, changes made while disconnected arriving after the reconnect, and the channel leave on sign-out. Verified to fail with the subscription removed and with the resync removed. Things learned building it:
+- Login goes through the real form: the `auth/v1/otp` request is fulfilled in the browser (no email sent) and the code comes from `admin.auth.admin.generateLink({ type: 'magiclink' }).properties.email_otp`, which `verifyOtp({ type: 'email' })` accepts.
+- Chrome's offline emulation (`context.setOffline`) does **not** close an open websocket. The drop is simulated with `context.routeWebSocket` (close the socket, refuse reconnects until "online").
+- A full page load (`page.goto`) right after verifying the code can land back on `/login` (session apparently not persisted yet), so the test navigates in-app.
+- Test files are `*.e2e.ts` so Vitest's `*.spec.ts` glob doesn't pick them up.
 
 ## Next steps
 
-1. Milestone 5 per the plan above — accounts A and B are already in one household for the manual two-session sync test.
-2. Milestone 6: mirror the to-do store/component/actions pattern for shopping lists.
+1. Confirm the 0011 migration version rename was run (see "Migrations workflow").
+2. Milestone 6: mirror the to-do store/component/actions pattern for shopping lists, add `shopping_items` listeners to the household channel, and extend the e2e test.
 3. Before milestone 8: smoke-test a minimal Podman dev compose early, given the local-stack networking issue found here.
