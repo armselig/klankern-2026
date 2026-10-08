@@ -2,6 +2,14 @@
 const user = useSupabaseUser()
 const client = useSupabaseClient()
 const router = useRouter()
+const route = useRoute()
+
+/** Hidden on pages that already contain their own sign-in form: on /join a
+ * detour to /login would drop the invite code, so the user would sign in
+ * without joining the household. */
+const showLoginButton = computed(
+  () => !user.value && route.path !== '/login' && !route.path.startsWith('/join/'),
+)
 
 /** Signs the user out and returns them to the login screen. */
 async function signOut() {
@@ -15,7 +23,11 @@ async function signOut() {
     <q-header elevated class="bg-primary text-white">
       <q-toolbar>
         <q-toolbar-title>Klankern</q-toolbar-title>
-        <q-btn v-if="user" flat label="Sign out" @click="signOut" />
+        <template v-if="user">
+          <span>{{ user.email }}</span>
+          <q-btn flat label="Sign out" @click="signOut" />
+        </template>
+        <q-btn v-else-if="showLoginButton" flat label="Log in" to="/login" />
       </q-toolbar>
     </q-header>
 
