@@ -1,19 +1,20 @@
-import type { TodoItem, TodoRealtimeEvent } from '~/types/todo'
-
-export type TodoItemsById = Record<string, TodoItem>
+import type { ItemsById, ListItem, ListRealtimeEvent } from '~/types/list'
 
 /**
  * Keyed by client-generated UUID (set at optimistic-insert time): the
  * server-confirmed row -- and later, the Realtime echo of the same INSERT --
  * upserts under the same id instead of appending a duplicate.
  */
-export function upsertTodoItem(itemsById: TodoItemsById, item: TodoItem): TodoItemsById {
+export function upsertListItem<T extends ListItem>(itemsById: ItemsById<T>, item: T): ItemsById<T> {
   return { ...itemsById, [item.id]: item }
 }
 
 /** Deletes are soft (deleted_at set) rather than removed from state, so an
  * out-of-order confirmation/Realtime event can't resurrect a deleted item. */
-export function softDeleteTodoItem(itemsById: TodoItemsById, id: string): TodoItemsById {
+export function softDeleteListItem<T extends ListItem>(
+  itemsById: ItemsById<T>,
+  id: string,
+): ItemsById<T> {
   const existing = itemsById[id]
   if (!existing) return itemsById
   return { ...itemsById, [id]: { ...existing, deleted_at: new Date().toISOString() } }
@@ -26,15 +27,15 @@ export function softDeleteTodoItem(itemsById: TodoItemsById, id: string): TodoIt
  * soft delete, since the app has no undelete and a late event would otherwise
  * bring the item back.
  */
-export function applyTodoRealtimeEvent(
-  itemsById: TodoItemsById,
-  event: TodoRealtimeEvent,
+export function applyListRealtimeEvent<T extends ListItem>(
+  itemsById: ItemsById<T>,
+  event: ListRealtimeEvent<T>,
   listId: string | null,
-): TodoItemsById {
+): ItemsById<T> {
   const incoming = event.new
   if (!listId || incoming.list_id !== listId) return itemsById
   if (itemsById[incoming.id]?.deleted_at && !incoming.deleted_at) return itemsById
-  return upsertTodoItem(itemsById, incoming)
+  return upsertListItem(itemsById, incoming)
 }
 
 /**
@@ -45,19 +46,21 @@ export function applyTodoRealtimeEvent(
  * may predate that write) and local tombstones (which the fetch would
  * otherwise resurrect while the delete is still on its way).
  */
-export function mergeTodoResync(
-  itemsById: TodoItemsById,
-  fetched: TodoItem[],
+export function mergeListResync<T extends ListItem>(
+  itemsById: ItemsById<T>,
+  fetched: T[],
   pendingIds: readonly string[],
-): TodoItemsById {
-  const merged: TodoItemsById = Object.fromEntries(fetched.map((item) => [item.id, item]))
+): ItemsById<T> {
+  const merged: ItemsById<T> = Object.fromEntries(fetched.map((item) => [item.id, item]))
   for (const local of Object.values(itemsById)) {
     if (pendingIds.includes(local.id) || local.deleted_at) merged[local.id] = local
   }
   return merged
 }
 
-export function visibleTodoItems(itemsById: TodoItemsById): TodoItem[] {
+/** Non-deleted items in list order. Lists with their own ordering (shopping:
+ * checked items last) sort this result further. */
+export function visibleListItems<T extends ListItem>(itemsById: ItemsById<T>): T[] {
   return Object.values(itemsById)
     .filter((item) => !item.deleted_at)
     .sort((a, b) => a.position - b.position)

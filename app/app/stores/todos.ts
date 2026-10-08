@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
-import type { TodoItem, TodoRealtimeEvent } from '~/types/todo'
+import type { ItemsById, ListRealtimeEvent } from '~/types/list'
+import type { TodoItem } from '~/types/todo'
 import {
   fetchOrCreateTodoList,
   fetchTodoItems,
@@ -9,19 +10,18 @@ import {
 } from '~/composables/todo-actions'
 import { nextPosition } from '~/utils/position'
 import {
-  applyTodoRealtimeEvent,
-  mergeTodoResync,
-  softDeleteTodoItem,
-  upsertTodoItem,
-  visibleTodoItems,
-  type TodoItemsById,
-} from '~/utils/todo-state'
+  applyListRealtimeEvent,
+  mergeListResync,
+  softDeleteListItem,
+  upsertListItem,
+  visibleListItems,
+} from '~/utils/list-state'
 
 export const useTodoStore = defineStore('todos', {
   state: () => ({
     householdId: null as string | null,
     listId: null as string | null,
-    itemsById: {} as TodoItemsById,
+    itemsById: {} as ItemsById<TodoItem>,
     /** Ids with a write still in flight; a resync must not overwrite them
      * with a fetch that may predate the write. */
     pendingIds: [] as string[],
@@ -29,7 +29,7 @@ export const useTodoStore = defineStore('todos', {
     error: null as string | null,
   }),
   getters: {
-    visible: (state) => visibleTodoItems(state.itemsById),
+    visible: (state) => visibleListItems(state.itemsById),
   },
   actions: {
     /** Loads (creating if needed) the household's single shared todo list and its items. */
@@ -50,8 +50,8 @@ export const useTodoStore = defineStore('todos', {
     },
 
     /** Folds a to-do change from the household's Realtime channel into state. */
-    applyRealtimeEvent(event: TodoRealtimeEvent) {
-      this.itemsById = applyTodoRealtimeEvent(this.itemsById, event, this.listId)
+    applyRealtimeEvent(event: ListRealtimeEvent<TodoItem>) {
+      this.itemsById = applyListRealtimeEvent(this.itemsById, event, this.listId)
     },
 
     /** Repairs state after a (re)connect, since Realtime doesn't replay missed
@@ -63,7 +63,7 @@ export const useTodoStore = defineStore('todos', {
       try {
         const items = await fetchTodoItems(useSupabaseClient(), listId)
         if (listId !== this.listId) return
-        this.itemsById = mergeTodoResync(this.itemsById, items, this.pendingIds)
+        this.itemsById = mergeListResync(this.itemsById, items, this.pendingIds)
       } catch (e) {
         this.error = e instanceof Error ? e.message : 'unknown_error'
       }
@@ -99,7 +99,7 @@ export const useTodoStore = defineStore('todos', {
         updated_at: now,
         deleted_at: null,
       }
-      this.itemsById = upsertTodoItem(this.itemsById, optimistic)
+      this.itemsById = upsertListItem(this.itemsById, optimistic)
       const listId = this.listId
       const householdId = this.householdId
 
@@ -112,7 +112,7 @@ export const useTodoStore = defineStore('todos', {
             title,
             position: optimistic.position,
           })
-          this.itemsById = upsertTodoItem(this.itemsById, confirmed)
+          this.itemsById = upsertListItem(this.itemsById, confirmed)
         } catch (e) {
           const { [id]: _removed, ...rest } = this.itemsById
           this.itemsById = rest
@@ -125,12 +125,12 @@ export const useTodoStore = defineStore('todos', {
       const item = this.itemsById[id]
       if (!item) return
       const done = !item.done
-      this.itemsById = upsertTodoItem(this.itemsById, { ...item, done })
+      this.itemsById = upsertListItem(this.itemsById, { ...item, done })
       await this.withPending(id, async () => {
         try {
           await setTodoItemDone(useSupabaseClient(), id, done)
         } catch (e) {
-          this.itemsById = upsertTodoItem(this.itemsById, item)
+          this.itemsById = upsertListItem(this.itemsById, item)
           this.error = e instanceof Error ? e.message : 'unknown_error'
         }
       })
@@ -139,12 +139,12 @@ export const useTodoStore = defineStore('todos', {
     async remove(id: string) {
       const previous = this.itemsById[id]
       if (!previous) return
-      this.itemsById = softDeleteTodoItem(this.itemsById, id)
+      this.itemsById = softDeleteListItem(this.itemsById, id)
       await this.withPending(id, async () => {
         try {
           await softDeleteTodoItemRemote(useSupabaseClient(), id)
         } catch (e) {
-          this.itemsById = upsertTodoItem(this.itemsById, previous)
+          this.itemsById = upsertListItem(this.itemsById, previous)
           this.error = e instanceof Error ? e.message : 'unknown_error'
         }
       })

@@ -1,11 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '~/types/database.types'
-import type { TodoItem, TodoRealtimeEvent } from '~/types/todo'
+import type { ListRealtimeEvent } from '~/types/list'
+import type { TodoItem } from '~/types/todo'
 
 type Client = SupabaseClient<Database>
 
 export interface HouseholdChangeListeners {
-  onTodoItemChange: (event: TodoRealtimeEvent) => void
+  onTodoItemChange: (event: ListRealtimeEvent<TodoItem>) => void
   /** Fires on the first subscribe and on every automatic rejoin after a
    * dropped connection; postgres_changes has no replay, so this is the cue
    * to refetch. */

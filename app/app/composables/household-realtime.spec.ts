@@ -88,7 +88,7 @@ describe('subscribeToHouseholdChanges', () => {
     ])
   })
 
-  it('passes to-do changes on as TodoRealtimeEvents', () => {
+  it('passes to-do changes on as ListRealtimeEvents', () => {
     const fake = fakeRealtimeClient()
     const l = listeners()
     subscribeToHouseholdChanges(fake.client, 'house-1', l)

@@ -44,7 +44,7 @@ export async function fetchTodoItems(client: Client, listId: string): Promise<To
 }
 
 /** Inserts with a client-supplied id so the store's optimistic entry and the
- * server-confirmed row share one key (see utils/todo-state.ts). */
+ * server-confirmed row share one key (see utils/list-state.ts). */
 export async function insertTodoItem(
   client: Client,
   item: { id: string; listId: string; householdId: string; title: string; position: number },

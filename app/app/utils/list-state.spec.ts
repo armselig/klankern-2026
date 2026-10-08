@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import type { TodoItem, TodoRealtimeEvent } from '~/types/todo'
+import type { ListRealtimeEvent } from '~/types/list'
+import type { TodoItem } from '~/types/todo'
 import {
-  applyTodoRealtimeEvent,
-  mergeTodoResync,
-  softDeleteTodoItem,
-  upsertTodoItem,
-  visibleTodoItems,
-} from './todo-state'
+  applyListRealtimeEvent,
+  mergeListResync,
+  softDeleteListItem,
+  upsertListItem,
+  visibleListItems,
+} from './list-state'
 
 function item(overrides: Partial<TodoItem> = {}): TodoItem {
   return {
@@ -24,9 +25,9 @@ function item(overrides: Partial<TodoItem> = {}): TodoItem {
   }
 }
 
-describe('upsertTodoItem', () => {
+describe('upsertListItem', () => {
   it('adds a new item under its id', () => {
-    const result = upsertTodoItem({}, item())
+    const result = upsertListItem({}, item())
     expect(result).toEqual({ 'item-1': item() })
   })
 
@@ -34,18 +35,18 @@ describe('upsertTodoItem', () => {
     const optimistic = item({ created_at: 'pending' })
     const confirmed = item({ created_at: '2026-01-01T00:00:05Z' })
 
-    let state = upsertTodoItem({}, optimistic)
-    state = upsertTodoItem(state, confirmed)
+    let state = upsertListItem({}, optimistic)
+    state = upsertListItem(state, confirmed)
 
     expect(Object.keys(state)).toEqual(['item-1'])
     expect(state['item-1']).toEqual(confirmed)
   })
 })
 
-describe('softDeleteTodoItem', () => {
+describe('softDeleteListItem', () => {
   it('sets deleted_at on the targeted item and leaves others untouched', () => {
     const state = { 'item-1': item(), 'item-2': item({ id: 'item-2' }) }
-    const result = softDeleteTodoItem(state, 'item-1')
+    const result = softDeleteListItem(state, 'item-1')
 
     expect(result['item-1']?.deleted_at).not.toBeNull()
     expect(result['item-2']?.deleted_at).toBeNull()
@@ -53,17 +54,17 @@ describe('softDeleteTodoItem', () => {
 
   it('is a no-op when the id is unknown', () => {
     const state = { 'item-1': item() }
-    expect(softDeleteTodoItem(state, 'missing')).toBe(state)
+    expect(softDeleteListItem(state, 'missing')).toBe(state)
   })
 })
 
-describe('visibleTodoItems', () => {
+describe('visibleListItems', () => {
   it('excludes soft-deleted items', () => {
     const state = {
       'item-1': item({ id: 'item-1' }),
       'item-2': item({ id: 'item-2', deleted_at: '2026-01-02T00:00:00Z' }),
     }
-    expect(visibleTodoItems(state).map((i) => i.id)).toEqual(['item-1'])
+    expect(visibleListItems(state).map((i) => i.id)).toEqual(['item-1'])
   })
 
   it('sorts by position ascending', () => {
@@ -72,23 +73,26 @@ describe('visibleTodoItems', () => {
       b: item({ id: 'b', position: 1 }),
       c: item({ id: 'c', position: 2 }),
     }
-    expect(visibleTodoItems(state).map((i) => i.id)).toEqual(['b', 'c', 'a'])
+    expect(visibleListItems(state).map((i) => i.id)).toEqual(['b', 'c', 'a'])
   })
 })
 
-function event(eventType: TodoRealtimeEvent['eventType'], row: TodoItem): TodoRealtimeEvent {
+function event(
+  eventType: ListRealtimeEvent<TodoItem>['eventType'],
+  row: TodoItem,
+): ListRealtimeEvent<TodoItem> {
   return { eventType, new: row }
 }
 
-describe('applyTodoRealtimeEvent', () => {
+describe('applyListRealtimeEvent', () => {
   it('adds an item inserted by another member', () => {
-    const result = applyTodoRealtimeEvent({}, event('INSERT', item()), 'list-1')
+    const result = applyListRealtimeEvent({}, event('INSERT', item()), 'list-1')
     expect(result).toEqual({ 'item-1': item() })
   })
 
   it('dedups the INSERT echo of an optimistic add', () => {
     const state = { 'item-1': item({ created_at: 'pending' }) }
-    const result = applyTodoRealtimeEvent(state, event('INSERT', item()), 'list-1')
+    const result = applyListRealtimeEvent(state, event('INSERT', item()), 'list-1')
 
     expect(Object.keys(result)).toEqual(['item-1'])
     expect(result['item-1']).toEqual(item())
@@ -96,23 +100,23 @@ describe('applyTodoRealtimeEvent', () => {
 
   it('applies a remote toggle', () => {
     const state = { 'item-1': item() }
-    const result = applyTodoRealtimeEvent(state, event('UPDATE', item({ done: true })), 'list-1')
+    const result = applyListRealtimeEvent(state, event('UPDATE', item({ done: true })), 'list-1')
     expect(result['item-1']?.done).toBe(true)
   })
 
   it('hides an item soft-deleted by another member', () => {
     const state = { 'item-1': item() }
     const deleted = item({ deleted_at: '2026-01-02T00:00:00Z' })
-    const result = applyTodoRealtimeEvent(state, event('UPDATE', deleted), 'list-1')
+    const result = applyListRealtimeEvent(state, event('UPDATE', deleted), 'list-1')
 
-    expect(visibleTodoItems(result)).toEqual([])
+    expect(visibleListItems(result)).toEqual([])
   })
 
   it('does not let a late INSERT or UPDATE resurrect a locally deleted item', () => {
     const state = { 'item-1': item({ deleted_at: '2026-01-02T00:00:00Z' }) }
 
-    expect(applyTodoRealtimeEvent(state, event('INSERT', item()), 'list-1')).toBe(state)
-    expect(applyTodoRealtimeEvent(state, event('UPDATE', item({ done: true })), 'list-1')).toBe(
+    expect(applyListRealtimeEvent(state, event('INSERT', item()), 'list-1')).toBe(state)
+    expect(applyListRealtimeEvent(state, event('UPDATE', item({ done: true })), 'list-1')).toBe(
       state,
     )
   })
@@ -120,25 +124,25 @@ describe('applyTodoRealtimeEvent', () => {
   it('ignores events for another list', () => {
     const state = { 'item-1': item() }
     const other = item({ id: 'item-2', list_id: 'list-2' })
-    expect(applyTodoRealtimeEvent(state, event('INSERT', other), 'list-1')).toBe(state)
+    expect(applyListRealtimeEvent(state, event('INSERT', other), 'list-1')).toBe(state)
   })
 
   it('ignores every event while no list is loaded', () => {
     const state = {}
-    expect(applyTodoRealtimeEvent(state, event('INSERT', item()), null)).toBe(state)
+    expect(applyListRealtimeEvent(state, event('INSERT', item()), null)).toBe(state)
   })
 })
 
-describe('mergeTodoResync', () => {
+describe('mergeListResync', () => {
   it('takes the fetched rows as the new state', () => {
     const state = { 'item-1': item({ title: 'Old title' }) }
-    const result = mergeTodoResync(state, [item({ title: 'New title' })], [])
+    const result = mergeListResync(state, [item({ title: 'New title' })], [])
     expect(result).toEqual({ 'item-1': item({ title: 'New title' }) })
   })
 
   it('keeps an optimistic add the server has not confirmed yet', () => {
     const optimistic = item({ id: 'pending-add' })
-    const result = mergeTodoResync({ 'pending-add': optimistic }, [item()], ['pending-add'])
+    const result = mergeListResync({ 'pending-add': optimistic }, [item()], ['pending-add'])
 
     expect(result['pending-add']).toEqual(optimistic)
     expect(result['item-1']).toEqual(item())
@@ -146,19 +150,19 @@ describe('mergeTodoResync', () => {
 
   it('keeps a pending local change over the fetched row', () => {
     const local = item({ done: true })
-    const result = mergeTodoResync({ 'item-1': local }, [item({ done: false })], ['item-1'])
+    const result = mergeListResync({ 'item-1': local }, [item({ done: false })], ['item-1'])
     expect(result['item-1']).toEqual(local)
   })
 
   it('does not resurrect a locally deleted item the fetch still returns as live', () => {
     const tombstone = item({ deleted_at: '2026-01-02T00:00:00Z' })
-    const result = mergeTodoResync({ 'item-1': tombstone }, [item()], [])
-    expect(visibleTodoItems(result)).toEqual([])
+    const result = mergeListResync({ 'item-1': tombstone }, [item()], [])
+    expect(visibleListItems(result)).toEqual([])
   })
 
   it('drops an item deleted remotely while offline (missing from the fetch)', () => {
     const state = { 'item-1': item(), 'item-2': item({ id: 'item-2' }) }
-    const result = mergeTodoResync(state, [item()], [])
+    const result = mergeListResync(state, [item()], [])
     expect(Object.keys(result)).toEqual(['item-1'])
   })
 })
