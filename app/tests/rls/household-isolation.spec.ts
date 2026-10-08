@@ -4,68 +4,20 @@
 // `window`), since supabase-js refuses to use a secret key whenever it
 // detects a browser-like global scope -- happy-dom's `window` would trip
 // that guard and raise "Forbidden use of secret API key in browser".
-import { randomUUID } from 'node:crypto'
-import { config as loadEnv } from 'dotenv'
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import {
+  admin,
+  createHousehold,
+  createTestUser,
+  deleteTestData,
+  runId,
+  type TestUser,
+} from '../support/supabase-fixtures'
 
 // Proves household-scoped RLS before any UI is built on top of the schema
-// (plan milestone 2). Runs against the real Supabase Cloud project using
-// disposable test users created via the Admin API, since this host's Podman
-// cannot run the local Supabase stack (netavark/nftables race on concurrent
-// container starts) and magic-link/OTP email can't be automated headlessly.
-
-loadEnv()
-
-const url = process.env.SUPABASE_URL
-const publishableKey = process.env.SUPABASE_KEY
-const secretKey = process.env.SUPABASE_SECRET_KEY
-
-if (!url || !publishableKey || !secretKey) {
-  throw new Error(
-    'SUPABASE_URL, SUPABASE_KEY and SUPABASE_SECRET_KEY must be set (see .env.example) to run RLS tests.',
-  )
-}
-
-const TEST_EMAIL_DOMAIN = 'klankern-rls-test.invalid'
-const runId = randomUUID().slice(0, 8)
-
-const admin = createClient(url, secretKey, {
-  auth: { autoRefreshToken: false, persistSession: false },
-})
-
-/** Creates a confirmed test user and returns a client scoped to their session (RLS applies as them). */
-async function createTestUser(label: string) {
-  const email = `rls-${label}-${runId}@${TEST_EMAIL_DOMAIN}`
-  const password = randomUUID()
-
-  const { data: created, error: createError } = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-  })
-  if (createError || !created.user) throw createError ?? new Error('user creation failed')
-
-  const anon = createClient(url, publishableKey)
-  const { data: signedIn, error: signInError } = await anon.auth.signInWithPassword({
-    email,
-    password,
-  })
-  if (signInError || !signedIn.session) throw signInError ?? new Error('sign-in failed')
-
-  const scoped = createClient(url, publishableKey, {
-    global: { headers: { Authorization: `Bearer ${signedIn.session.access_token}` } },
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
-
-  return { userId: created.user.id, client: scoped }
-}
-
-async function createHousehold(client: SupabaseClient, name: string) {
-  const { data: household, error } = await client.rpc('create_household', { p_name: name })
-  if (error || !household) throw error ?? new Error('create_household failed')
-  return household.id as string
-}
+// (plan milestone 2). See tests/support/supabase-fixtures.ts for why this
+// runs against Supabase Cloud with disposable users.
 
 async function addTodoItem(client: SupabaseClient, householdId: string, title: string) {
   const { data: list, error: listError } = await client
@@ -86,9 +38,9 @@ async function addTodoItem(client: SupabaseClient, householdId: string, title: s
 }
 
 describe('household RLS isolation', () => {
-  let userA: Awaited<ReturnType<typeof createTestUser>>
-  let userB: Awaited<ReturnType<typeof createTestUser>>
-  let userC: Awaited<ReturnType<typeof createTestUser>>
+  let userA: TestUser
+  let userB: TestUser
+  let userC: TestUser
   let householdAId: string
   let householdBId: string
 
@@ -107,12 +59,7 @@ describe('household RLS isolation', () => {
   })
 
   afterAll(async () => {
-    // Deleting the households (service-role, bypasses RLS) cascades to their
-    // todo_lists/items, shopping_lists/items, invites and membership rows.
-    await admin.from('households').delete().in('id', [householdAId, householdBId].filter(Boolean))
-    for (const user of [userA, userB, userC]) {
-      if (user?.userId) await admin.auth.admin.deleteUser(user.userId)
-    }
+    await deleteTestData([householdAId, householdBId], [userA, userB, userC])
   })
 
   it('lets a member read their own household', async () => {

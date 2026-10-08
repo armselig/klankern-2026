@@ -18,7 +18,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "nuxt prepare && vitest run",
-    "test:watch": "nuxt prepare && vitest"
+    "test:watch": "nuxt prepare && vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@nuxtjs/supabase": "2.0.10",
@@ -32,6 +33,7 @@
   "devDependencies": {
     "@nuxt/eslint-config": "1.17.0",
     "@nuxt/test-utils": "4.3.3",
+    "@playwright/test": "1.64.0",
     "@vite-pwa/nuxt": "1.1.1",
     "@vitejs/plugin-vue": "6.0.9",
     "@vue/test-utils": "2.5.1",
