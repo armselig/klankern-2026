@@ -48,7 +48,7 @@ export const useTodoStore = defineStore('todos', {
      * then gets reconciled (not duplicated) once the server confirms it. */
     async add(title: string) {
       if (!this.listId || !this.householdId) throw new Error('not_initialized')
-      const userId = useSupabaseUser().value?.id
+      const userId = useSupabaseUser().value?.sub
       if (!userId) throw new Error('not_authenticated')
       const id = crypto.randomUUID()
       const now = new Date().toISOString()

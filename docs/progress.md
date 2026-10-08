@@ -2,7 +2,7 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of the commit that added migration 0009 (2026-10-08) (`main`, working tree clean, nothing uncommitted). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of the commit that recorded the milestone 3–4 browser click-through (2026-10-08) (`main`, working tree clean, nothing uncommitted). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
@@ -10,8 +10,8 @@ Tracks what's been built against the milestones in [`plan.md`](./plan.md), sessi
 |---|---|
 | 1. Scaffold + tooling + git hooks | ✅ Done |
 | 2. Schema + RLS + two-JWT test | ✅ Done — RLS test passing against Supabase Cloud |
-| 3. Auth + household join flow | ✅ Built; DB paths verified by the RLS test. Browser click-through **blocked at login** — see "Blocker: login emails contain no OTP code" |
-| 4. Shared to-do list CRUD | ✅ Built; DB paths verified by the RLS test, UI not yet clicked through in a browser |
+| 3. Auth + household join flow | ✅ Done — clicked through in a browser (OTP login, invite, join) |
+| 4. Shared to-do list CRUD | ✅ Done — clicked through in a browser (add, toggle, remove, reload, second member sees the list) |
 | 5. Realtime sync for to-dos | ⬜ Not started |
 | 6. Shared shopping list | ⬜ Not started |
 | 7. PWA installability pass | 🟡 Manifest/icons/Workbox config in place from milestone 1; Lighthouse audit not run |
@@ -71,17 +71,25 @@ Fixed by `0007_create_household_rpc.sql` (`create_household` / `create_invite` S
 
 `app/.env` (gitignored) holds: `SUPABASE_URL`, `SUPABASE_KEY` (publishable), `SUPABASE_DB_PASSWORD`, `SUPABASE_SECRET_KEY`. The DB password and secret key are **server-side/test-tooling only** — never read by `nuxt.config.ts`'s public runtime config, never shipped to the browser. The secret key in particular should stay out of anything client-facing permanently; it's only used by `tests/rls/` to provision disposable test users via the Admin API.
 
-## Blocker: login emails contain no OTP code (2026-10-08)
+## Resolved: login emails contained no OTP code (2026-10-08)
 
-Found on the first browser click-through attempt. The login page works up to the code-entry step (signed-out `/` correctly redirects to `/login`; "Send code" succeeds), but the email Supabase sends contains **only a magic link, no 6-digit code**: the project still uses Supabase's default email templates, which don't include `{{ .Token }}`. The app code (`signInWithOtp` + `verifyOtp`) is fine — this is project configuration only.
+Supabase's default email templates only contain a magic link. Fixed in the dashboard by the user: custom SMTP via **Resend**, and `{{ .Token }}` (no `{{ .ConfirmationURL }}`) in **both** the "Magic link" template (existing users) and the "Confirm signup" template (a brand-new user's first `signInWithOtp`). Missing the second one is easy: the first code request for a new address uses "Confirm signup".
 
-Editing the email templates requires **custom SMTP** in the Supabase dashboard. That's needed regardless: the built-in email service is test-only (heavily rate-limited, and as far as known delivers only to the Supabase organization's team members), so a second household member — or a `+b` test address — likely wouldn't receive anything.
+Click-through accounts: A = `hndrk.nmnn@gmail.com` (owner), B = `hndrk.nmnn+b@gmail.com` (member), both in household "Neumann". Codes are pasted into the app by the user — the agent doesn't read the inbox.
 
-To unblock (dashboard, done by the user since it involves SMTP credentials and DNS records for a sending domain):
-1. Authentication → Emails → SMTP settings: configure a custom SMTP provider.
-2. Authentication → Emails → Templates: add `{{ .Token }}` to **both** "Magic link" (sent to existing users) and "Confirm signup" (sent to new users on their first `signInWithOtp`). Drop `{{ .ConfirmationURL }}` — the link would open the system browser instead of the installed PWA.
+## Browser click-through of milestones 3–4 (2026-10-08)
 
-Click-through accounts agreed: A = `hndrk.nmnn@gmail.com`, B = `hndrk.nmnn+b@gmail.com`. Codes are pasted into chat by the user — the agent doesn't read the inbox.
+Done in Chrome against the user's `nuxt dev` on `localhost:3000`. Every step works: OTP login, invite creation, signed-out join via `/join/<code>` + OTP, to-do add (button and Enter), toggle, soft-delete, state survives reload, and A sees the items B created.
+
+**Bug found and fixed**: adding a to-do always failed with `not_authenticated`. In `@nuxtjs/supabase` v2, `useSupabaseUser()` holds the JWT **claims** (`Ref<JwtPayload | null>`, filled via `auth.getClaims()`), not a `User` — the user id is `.sub`, and `.id` is always `undefined`. The type check didn't catch it because `JwtPayload` allows arbitrary keys. **Rule going forward**: read the id as `useSupabaseUser().value?.sub`, or use `getCurrentUserId(client)` in `*-actions.ts`.
+
+Smaller issues found (to be fixed next):
+1. The cloud project sends **8-digit** codes, but the login and join pages said "6-digit code".
+2. `redeem_invite` increments `use_count` even when the caller is already a member (`on conflict do nothing` skips the insert, the update still runs).
+3. The add-to-do input loses focus after each add.
+4. To-do checkboxes have no accessible name (announced as "on" instead of the item title).
+
+Leftover test data in the cloud project: to-dos "Test 1–3" and invite `b005ab07` in household "Neumann".
 
 ## Milestone 5 plan (agreed, not started)
 
@@ -96,8 +104,7 @@ Test-first, same pattern as milestone 4:
 
 ## Next steps
 
-1. **User**: set up custom SMTP + OTP email templates (see blocker above).
-2. Click through milestones 3–4 in a browser (OTP login, create household, invite + join, to-do CRUD) with the two accounts above — this also leaves two accounts in one household, ready for milestone 5's manual two-session sync test.
-3. Milestone 5 per the plan above.
-4. Milestone 6: mirror the to-do store/component/actions pattern for shopping lists.
-5. Before milestone 8: smoke-test a minimal Podman dev compose early, given the local-stack networking issue found here.
+1. Fix the four click-through issues listed above.
+2. Milestone 5 per the plan above — accounts A and B are already in one household for the manual two-session sync test.
+3. Milestone 6: mirror the to-do store/component/actions pattern for shopping lists.
+4. Before milestone 8: smoke-test a minimal Podman dev compose early, given the local-stack networking issue found here.
