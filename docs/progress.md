@@ -60,7 +60,7 @@ Fixed by `0007_create_household_rpc.sql` (`create_household` / `create_invite` S
 
 **Function privileges**: Postgres grants `EXECUTE` on every new function to `PUBLIC`, i.e. callable by signed-out clients via `/rest/v1/rpc/...`. Every new function in `public` needs `revoke execute ... from public, anon` plus an explicit `grant ... to authenticated` (see 0007, 0009). The security advisor's remaining "signed-in users can execute SECURITY DEFINER function" warnings for `create_household`, `create_invite`, `redeem_invite` and `is_household_member` are intentional: the first three are the app's RPCs, and RLS policies need `authenticated` to be able to execute `is_household_member`.
 
-**Migrations workflow**: the Supabase MCP server (`.mcp.json`) works in fresh sessions and was used to apply 0007–0009 (`apply_migration`). It records a timestamp version, so the `supabase_migrations.schema_migrations` row was renamed to `0007`–`0009` afterwards (in its own `execute_sql` call — don't batch it with a `begin … rollback` probe, the rollback undoes it) to keep remote history matching the local `NNNN_` filenames — do the same for future migrations applied that way. **Since 0011, the agent's auto-mode classifier blocks that rename** (`update supabase_migrations.schema_migrations ...`), so it's now a manual step for the user in the dashboard SQL editor; the agent hands over the exact statement. 0011's rename (`20261008145013` → `0011`) was handed over on 2026-10-08 — check `select version from supabase_migrations.schema_migrations` if unsure it was run.
+**Migrations workflow**: the Supabase MCP server (`.mcp.json`) works in fresh sessions and was used to apply 0007–0009 (`apply_migration`). It records a timestamp version, so the `supabase_migrations.schema_migrations` row was renamed to `0007`–`0009` afterwards (in its own `execute_sql` call — don't batch it with a `begin … rollback` probe, the rollback undoes it) to keep remote history matching the local `NNNN_` filenames — do the same for future migrations applied that way. In auto mode, Claude Code's permission classifier blocks that rename (`update supabase_migrations.schema_migrations ...`) when the agent does it on its own initiative, but lets it through once the user explicitly asks for it. So: ask the user, then run it, with a read-only `select version, name from supabase_migrations.schema_migrations` before and after. 0011 was renamed this way on 2026-10-08.
 
 ## Other notable decisions / deviations from the plan
 
@@ -118,6 +118,5 @@ The layout header shows the signed-in user's email next to "Sign out". Signed ou
 
 ## Next steps
 
-1. Confirm the 0011 migration version rename was run (see "Migrations workflow").
-2. Milestone 6: mirror the to-do store/component/actions pattern for shopping lists, add `shopping_items` listeners to the household channel, and extend the e2e test.
-3. Before milestone 8: smoke-test a minimal Podman dev compose early, given the local-stack networking issue found here.
+1. Milestone 6: mirror the to-do store/component/actions pattern for shopping lists, add `shopping_items` listeners to the household channel, and extend the e2e test.
+2. Before milestone 8: smoke-test a minimal Podman dev compose early, given the local-stack networking issue found here.
