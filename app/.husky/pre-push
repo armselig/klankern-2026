@@ -1,2 +1,3 @@
 cd app
+npm run typecheck
 npm test
