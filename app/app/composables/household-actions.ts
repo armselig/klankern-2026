@@ -12,24 +12,14 @@ type Client = SupabaseClient<Database>
  * testable with a mocked SupabaseClient, without needing a Nuxt runtime.
  */
 
-/** Creates a household and makes the caller its owner. Two inserts: RLS only allows
- * claiming ownership (migration 0004) when the household has zero existing members,
- * which is true immediately after this first insert. */
+/** Creates a household and makes the caller its owner, atomically, via the
+ * create_household RPC (migration 0007). Not a plain insert + select: RETURNING
+ * the new household would have to pass its SELECT policy, which requires a
+ * membership that doesn't exist yet at that point. */
 export async function createHousehold(client: Client, name: string): Promise<Household> {
-  const { data: household, error: householdError } = await client
-    .from('households')
-    .insert({ name })
-    .select()
-    .single()
-  if (householdError) throw householdError
-
-  const userId = await getCurrentUserId(client)
-  const { error: memberError } = await client
-    .from('household_members')
-    .insert({ household_id: household.id, user_id: userId, role: 'owner' })
-  if (memberError) throw memberError
-
-  return household
+  const { data, error } = await client.rpc('create_household', { p_name: name })
+  if (error) throw error
+  return data
 }
 
 /** The household the current user belongs to, or null if they haven't created/joined one yet. */
@@ -44,16 +34,13 @@ export async function fetchMyHousehold(client: Client): Promise<Household | null
   return data?.households ?? null
 }
 
-/** Creates an invite for a household the caller already belongs to. Returns the redeemable code. */
+/** Creates an invite for a household the caller already belongs to. Returns the redeemable code.
+ * Goes through the create_invite RPC (migration 0007) because household_invites has no SELECT
+ * policy (codes must not be enumerable), so an insert could never read its code back. */
 export async function createInvite(client: Client, householdId: string): Promise<string> {
-  const userId = await getCurrentUserId(client)
-  const { data, error } = await client
-    .from('household_invites')
-    .insert({ household_id: householdId, created_by: userId })
-    .select('code')
-    .single()
+  const { data, error } = await client.rpc('create_invite', { p_household_id: householdId })
   if (error) throw error
-  return data.code
+  return data
 }
 
 /** Redeems an invite code, joining the caller to that household. Returns the joined household's id. */

@@ -62,19 +62,8 @@ async function createTestUser(label: string) {
 }
 
 async function createHousehold(client: SupabaseClient, name: string) {
-  const { data: household, error: householdError } = await client
-    .from('households')
-    .insert({ name })
-    .select('id')
-    .single()
-  if (householdError || !household) throw householdError ?? new Error('household insert failed')
-
-  const { data: auth } = await client.auth.getUser()
-  const { error: memberError } = await client
-    .from('household_members')
-    .insert({ household_id: household.id, user_id: auth.user!.id, role: 'owner' })
-  if (memberError) throw memberError
-
+  const { data: household, error } = await client.rpc('create_household', { p_name: name })
+  if (error || !household) throw error ?? new Error('create_household failed')
   return household.id as string
 }
 
@@ -169,19 +158,23 @@ describe('household RLS isolation', () => {
     expect(error).not.toBeNull()
   })
 
+  it('create_invite rejects a caller who is not a member of the household', async () => {
+    const { data, error } = await userB.client.rpc('create_invite', {
+      p_household_id: householdAId,
+    })
+    expect(data).toBeNull()
+    expect(error).not.toBeNull()
+  })
+
   it('redeem_invite grants a new member access to the household', async () => {
-    const { data: invite, error: inviteError } = await userA.client
-      .from('household_invites')
-      .insert({ household_id: householdAId })
-      .select('code')
-      .single()
+    const { data: code, error: inviteError } = await userA.client.rpc('create_invite', {
+      p_household_id: householdAId,
+    })
     expect(inviteError).toBeNull()
 
     const { data: joinedHouseholdId, error: redeemError } = await userC.client.rpc(
       'redeem_invite',
-      {
-        p_code: invite!.code,
-      },
+      { p_code: code },
     )
     expect(redeemError).toBeNull()
     expect(joinedHouseholdId).toBe(householdAId)

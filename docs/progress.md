@@ -2,16 +2,16 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of commit `d3f3ba9` (`main`, working tree clean, nothing uncommitted). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of the commit that added migrations 0007/0008 (2026-10-08) (`main`, working tree clean, nothing uncommitted). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
 | Milestone | Status |
 |---|---|
 | 1. Scaffold + tooling + git hooks | ✅ Done |
-| 2. Schema + RLS + two-JWT test | 🟡 SQL done, test **blocked** on a Supabase platform bug (see below) |
-| 3. Auth + household join flow | ✅ Built, untested end-to-end (same blocker) |
-| 4. Shared to-do list CRUD | ✅ Built, untested end-to-end (same blocker) |
+| 2. Schema + RLS + two-JWT test | ✅ Done — RLS test passing against Supabase Cloud |
+| 3. Auth + household join flow | ✅ Built; DB paths verified by the RLS test, UI not yet clicked through in a browser |
+| 4. Shared to-do list CRUD | ✅ Built; DB paths verified by the RLS test, UI not yet clicked through in a browser |
 | 5. Realtime sync for to-dos | ⬜ Not started |
 | 6. Shared shopping list | ⬜ Not started |
 | 7. PWA installability pass | 🟡 Manifest/icons/Workbox config in place from milestone 1; Lighthouse audit not run |
@@ -33,13 +33,13 @@ app/app/
   pages/            login.vue, confirm.vue, index.vue, todos.vue, join/[code].vue
   components/       household/{CreateHouseholdForm,InviteDialog}.vue, todo/{TodoList,TodoItem}.vue
   layouts/          default.vue
-app/supabase/migrations/   0001_households.sql … 0006_grants.sql
-app/tests/rls/              household-isolation.spec.ts (two-JWT RLS proof, currently failing — see below)
+app/supabase/migrations/   0001_households.sql … 0008_service_role_grants.sql
+app/tests/rls/              household-isolation.spec.ts (two-JWT RLS proof against Supabase Cloud)
 ```
 
 **Design pattern used throughout**: business logic lives in plain `composables/*-actions.ts` functions that take a `SupabaseClient` as a parameter, unit-tested with a mocked client (no Nuxt runtime needed). Pinia stores are thin — they call `useSupabaseClient()`/`useSupabaseUser()` and delegate to those functions. State-transition logic that needs testing on its own (optimistic add/dedup, soft-delete, sort order) is further extracted into pure reducer functions in `utils/`. This is the pattern to continue for the shopping list (milestone 6) and whiteboard/recipes (later phases).
 
-**Testing**: Vitest, 28 tests passing (`npm test`). Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
+**Testing**: Vitest, 38 tests passing (including the RLS suite) (`npm test`). Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
 
 **Database types**: generated from the live schema via `supabase gen types typescript`, saved to `app/app/types/database.types.ts`, picked up automatically by `@nuxtjs/supabase`'s default `types` path. Re-run after any migration changes:
 ```
@@ -47,15 +47,15 @@ npx supabase gen types typescript --db-url "$DB_URL" --schema public > app/types
 npx prettier --write app/types/database.types.ts
 ```
 
-## Known blocker: Supabase project rejects role-scoped RLS policies
+## Resolved: the "Supabase RLS bug" was `INSERT ... RETURNING` (2026-10-08)
 
-**This blocks milestone 2's automated test and all real end-to-end testing of milestones 3–4.**
+The former blocker (role-scoped RLS policies apparently rejected by PostgREST) was **not** a platform bug. supabase-js `.insert().select()` sends `INSERT ... RETURNING`, and Postgres requires the returned row to pass the table's **SELECT** policies too, raising the same "new row violates row-level security policy" error when it doesn't. Creating a household (creator isn't a member yet at RETURNING time) and creating an invite (no SELECT policy by design) both hit this. Full write-up: [`supabase-support-repro.md`](./supabase-support-repro.md).
 
-Every RLS policy scoped to a named role (`to authenticated` or `to anon`) is rejected by the Data API (PostgREST) with `42501 — new row violates row-level security policy`, even for a policy as permissive as `with check (true)`. Policies scoped `to public` work fine through the same API path. Raw SQL (`SET ROLE authenticated; INSERT ...`) succeeds. A request-scoped check confirmed `current_user` really is `authenticated` during the failing API call. Restarting the project from the dashboard did not fix it. Full repro and everything ruled out is written up in [`supabase-support-repro.md`](./supabase-support-repro.md) — that's what to hand to Supabase support.
+Fixed by `0007_create_household_rpc.sql` (`create_household` / `create_invite` SECURITY DEFINER RPCs; dropped the "first member claims ownership" policy) and `0008_service_role_grants.sql` (`service_role` had no table privileges, which silently broke the RLS test's admin fixtures and cleanup).
 
-**Until this is fixed**: the schema/migrations/policies themselves are correct (proven via direct SQL) — no code changes are needed once Supabase resolves it. `tests/rls/household-isolation.spec.ts` is written and ready; it should just start passing. `npm test` currently excludes it implicitly only in that it's expected to fail — run `npx vitest run --exclude '**/rls/**'` to see the rest of the suite green.
+**Rule going forward**: any `.insert/.update/.upsert(...).select()` needs the resulting row to be visible under the table's SELECT policy at that moment; otherwise drop the `.select()` or use a SECURITY DEFINER RPC.
 
-A Supabase MCP server was added to this project (`.mcp.json`, scope: project) and authenticated mid-session, but its tools weren't available in that session (MCP servers load at session start) — worth using in a fresh session to dig further or to apply dashboard-side fixes directly.
+**Migrations workflow**: the Supabase MCP server (`.mcp.json`) works in fresh sessions and was used to apply 0007/0008 (`apply_migration`). It records a timestamp version, so the `supabase_migrations.schema_migrations` row was renamed to `0007`/`0008` afterwards to keep remote history matching the local `NNNN_` filenames — do the same for future migrations applied that way.
 
 ## Other notable decisions / deviations from the plan
 
@@ -71,7 +71,8 @@ A Supabase MCP server was added to this project (`.mcp.json`, scope: project) an
 
 ## Next steps
 
-1. Either get the Supabase platform issue resolved, or decide to proceed without automated RLS verification for now and test manually once a browser is available.
-2. Milestone 5: Realtime sync for to-dos (`alter publication supabase_realtime add table ...`, `useHouseholdRealtime` composable, reconcile-on-reconnect).
-3. Milestone 6: mirror the to-do store/component/actions pattern for shopping lists.
-4. Before milestone 8: smoke-test a minimal Podman dev compose early, given the local-stack networking issue found here.
+1. Click through milestones 3–4 in a browser (magic-link login, create household, invite + join, to-do CRUD).
+2. Pre-existing security advisor warnings, not yet addressed: `redeem_invite`, `is_household_member` and `rls_auto_enable` (not from our migrations) are executable by `anon` (no `revoke ... from public, anon` like 0007 does).
+3. Milestone 5: Realtime sync for to-dos (`alter publication supabase_realtime add table ...`, `useHouseholdRealtime` composable, reconcile-on-reconnect).
+4. Milestone 6: mirror the to-do store/component/actions pattern for shopping lists.
+5. Before milestone 8: smoke-test a minimal Podman dev compose early, given the local-stack networking issue found here.

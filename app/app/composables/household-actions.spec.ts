@@ -38,30 +38,21 @@ function fakeClient({
 }
 
 describe('createHousehold', () => {
-  it('inserts the household, then inserts the caller as owner', async () => {
+  it('calls the create_household RPC and returns the created household', async () => {
     const household = { id: 'h1', name: 'The Does', created_at: 'now' }
-    const householdQuery = fakeQueryBuilder({ data: household, error: null })
-    const memberQuery = fakeQueryBuilder({ data: null, error: null })
-
-    const from = vi.fn((table: string) =>
-      table === 'households' ? householdQuery.builder : memberQuery.builder,
-    )
-    const client = fakeClient({ userId: 'user-1', from })
+    const rpc = vi.fn().mockResolvedValue({ data: household, error: null })
+    const client = fakeClient({ rpc })
 
     const result = await createHousehold(client as never, 'The Does')
 
     expect(result).toEqual(household)
-    expect(householdQuery.calls.insert).toEqual([{ name: 'The Does' }])
-    expect(memberQuery.calls.insert).toEqual([
-      { household_id: 'h1', user_id: 'user-1', role: 'owner' },
-    ])
+    expect(rpc).toHaveBeenCalledWith('create_household', { p_name: 'The Does' })
   })
 
-  it('throws when the household insert fails, without attempting the member insert', async () => {
-    const error = new Error('insert failed')
-    const householdQuery = fakeQueryBuilder({ data: null, error })
-    const from = vi.fn(() => householdQuery.builder)
-    const client = fakeClient({ from })
+  it('throws when the RPC fails', async () => {
+    const error = new Error('not_authenticated')
+    const rpc = vi.fn().mockResolvedValue({ data: null, error })
+    const client = fakeClient({ rpc })
 
     await expect(createHousehold(client as never, 'x')).rejects.toBe(error)
   })
@@ -85,14 +76,22 @@ describe('fetchMyHousehold', () => {
 })
 
 describe('createInvite', () => {
-  it('inserts an invite scoped to the household and the caller, returns the code', async () => {
-    const query = fakeQueryBuilder({ data: { code: 'abc123' }, error: null })
-    const client = fakeClient({ userId: 'user-1', from: () => query.builder })
+  it('calls the create_invite RPC for the household and returns the code', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: 'abc123', error: null })
+    const client = fakeClient({ rpc })
 
     const code = await createInvite(client as never, 'h1')
 
     expect(code).toBe('abc123')
-    expect(query.calls.insert).toEqual([{ household_id: 'h1', created_by: 'user-1' }])
+    expect(rpc).toHaveBeenCalledWith('create_invite', { p_household_id: 'h1' })
+  })
+
+  it('throws when the caller is not a member of the household', async () => {
+    const error = new Error('not_a_household_member')
+    const rpc = vi.fn().mockResolvedValue({ data: null, error })
+    const client = fakeClient({ rpc })
+
+    await expect(createInvite(client as never, 'h1')).rejects.toBe(error)
   })
 })
 

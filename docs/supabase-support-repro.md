@@ -1,93 +1,89 @@
-# PostgREST ignores role-scoped RLS policies (only `to public` works)
+# Resolved: "new row violates row-level security policy" on insert (not a Supabase bug)
 
-**Project ref:** qlgkbqxvdsvpoayxprdj
+**Project ref:** qlgkbqxvdsvpoayxprdj · **Resolved:** 2026-10-08 · **Fix:** migrations `0007_create_household_rpc.sql`, `0008_service_role_grants.sql`
+
+This file was originally a bug report for Supabase support, claiming PostgREST ignored
+role-scoped (`to authenticated`) RLS policies. That diagnosis was wrong. It was never
+sent; this is the corrected write-up so the same mistake isn't repeated.
 
 ## Symptom
 
-Any RLS policy scoped to a named role (`to authenticated` or `to anon`) is rejected via
-the Data API (PostgREST / `/rest/v1/...`) with:
+Inserts through supabase-js failed with:
 
 ```json
-{"code":"42501","details":null,"hint":null,"message":"new row violates row-level security policy for table \"<table>\""}
+{"code":"42501","message":"new row violates row-level security policy for table \"households\""}
 ```
 
-...even though:
+even though the row clearly satisfied the table's INSERT policy (`with check (true)`),
+and the same insert succeeded via direct SQL as `authenticated`.
 
-- The row would clearly satisfy the policy's `WITH CHECK` expression.
-- A policy scoped `to public` on the same shape of table, through the same API path,
-  with the same logged-in user, works correctly.
-- A direct SQL connection (`SET ROLE authenticated; INSERT ...`) succeeds.
+## Actual cause: `RETURNING` is checked against SELECT policies
 
-## Minimal repro (fresh table, not pre-existing schema)
+supabase-js `.insert(...).select()` makes PostgREST send `Prefer: return=representation`,
+i.e. `INSERT ... RETURNING ...`. Postgres then requires the new row to pass the table's
+**SELECT** policies too — and when it doesn't, it raises the same
+"new row violates row-level security policy" error as a failed `WITH CHECK`. The error
+message names the INSERT, but the policy that rejected it is the SELECT one.
+
+Reproduced directly in SQL (transactions rolled back):
 
 ```sql
-create table public.repro_probe (id uuid primary key default gen_random_uuid(), name text);
-alter table public.repro_probe enable row level security;
-create policy p on public.repro_probe for insert to authenticated with check (true);
-grant insert, select on public.repro_probe to authenticated;
-notify pgrst, 'reload schema';
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000001","role":"authenticated"}';
+insert into public.households(name) values ('x');               -- succeeds
+insert into public.households(name) values ('x') returning id;   -- 42501
+rollback;
 ```
 
-Then, as a real logged-in user (confirmed `role: authenticated` in their JWT), call:
+Where this hit us:
 
-```
-POST /rest/v1/repro_probe
-Authorization: Bearer <user_access_token>
-apikey: <publishable_key>
-Content-Type: application/json
-Prefer: return=representation
+- **`households`** — SELECT policy is `is_household_member(id)`, but the creator only
+  becomes a member in a *second* insert into `household_members`. At `RETURNING` time
+  they aren't a member yet, so reading back the household they just created is denied.
+- **`household_invites`** — deliberately has no SELECT policy (codes must not be
+  enumerable), so `.insert().select('code')` could never succeed.
 
-{"name": "x"}
-```
+## Why the original investigation was misled
 
-Result: `403 { "code": "42501", "message": "new row violates row-level security policy for table \"repro_probe\"" }`
+- **The direct-SQL comparisons** (`SET ROLE authenticated; INSERT ...`) didn't use
+  `RETURNING`, so they passed and made the API path look uniquely broken.
+- **The `repro_probe` table** had only an INSERT policy and no SELECT policy, so the
+  `return=representation` request failed for exactly this reason — the "minimal repro"
+  reproduced the RETURNING rule, not a role-handling bug.
+- **The `to public` vs `to authenticated` comparison** was a red herring; the role the
+  policy targeted was never the variable that mattered.
+- **The RPC check** (`current_user` = `authenticated` inside the request) was correct,
+  and confirmed the role switch worked — which in hindsight pointed *away* from a
+  PostgREST role bug.
 
-Changing the policy to `for insert to public with check (true)` makes the identical
-request succeed (`201`).
+## Fix
 
-## What we ruled out
+`0007_create_household_rpc.sql` adds two `SECURITY DEFINER` RPCs, the same pattern
+already used by `redeem_invite()`:
 
-- **Not missing grants** -- `grant insert, select on ... to authenticated` is present
-  and confirmed via `information_schema`/`pg_policy` introspection; a genuinely missing
-  grant produces a distinctly different error ("permission denied for table ..."), not
-  this RLS-violation message.
-- **Not a stale PostgREST schema cache** -- ran `notify pgrst, 'reload schema'` and
-  `notify pgrst, 'reload config'` repeatedly; no change. Also reproduced on a table
-  created seconds before the test, so no accumulated staleness is possible.
-- **Not the project being in a degraded state** -- restarted the project from the
-  dashboard; issue persisted identically afterward.
-- **Not actually a role-switch failure** -- confirmed via a `SECURITY INVOKER` SQL
-  function called through `/rest/v1/rpc/...` in the exact same request as the failing
-  INSERT: `current_user` reports `authenticated` in that request, and the INSERT inside
-  that same function call still gets rejected by the `to authenticated` policy.
-- **Not `pgrst.db_schemas` on the `authenticator` role** -- per a community thread
-  (tanius / Supabase support "Steve") describing a similar-sounding issue caused by the
-  resumable-uploads feature rollout clobbering `pgrst.db_schemas` on the `authenticator`
-  role (dropping `public` from the exposed schema list). We checked:
+- `create_household(p_name)` — inserts the household and the caller's owner membership
+  in one transaction and returns the household. Also removes the risk of a memberless
+  household if the second insert failed. The now-unused
+  "first member claims ownership" policy on `household_members` was dropped.
+- `create_invite(p_household_id)` — checks the caller is a member, inserts the invite,
+  returns the code. `household_invites` still has no SELECT policy.
 
-  ```sql
-  SELECT setrole::regrole, setconfig
-    FROM pg_db_role_setting
-    WHERE setrole::regrole = 'authenticator'::regrole;
-  ```
+Both revoke `EXECUTE` from `public`/`anon` and grant it only to `authenticated`.
 
-  No `pgrst.db_schemas` override was present at all in our case (different from that
-  thread's exact symptom). We set it explicitly anyway:
+## Second, unrelated finding: `service_role` had no table grants
 
-  ```sql
-  ALTER ROLE authenticator SET pgrst.db_schemas = 'public, graphql_public';
-  NOTIFY pgrst, 'reload config';
-  ```
+Once the RPCs worked, the RLS test's Admin-API (secret key) fixture inserts and its
+`afterAll` cleanup still failed — silently, since the errors weren't checked.
+`service_role` bypasses RLS but still needs table privileges, and this project's
+default privileges hadn't given it any (`0006_grants.sql` only covered
+`authenticated`). `0008_service_role_grants.sql` grants it
+`select, insert, update, delete` on all app tables.
 
-  No change -- issue persisted identically. (This also wouldn't explain our symptom
-  shape: if `public` weren't exposed at all, policies scoped `to public` on tables in
-  that schema should fail too, but they succeed.)
+## Rule for future tables
 
-## Working hypothesis
-
-Something in this project's PostgREST deployment isn't applying role-scoped
-(`to authenticated` / `to anon`) RLS policies correctly even though the role switch
-itself is confirmed to happen (`current_user` is correct), while role-agnostic
-(`to public`) policies work normally. This points at the PostgREST layer specifically,
-not the underlying Postgres roles/grants/policies, which all check out correctly via
-direct SQL.
+If client code does `.insert().select()` / `.update().select()` / `.upsert().select()`,
+the resulting row must be visible under the table's SELECT policy *at that moment*.
+If it can't be (visibility depends on a row inserted later, or the table has no SELECT
+policy by design), either drop the `.select()` or do the write in a `SECURITY DEFINER`
+RPC that returns what the client needs.
