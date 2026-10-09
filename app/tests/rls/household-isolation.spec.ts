@@ -11,6 +11,7 @@ import {
   createHousehold,
   createTestUser,
   deleteTestData,
+  insertInvite,
   runId,
   type TestUser,
 } from '../support/supabase-fixtures'
@@ -157,34 +158,19 @@ describe('household RLS isolation', () => {
   })
 
   it('redeem_invite rejects an expired code', async () => {
-    const { data: invite } = await admin
-      .from('household_invites')
-      .insert({
-        household_id: householdAId,
-        created_by: userA.userId,
-        expires_at: new Date(Date.now() - 1000).toISOString(),
-      })
-      .select('code')
-      .single()
+    const code = await insertInvite(householdAId, userA.userId, {
+      expires_at: new Date(Date.now() - 1000).toISOString(),
+    })
 
-    const { data, error } = await userB.client.rpc('redeem_invite', { p_code: invite!.code })
+    const { data, error } = await userB.client.rpc('redeem_invite', { p_code: code })
     expect(data).toBeNull()
     expect(error).not.toBeNull()
   })
 
   it('redeem_invite rejects an exhausted code', async () => {
-    const { data: invite } = await admin
-      .from('household_invites')
-      .insert({
-        household_id: householdAId,
-        created_by: userA.userId,
-        max_uses: 1,
-        use_count: 1,
-      })
-      .select('code')
-      .single()
+    const code = await insertInvite(householdAId, userA.userId, { max_uses: 1, use_count: 1 })
 
-    const { data, error } = await userB.client.rpc('redeem_invite', { p_code: invite!.code })
+    const { data, error } = await userB.client.rpc('redeem_invite', { p_code: code })
     expect(data).toBeNull()
     expect(error).not.toBeNull()
   })

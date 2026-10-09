@@ -1,10 +1,18 @@
 import { expect, test, type BrowserContext, type Page, type WebSocketRoute } from '@playwright/test'
-import { ROUTES } from '../../app/utils/routes'
+import {
+  addShoppingItem,
+  addTodo,
+  EMPTY_LIST_TEXT,
+  listItem,
+  openList,
+  removeListItem,
+  signIn,
+  signOut,
+} from '../support/e2e-ui'
 import {
   createHousehold,
   createTestUser,
   deleteTestData,
-  generateLoginCode,
   joinHousehold,
   runId,
   type TestUser,
@@ -56,59 +64,13 @@ async function controlRealtimeSocket(context: BrowserContext) {
 }
 
 /**
- * Signs in through the real login form. The "send code" request is answered
- * locally so no email is sent; the code comes from the Admin API instead,
- * and verifying it hits the real auth server.
+ * Signs both members in and opens the same list page on each.
  */
-async function signIn(page: Page, user: TestUser) {
-  await page.route('**/auth/v1/otp**', (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
-  )
-  await page.goto(ROUTES.login)
-  await page.getByLabel('Email address').fill(user.email)
-  await page.getByRole('button', { name: 'Send code' }).click()
-
-  await page.getByLabel('Code from the email').fill(await generateLoginCode(user.email))
-  await page.getByRole('button', { name: 'Verify' }).click()
-  await expect(page.getByText(user.email)).toBeVisible()
-}
-
-/** Both lists render an item as a checkbox labelled with its text. */
-function listItem(page: Page, label: string) {
-  return page.getByRole('checkbox', { name: label, exact: true })
-}
-
-/** Remove buttons all share one label, so find the one in the item's row. */
-async function removeListItem(page: Page, label: string) {
-  await page
-    .locator('.q-item')
-    .filter({ has: listItem(page, label) })
-    .getByRole('button', { name: 'Remove' })
-    .click()
-}
-
-async function addTodo(page: Page, title: string) {
-  await page.getByLabel('Add a to-do').fill(title)
-  await page.keyboard.press('Enter')
-}
-
-async function addShoppingItem(page: Page, title: string, quantity = '') {
-  await page.getByLabel('Item', { exact: true }).fill(title)
-  await page.getByLabel('Quantity (optional)').fill(quantity)
-  await page.keyboard.press('Enter')
-}
-
-/**
- * Signs both members in and opens the same list page on each. Navigation is
- * in-app like a user's: a full page load right after verifying can race the
- * session being persisted and land back on the login page.
- */
-async function openListForBoth(pages: Page[], users: TestUser[], linkName: string, path: string) {
+async function openListForBoth(pages: Page[], users: TestUser[], linkName: 'To-dos' | 'Shopping') {
   for (const [index, page] of pages.entries()) {
     await signIn(page, users[index]!)
-    await page.getByRole('link', { name: linkName }).click()
-    await expect(page).toHaveURL(new RegExp(`${path}$`))
-    await expect(page.getByText('Nothing on the list yet.')).toBeVisible()
+    await openList(page, linkName)
+    await expect(page.getByText(EMPTY_LIST_TEXT)).toBeVisible()
   }
 }
 
@@ -136,7 +98,7 @@ test.describe('realtime sync between two members', () => {
     const pageA = await contextA.newPage()
     const pageB = await contextB.newPage()
 
-    await openListForBoth([pageA, pageB], [userA, userB], 'To-dos', ROUTES.todos)
+    await openListForBoth([pageA, pageB], [userA, userB], 'To-dos')
 
     await test.step('an item added by B appears on A', async () => {
       await addTodo(pageB, 'Milk from B')
@@ -176,8 +138,7 @@ test.describe('realtime sync between two members', () => {
     })
 
     await test.step("signing out leaves the household's channel", async () => {
-      await pageA.getByRole('button', { name: 'Sign out' }).click()
-      await expect(pageA).toHaveURL(new RegExp(`${ROUTES.login}$`))
+      await signOut(pageA)
       await expect
         .poll(() =>
           socketA.sentFrames.some(
@@ -199,7 +160,7 @@ test.describe('realtime sync between two members', () => {
     const pageA = await contextA.newPage()
     const pageB = await contextB.newPage()
 
-    await openListForBoth([pageA, pageB], [userA, userB], 'Shopping', ROUTES.shopping)
+    await openListForBoth([pageA, pageB], [userA, userB], 'Shopping')
 
     await test.step('items added by B appear on A, with their quantity', async () => {
       await addShoppingItem(pageB, 'Apples', '6')

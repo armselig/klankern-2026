@@ -70,15 +70,48 @@ export async function createHousehold(client: SupabaseClient, name: string): Pro
   return household.id as string
 }
 
-/** Adds `member` to the owner's household through the same invite RPCs the app uses. */
-export async function joinHousehold(owner: TestUser, member: TestUser, householdId: string) {
-  const { data: code, error: inviteError } = await owner.client.rpc('create_invite', {
+/** An invite code for the household, created through the same RPC the app's invite dialog uses. */
+export async function createInviteCode(owner: TestUser, householdId: string): Promise<string> {
+  const { data: code, error } = await owner.client.rpc('create_invite', {
     p_household_id: householdId,
   })
-  if (inviteError || !code) throw inviteError ?? new Error('create_invite failed')
+  if (error || !code) throw error ?? new Error('create_invite failed')
+  return code as string
+}
 
+/**
+ * Inserts an invite directly (service role), so a test can create one that
+ * `create_invite` never would: already expired, or already used up.
+ */
+export async function insertInvite(
+  householdId: string,
+  createdBy: string,
+  overrides: { expires_at?: string; max_uses?: number; use_count?: number },
+): Promise<string> {
+  const { data: invite, error } = await admin
+    .from('household_invites')
+    .insert({ household_id: householdId, created_by: createdBy, ...overrides })
+    .select('code')
+    .single()
+  if (error || !invite) throw error ?? new Error('invite insert failed')
+  return invite.code as string
+}
+
+/** Adds `member` to the owner's household through the same invite RPCs the app uses. */
+export async function joinHousehold(owner: TestUser, member: TestUser, householdId: string) {
+  const code = await createInviteCode(owner, householdId)
   const { error: redeemError } = await member.client.rpc('redeem_invite', { p_code: code })
   if (redeemError) throw redeemError
+}
+
+/** The id of the household a user belongs to, for cleaning up one created through the UI. */
+export async function findHouseholdId(user: TestUser): Promise<string | undefined> {
+  const { data } = await admin
+    .from('household_members')
+    .select('household_id')
+    .eq('user_id', user.userId)
+    .maybeSingle()
+  return data?.household_id as string | undefined
 }
 
 /**
