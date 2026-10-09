@@ -1,4 +1,5 @@
-import { expect, test, type BrowserContext, type Page, type WebSocketRoute } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
+import { controlRealtimeSocket } from '../support/realtime-socket'
 import {
   addShoppingItem,
   addTodo,
@@ -8,6 +9,7 @@ import {
   removeListItem,
   signIn,
   signOut,
+  untilSaved,
 } from '../support/e2e-ui'
 import {
   createHousehold,
@@ -21,47 +23,6 @@ import {
 // Milestones 5 and 6: two members in two browser contexts see each other's
 // to-do and shopping changes live, including after a dropped Realtime
 // connection.
-
-const REALTIME_SOCKET = /\/realtime\/v1\/websocket/
-
-/**
- * Proxies a context's Realtime websocket so the test can cut it. Chrome's
- * offline emulation (`context.setOffline`) does not close an already open
- * websocket, so a network drop is simulated here instead: `goOffline` closes
- * the open connection and refuses reconnects until `goOnline`. Sent frames
- * are recorded to check what the app tells the server.
- */
-async function controlRealtimeSocket(context: BrowserContext) {
-  let offline = false
-  const openSockets = new Set<WebSocketRoute>()
-  const sentFrames: string[] = []
-
-  await context.routeWebSocket(REALTIME_SOCKET, (socket) => {
-    if (offline) {
-      void socket.close({ code: 1006, reason: 'e2e offline' })
-      return
-    }
-    const server = socket.connectToServer()
-    openSockets.add(socket)
-    socket.onMessage((message) => {
-      sentFrames.push(message.toString())
-      server.send(message)
-    })
-    socket.onClose(() => openSockets.delete(socket))
-  })
-
-  return {
-    sentFrames,
-    goOffline() {
-      offline = true
-      for (const socket of openSockets) void socket.close({ code: 1006, reason: 'e2e offline' })
-      openSockets.clear()
-    },
-    goOnline() {
-      offline = false
-    },
-  }
-}
 
 /**
  * Signs both members in and opens the same list page on each.
@@ -181,5 +142,85 @@ test.describe('realtime sync between two members', () => {
 
     await contextA.close()
     await contextB.close()
+  })
+
+  // Known bug, recorded but not fixed yet (see docs/progress.md, "Known
+  // bug: resync can undo a change"): mergeListResync only protects ids still
+  // pending when the fetch returns, so this fails today. Remove test.fail()
+  // together with the fix.
+  test('a check saved while a resync is fetching is not undone by that fetch', async ({
+    browser,
+  }) => {
+    test.fail()
+    const context = await browser.newContext()
+    const socket = await controlRealtimeSocket(context)
+    const page = await context.newPage()
+    const title = `Resync race ${runId}`
+
+    await signIn(page, userA)
+    await openList(page, 'Shopping')
+    const added = page.waitForResponse(
+      (response) =>
+        response.url().includes('/shopping_items') && response.request().method() === 'POST',
+    )
+    await addShoppingItem(page, title)
+    await added
+    // Let the channel's own first joins (and their resyncs) settle, so the
+    // fetch held below is the one this test triggers.
+    await expect
+      .poll(() => socket.receivedFrames.some((frame) => frame.includes('Subscribed to PostgreSQL')))
+      .toBe(true)
+    await page.waitForTimeout(3_000)
+
+    // Hold the next list fetch after the server has answered it: its rows
+    // are a snapshot from before the check below.
+    let snapshotTaken!: () => void
+    const snapshot = new Promise<void>((resolve) => (snapshotTaken = resolve))
+    let release!: () => void
+    const released = new Promise<void>((resolve) => (release = resolve))
+    let held = false
+    await page.route(/\/rest\/v1\/shopping_items/, async (route) => {
+      if (route.request().method() !== 'GET' || held) return route.fallback()
+      held = true
+      const response = await route.fetch()
+      snapshotTaken()
+      await released
+      await route.fulfill({ response })
+    })
+
+    await test.step('a reconnect starts a resync, whose fetch is held', async () => {
+      socket.goOffline()
+      socket.goOnline()
+      await snapshot
+    })
+
+    await test.step('the item is checked and saved while the fetch is held', async () => {
+      await untilSaved(page, () => listItem(page, title).click())
+      // Wait for the UPDATE echo too: arriving after the merge, it would
+      // repair the state and hide the problem.
+      await expect
+        .poll(() =>
+          socket.receivedFrames.some(
+            (frame) =>
+              frame.includes('"UPDATE"') &&
+              frame.includes(title) &&
+              /"checked":\s*true/.test(frame),
+          ),
+        )
+        .toBe(true)
+    })
+
+    await test.step('the late fetch result does not undo the check', async () => {
+      const merged = page.waitForResponse(
+        (response) =>
+          response.url().includes('/shopping_items') && response.request().method() === 'GET',
+      )
+      release()
+      await merged
+      await page.waitForTimeout(1_000)
+      await expect(listItem(page, title)).toBeChecked()
+    })
+
+    await context.close()
   })
 })
