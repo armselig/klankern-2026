@@ -5,6 +5,7 @@ const router = useRouter()
 const route = useRoute()
 
 useHouseholdRealtime()
+usePwaUpdateNotice()
 
 /** Hidden on pages that already contain their own sign-in form: on /join a
  * detour to /login would drop the invite code, so the user would sign in
@@ -25,6 +26,13 @@ async function signOut() {
     <q-header elevated class="bg-primary text-white">
       <q-toolbar>
         <q-toolbar-title>Klankern</q-toolbar-title>
+        <!-- Only shown once the browser offers installation (beforeinstallprompt). -->
+        <q-btn
+          v-if="$pwa?.showInstallPrompt && !$pwa.isPWAInstalled"
+          flat
+          label="Install app"
+          @click="$pwa.install()"
+        />
         <template v-if="user">
           <span>{{ user.email }}</span>
           <q-btn flat label="Sign out" @click="signOut" />
