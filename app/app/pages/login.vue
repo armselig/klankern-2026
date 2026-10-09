@@ -4,6 +4,8 @@
  * instead of this installed PWA and would leave it looking logged out, so
  * the user instead types the emailed code back into the app itself.
  */
+useHead({ title: 'Sign in' })
+
 const client = useSupabaseClient()
 const router = useRouter()
 

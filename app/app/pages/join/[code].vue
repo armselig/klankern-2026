@@ -4,6 +4,8 @@
 // invite link, log in with OTP right on this page, and be redeemed into
 // the household in one flow -- rather than bouncing through a separate
 // login page and losing the invite code.
+useHead({ title: 'Join your household' })
+
 const route = useRoute()
 const code = route.params.code as string
 

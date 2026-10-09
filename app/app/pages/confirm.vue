@@ -4,6 +4,8 @@
 // module requires a configured callback route to exist regardless). By the
 // time this page renders, the module has already exchanged the URL for a
 // session; just move on to the dashboard.
+useHead({ title: 'Signing in' })
+
 const router = useRouter()
 onMounted(() => router.replace(ROUTES.home))
 </script>

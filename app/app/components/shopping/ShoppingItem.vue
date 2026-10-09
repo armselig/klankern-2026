@@ -16,7 +16,7 @@ const label = computed(() =>
       <q-checkbox
         :model-value="item.checked"
         :label="label"
-        :class="{ 'text-strike text-grey': item.checked }"
+        :class="{ 'text-strike text-grey-8': item.checked }"
         @update:model-value="emit('toggle', item.id)"
       />
     </q-item-section>

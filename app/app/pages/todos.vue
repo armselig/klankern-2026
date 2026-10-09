@@ -1,4 +1,6 @@
 <script setup lang="ts">
+useHead({ title: 'To-dos' })
+
 const householdStore = useHouseholdStore()
 
 onMounted(async () => {

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+useHead({ title: 'Shopping' })
+
 const householdStore = useHouseholdStore()
 
 onMounted(async () => {
