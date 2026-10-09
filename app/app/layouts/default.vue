@@ -25,7 +25,7 @@ async function signOut() {
   <q-layout view="hHh lpR fFf">
     <q-header elevated class="bg-primary text-white">
       <q-toolbar>
-        <q-toolbar-title>Klankern</q-toolbar-title>
+        <q-toolbar-title><nuxt-link :to="ROUTES.home">Klankern</nuxt-link></q-toolbar-title>
         <!-- Only shown once the browser offers installation (beforeinstallprompt). -->
         <q-btn
           v-if="$pwa?.showInstallPrompt && !$pwa.isPWAInstalled"
@@ -44,5 +44,7 @@ async function signOut() {
     <q-page-container>
       <slot />
     </q-page-container>
+
+    <q-footer>&copy; armselig</q-footer>
   </q-layout>
 </template>
