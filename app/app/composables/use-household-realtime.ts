@@ -6,10 +6,10 @@ import { subscribeToHouseholdChanges } from './household-realtime'
  * rather than inside a feature component, so every list (to-dos, shopping)
  * shares the channel instead of opening its own.
  *
- * Keyed on the user as well as the household: sign-out doesn't clear the
- * household store, so watching the household alone would leave the channel
- * open after sign-out. The channel is removed when the key changes or
- * becomes null, and when the calling component's scope is disposed.
+ * Keyed on the user as well as the household, so the channel closes the
+ * moment the user signs out, independent of when useResetStoresOnUserChange
+ * clears the household store. The channel is removed when the key changes
+ * or becomes null, and when the calling component's scope is disposed.
  */
 export function useHouseholdRealtime() {
   const client = useSupabaseClient()

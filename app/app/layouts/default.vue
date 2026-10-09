@@ -4,6 +4,8 @@ const client = useSupabaseClient()
 const router = useRouter()
 const route = useRoute()
 
+// Before useHouseholdRealtime, so it never sees a new user with old data.
+useResetStoresOnUserChange()
 useHouseholdRealtime()
 usePwaUpdateNotice()
 
