@@ -56,7 +56,7 @@ test.describe('accessibility', () => {
     await expectNoBlockingViolations(page, 'the login page')
 
     await page.goto(ROUTES.join('some-code'))
-    await expect(page.getByText('Join your household')).toBeVisible()
+    await expect(page.getByText('Join your household', { exact: true })).toBeVisible()
     await expectNoBlockingViolations(page, 'the join page')
   })
 

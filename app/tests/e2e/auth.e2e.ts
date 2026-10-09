@@ -41,7 +41,7 @@ test.describe('auth', () => {
 
     await test.step('a join link stays on the join page', async () => {
       await page.goto(ROUTES.join('some-code'))
-      await expect(page.getByText('Join your household')).toBeVisible()
+      await expect(page.getByText('Join your household', { exact: true })).toBeVisible()
       await expect(page).toHaveURL(new RegExp(`${ROUTES.join('some-code')}$`))
     })
   })

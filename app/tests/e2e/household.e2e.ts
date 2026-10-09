@@ -97,7 +97,7 @@ test.describe('household setup and invites', () => {
     await test.step('the join page has its own sign-in and no "Log in" detour', async () => {
       await stubOtpRequest(memberPage)
       await memberPage.goto(inviteUrl.pathname)
-      await expect(memberPage.getByText('Join your household')).toBeVisible()
+      await expect(memberPage.getByText('Join your household', { exact: true })).toBeVisible()
       await expect(memberPage.getByRole('link', { name: 'Log in' })).toHaveCount(0)
     })
 
