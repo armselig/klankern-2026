@@ -2,7 +2,7 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of the commit that finished milestone 6 (shared shopping list, 2026-10-08) (`main`, working tree clean, nothing uncommitted). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of the commit that recorded milestone 7 (PWA installability, 2026-10-09) (`main`, working tree clean, nothing uncommitted). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
@@ -14,7 +14,7 @@ Tracks what's been built against the milestones in [`plan.md`](./plan.md), sessi
 | 4. Shared to-do list CRUD | ✅ Done — clicked through in a browser (add, toggle, remove, reload, second member sees the list) |
 | 5. Realtime sync for to-dos | ✅ Done — proven by the Playwright e2e test (two browsers, incl. reconnect) |
 | 6. Shared shopping list | ✅ Done — CRUD + live sync, covered by unit tests and the Playwright e2e test |
-| 7. PWA installability pass | 🟡 Manifest/icons/Workbox config in place from milestone 1; Lighthouse audit not run |
+| 7. PWA installability pass | 🟡 Built; installability + offline page verified by the Playwright `pwa` project. Manual check of the install button and update notice pending; Android install waits for the HTTPS deployment (milestone 8) |
 | 8. Containerize (Podman) + deploy | ⬜ Not started |
 | 9. Shared whiteboard (deferred phase) | ⬜ Not started |
 | 10. Shared recipes (deferred phase) | ⬜ Not started |
@@ -28,7 +28,8 @@ Tracks what's been built against the milestones in [`plan.md`](./plan.md), sessi
 app/app/
   types/            database.types.ts (generated), household.ts, list.ts, todo.ts, shopping.ts
   composables/      current-user.ts, household-actions.ts, todo-actions.ts, shopping-actions.ts,
-                    household-realtime.ts (+ .spec.ts siblings), use-household-realtime.ts
+                    household-realtime.ts (+ .spec.ts siblings), use-household-realtime.ts,
+                    use-pwa-update-notice.ts
   utils/            position.ts, list-state.ts, shopping-state.ts (+ .spec.ts siblings), routes.ts
   stores/           household.ts, todos.ts, shopping.ts
   pages/            login.vue, confirm.vue, index.vue, todos.vue, shopping.vue, join/[code].vue
@@ -38,12 +39,13 @@ app/app/
 app/supabase/migrations/   0001_households.sql … 0011_realtime_publication.sql
 app/tests/support/          supabase-fixtures.ts (disposable users/households via the Admin API, shared by RLS + e2e)
 app/tests/rls/              household-isolation.spec.ts (two-JWT RLS proof against Supabase Cloud)
-app/tests/e2e/              realtime-sync.e2e.ts (Playwright, two browser contexts)
+app/tests/e2e/              realtime-sync.e2e.ts (Playwright `sync` project, two browser contexts),
+                            pwa.e2e.ts (Playwright `pwa` project, production build)
 ```
 
 **Design pattern used throughout**: business logic lives in plain `composables/*-actions.ts` functions that take a `SupabaseClient` as a parameter, unit-tested with a mocked client (no Nuxt runtime needed). Pinia stores are thin — they call `useSupabaseClient()`/`useSupabaseUser()` and delegate to those functions. State-transition logic that needs testing on its own (optimistic add/dedup, soft-delete, sort order) is further extracted into pure reducer functions in `utils/`. List logic that doesn't depend on the item type (dedup, soft delete, Realtime events, reconnect merge) is **generic** over `ListItem` (`types/list.ts`) in `utils/list-state.ts` and shared by every list; only the actions, store, components and list-specific ordering are per list. This is the pattern to continue for whiteboard/recipes (later phases).
 
-**Testing**: Vitest, 67 tests passing (including the RLS suite) (`npm test`). Playwright e2e (`npm run test:e2e`, see the milestone 5 section) is separate and not in the pre-push hook. Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
+**Testing**: Vitest, 67 tests passing (including the RLS suite) (`npm test`). Playwright e2e (`npm run test:e2e`, 4 tests in two projects, see the milestone 5 and 7 sections) is separate and not in the pre-push hook. Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
 
 **Database types**: generated from the live schema via `supabase gen types typescript`, saved to `app/app/types/database.types.ts`, picked up automatically by `@nuxtjs/supabase`'s default `types` path. Re-run after any migration changes:
 ```
@@ -130,7 +132,29 @@ No migration needed: `shopping_lists`/`shopping_items` existed since 0003 and `s
 
 Known duplication: the fake Supabase query builder/client for unit tests is copied in `household-actions.spec.ts`, `todo-actions.spec.ts` and `shopping-actions.spec.ts` — a candidate for a shared test helper.
 
+## Milestone 7: PWA installability (built 2026-10-09)
+
+Checking a production build (`nuxt build`) showed the milestone-1 PWA config was broken in ways `nuxt dev` never revealed (the service worker isn't generated in dev):
+- **No `<link rel="manifest">`** — `@vite-pwa/nuxt` only adds it via `<NuxtPwaManifest />`, now in `app.vue`. Without it the app wasn't installable at all.
+- **`navigateFallback: '/offline.html'`** registers a route that answers *every* page load with the fallback page, online or not. Replaced by a `NetworkOnly` runtime rule for navigations with `precacheFallback: { fallbackURL: 'offline.html' }`, and `navigateFallback: null`.
+- **Nearly empty precache**: `@vite-pwa/nuxt` appends its own glob patterns to an empty list, which drops Workbox's defaults. `globPatterns` is now explicit (`offline.html`, icons, favicon).
+- **`offline.html` precached as `offline`**: the module's default `manifestTransforms` strips `.html` (pretty URLs), but this server answers `/offline` with the app's own page. Overridden with `manifestTransforms: []`. `globIgnores: ['_nuxt/builds/**']` keeps Nuxt's build-info JSON out of the precache (it would be cached without a revision). This makes every build print a harmless "glob pattern doesn't match any files" warning for the module's `_nuxt/builds/**/*.json` pattern.
+
+Added:
+- `registerType: 'prompt'` (was `autoUpdate` + `skipWaiting`, i.e. silent reloads) with a persistent Quasar notice "A new version of Klankern is available." / Reload / Later (`composables/use-pwa-update-notice.ts`, called in the layout).
+- "Install app" header button, shown when `$pwa.showInstallPrompt && !$pwa.isPWAInstalled`. Use the global `$pwa` in templates: Vue reserves `$`-prefixed setup bindings.
+- `theme-color` meta and `apple-touch-icon` link (`app.head` in `nuxt.config.ts`).
+
+**Verification**: Lighthouse dropped its PWA category in v12 (13.5 is installed here), so the planned Lighthouse audit is replaced by the Playwright `pwa` project (`tests/e2e/pwa.e2e.ts`). It runs against a fresh production build served on port 3100 (`E2E_PRODUCTION_PORT`), built on every `npm run test:e2e`. It covers:
+- Chrome's own installability check (`Page.getInstallabilityErrors` is empty) and the manifest contents.
+- Offline page loads show `offline.html`; back online, the app loads again.
+
+Chrome never reports installability in an incognito-like context, which Playwright's default contexts are, so the installability test uses `chromium.launchPersistentContext` with a throwaway profile. `context.setOffline` works for HTTP page loads (unlike open websockets, see milestone 5).
+
+**Open for milestone 7**: the user's manual check of the install button and the update notice on a production build (`npx nuxi build && node .output/server/index.mjs`, then rebuild after a change to see the notice). Installing on Android needs HTTPS on a real host, so it waits for milestone 8.
+
 ## Next steps
 
-1. Milestone 7: PWA installability pass (Lighthouse audit; decide on an icon strategy, see "No icon font bundled").
-2. Before milestone 8: smoke-test a minimal Podman dev compose early, given the local-stack networking issue found here.
+1. Finish milestone 7 with the manual checks above.
+2. Decide on an icon strategy when a screen first needs icons (see "No icon font bundled"); labeled buttons work until then.
+3. Before milestone 8: smoke-test a minimal Podman dev compose early, given the local-stack networking issue found here.
