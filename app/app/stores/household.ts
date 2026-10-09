@@ -6,6 +6,7 @@ import {
   fetchMyHousehold,
   redeemInvite,
 } from '~/composables/household-actions'
+import { errorMessage } from '~/utils/error-message'
 
 export const useHouseholdStore = defineStore('household', {
   state: () => ({
@@ -20,7 +21,7 @@ export const useHouseholdStore = defineStore('household', {
       try {
         this.household = await fetchMyHousehold(useSupabaseClient())
       } catch (e) {
-        this.error = e instanceof Error ? e.message : 'unknown_error'
+        this.error = errorMessage(e)
       } finally {
         this.loading = false
       }
@@ -32,7 +33,7 @@ export const useHouseholdStore = defineStore('household', {
       try {
         this.household = await createHousehold(useSupabaseClient(), name)
       } catch (e) {
-        this.error = e instanceof Error ? e.message : 'unknown_error'
+        this.error = errorMessage(e)
         throw e
       } finally {
         this.loading = false
@@ -51,7 +52,7 @@ export const useHouseholdStore = defineStore('household', {
         await redeemInvite(useSupabaseClient(), code)
         await this.fetchMine()
       } catch (e) {
-        this.error = e instanceof Error ? e.message : 'unknown_error'
+        this.error = errorMessage(e)
         throw e
       } finally {
         this.loading = false

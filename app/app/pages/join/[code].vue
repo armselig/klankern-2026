@@ -48,13 +48,20 @@ async function verifyCode() {
   await join()
 }
 
+/** redeem_invite's error codes are for code, not people: known ones get a
+ * sentence the invited family member can act on. */
+const JOIN_ERROR_TEXT: Record<string, string> = {
+  invalid_or_expired_invite: 'This invite link is invalid or has expired. Ask for a new one.',
+}
+
 async function join() {
   step.value = 'joining'
   try {
     await householdStore.redeem(code)
     await router.push(ROUTES.home)
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'unknown_error'
+    const message = errorMessage(e)
+    error.value = JOIN_ERROR_TEXT[message] ?? message
     step.value = 'error'
   }
 }

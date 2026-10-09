@@ -17,7 +17,7 @@ async function show() {
   try {
     code.value = await householdStore.invite()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'unknown_error'
+    error.value = errorMessage(e)
   } finally {
     loading.value = false
   }

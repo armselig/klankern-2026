@@ -9,6 +9,27 @@ export function upsertListItem<T extends ListItem>(itemsById: ItemsById<T>, item
   return { ...itemsById, [item.id]: item }
 }
 
+/**
+ * Folds the server-confirmed row of an optimistic add into state. A check or
+ * remove made while the add was saving has changed the local item since its
+ * optimistic version: those fields keep the local value, the rest (server
+ * timestamps) comes from the confirmed row. Nothing is added back when the
+ * item is no longer in state at all (e.g. the stores were reset).
+ */
+export function confirmListItem<T extends ListItem>(
+  itemsById: ItemsById<T>,
+  optimistic: T,
+  confirmed: T,
+): ItemsById<T> {
+  const local = itemsById[confirmed.id]
+  if (!local) return itemsById
+  const merged = { ...confirmed }
+  for (const key of Object.keys(local) as (keyof T)[]) {
+    if (local[key] !== optimistic[key]) merged[key] = local[key]
+  }
+  return upsertListItem(itemsById, merged)
+}
+
 /** Deletes are soft (deleted_at set) rather than removed from state, so an
  * out-of-order confirmation/Realtime event can't resurrect a deleted item. */
 export function softDeleteListItem<T extends ListItem>(

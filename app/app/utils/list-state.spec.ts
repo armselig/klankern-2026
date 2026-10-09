@@ -3,6 +3,7 @@ import type { ListRealtimeEvent } from '~/types/list'
 import type { TodoItem } from '~/types/todo'
 import {
   applyListRealtimeEvent,
+  confirmListItem,
   mergeListResync,
   softDeleteListItem,
   upsertListItem,
@@ -40,6 +41,32 @@ describe('upsertListItem', () => {
 
     expect(Object.keys(state)).toEqual(['item-1'])
     expect(state['item-1']).toEqual(confirmed)
+  })
+})
+
+describe('confirmListItem', () => {
+  const optimistic = item({ created_at: 'local', updated_at: 'local' })
+  const confirmed = item({ created_at: 'server', updated_at: 'server' })
+
+  it('takes the confirmed row when nothing changed locally while saving', () => {
+    const result = confirmListItem({ [optimistic.id]: optimistic }, optimistic, confirmed)
+    expect(result[optimistic.id]).toEqual(confirmed)
+  })
+
+  it('keeps a check made while the add was saving', () => {
+    const checked = { ...optimistic, done: true }
+    const result = confirmListItem({ [optimistic.id]: checked }, optimistic, confirmed)
+    expect(result[optimistic.id]).toEqual({ ...confirmed, done: true })
+  })
+
+  it('keeps a remove made while the add was saving', () => {
+    const removed = { ...optimistic, deleted_at: '2026-01-02T00:00:00Z' }
+    const result = confirmListItem({ [optimistic.id]: removed }, optimistic, confirmed)
+    expect(result[optimistic.id]!.deleted_at).toBe('2026-01-02T00:00:00Z')
+  })
+
+  it('does not bring back an item that is no longer in state', () => {
+    expect(confirmListItem({}, optimistic, confirmed)).toEqual({})
   })
 })
 

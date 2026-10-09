@@ -8,14 +8,20 @@ import {
   setShoppingItemChecked,
   softDeleteShoppingItemRemote,
 } from '~/composables/shopping-actions'
+import { errorMessage } from '~/utils/error-message'
+import { createInsertsInFlight } from '~/utils/inserts-in-flight'
 import { nextPosition } from '~/utils/position'
 import {
   applyListRealtimeEvent,
+  confirmListItem,
   mergeListResync,
   softDeleteListItem,
   upsertListItem,
 } from '~/utils/list-state'
 import { visibleShoppingItems } from '~/utils/shopping-state'
+
+/** Adds still being saved; see createInsertsInFlight. */
+const insertsInFlight = createInsertsInFlight()
 
 export const useShoppingStore = defineStore('shopping', {
   state: () => ({
@@ -43,7 +49,7 @@ export const useShoppingStore = defineStore('shopping', {
         const items = await fetchShoppingItems(useSupabaseClient(), list.id)
         this.itemsById = Object.fromEntries(items.map((item) => [item.id, item]))
       } catch (e) {
-        this.error = e instanceof Error ? e.message : 'unknown_error'
+        this.error = errorMessage(e)
       } finally {
         this.loading = false
       }
@@ -65,7 +71,7 @@ export const useShoppingStore = defineStore('shopping', {
         if (listId !== this.listId) return
         this.itemsById = mergeListResync(this.itemsById, items, this.pendingIds)
       } catch (e) {
-        this.error = e instanceof Error ? e.message : 'unknown_error'
+        this.error = errorMessage(e)
       }
     },
 
@@ -75,12 +81,16 @@ export const useShoppingStore = defineStore('shopping', {
       try {
         await write()
       } finally {
-        this.pendingIds = this.pendingIds.filter((pendingId) => pendingId !== id)
+        // Only this write's entry: an add and a check of the same item can
+        // be pending at the same time.
+        const index = this.pendingIds.indexOf(id)
+        this.pendingIds = this.pendingIds.filter((_, i) => i !== index)
       }
     },
 
     /** Optimistic add: the row appears immediately under a client-generated id,
-     * then gets reconciled (not duplicated) once the server confirms it. */
+     * then gets reconciled (not duplicated) once the server confirms it,
+     * keeping any check or remove made in the meantime. */
     async add(title: string, quantity: string | null) {
       if (!this.listId || !this.householdId) throw new Error('not_initialized')
       const userId = useSupabaseUser().value?.sub
@@ -106,48 +116,58 @@ export const useShoppingStore = defineStore('shopping', {
 
       await this.withPending(id, async () => {
         try {
-          const confirmed = await insertShoppingItem(useSupabaseClient(), {
+          const confirmed = await insertsInFlight.track(
             id,
-            listId,
-            householdId,
-            title,
-            quantity,
-            position: optimistic.position,
-          })
-          this.itemsById = upsertListItem(this.itemsById, confirmed)
+            insertShoppingItem(useSupabaseClient(), {
+              id,
+              listId,
+              householdId,
+              title,
+              quantity,
+              position: optimistic.position,
+            }),
+          )
+          this.itemsById = confirmListItem(this.itemsById, optimistic, confirmed)
         } catch (e) {
           const { [id]: _removed, ...rest } = this.itemsById
           this.itemsById = rest
-          this.error = e instanceof Error ? e.message : 'unknown_error'
+          this.error = errorMessage(e)
         }
       })
     },
 
+    /** Optimistic; the server update waits for the item's add to be saved. */
     async toggle(id: string) {
       const item = this.itemsById[id]
       if (!item) return
       const checked = !item.checked
       this.itemsById = upsertListItem(this.itemsById, { ...item, checked })
       await this.withPending(id, async () => {
+        await insertsInFlight.settled(id)
+        // The add failed and took the item with it: nothing left to update.
+        if (!this.itemsById[id]) return
         try {
           await setShoppingItemChecked(useSupabaseClient(), id, checked)
         } catch (e) {
           this.itemsById = upsertListItem(this.itemsById, item)
-          this.error = e instanceof Error ? e.message : 'unknown_error'
+          this.error = errorMessage(e)
         }
       })
     },
 
+    /** Optimistic soft delete; like toggle, waits for the item's add to be saved. */
     async remove(id: string) {
       const previous = this.itemsById[id]
       if (!previous) return
       this.itemsById = softDeleteListItem(this.itemsById, id)
       await this.withPending(id, async () => {
+        await insertsInFlight.settled(id)
+        if (!this.itemsById[id]) return
         try {
           await softDeleteShoppingItemRemote(useSupabaseClient(), id)
         } catch (e) {
           this.itemsById = upsertListItem(this.itemsById, previous)
-          this.error = e instanceof Error ? e.message : 'unknown_error'
+          this.error = errorMessage(e)
         }
       })
     },
