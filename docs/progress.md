@@ -2,7 +2,7 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of the commit that recorded milestone 7 (PWA installability, 2026-10-09) (`main`, working tree clean, nothing uncommitted). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of the commit that recorded the manual milestone 7 check (2026-10-09) (`main`, working tree clean, nothing uncommitted). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
@@ -14,7 +14,7 @@ Tracks what's been built against the milestones in [`plan.md`](./plan.md), sessi
 | 4. Shared to-do list CRUD | ✅ Done — clicked through in a browser (add, toggle, remove, reload, second member sees the list) |
 | 5. Realtime sync for to-dos | ✅ Done — proven by the Playwright e2e test (two browsers, incl. reconnect) |
 | 6. Shared shopping list | ✅ Done — CRUD + live sync, covered by unit tests and the Playwright e2e test |
-| 7. PWA installability pass | 🟡 Built; installability + offline page verified by the Playwright `pwa` project. Manual check of the install button and update notice pending; Android install waits for the HTTPS deployment (milestone 8) |
+| 7. PWA installability pass | 🟡 Built; installability + offline page verified by the Playwright `pwa` project. Install button checked manually in Chrome. Update notice not yet verified; Android install waits for the HTTPS deployment (milestone 8) |
 | 8. Containerize (Podman) + deploy | ⬜ Not started |
 | 9. Shared whiteboard (deferred phase) | ⬜ Not started |
 | 10. Shared recipes (deferred phase) | ⬜ Not started |
@@ -151,10 +151,13 @@ Added:
 
 Chrome never reports installability in an incognito-like context, which Playwright's default contexts are, so the installability test uses `chromium.launchPersistentContext` with a throwaway profile. `context.setOffline` works for HTTP page loads (unlike open websockets, see milestone 5).
 
-**Open for milestone 7**: the user's manual check of the install button and the update notice on a production build (`npx nuxi build && node .output/server/index.mjs`, then rebuild after a change to see the notice). Installing on Android needs HTTPS on a real host, so it waits for milestone 8.
+**Manual check (2026-10-09)**, on a production build (`npx nuxi build && PORT=3100 node .output/server/index.mjs`, so it doesn't clash with `nuxt dev` on :3000):
+- The "Install app" button appears in Chrome and installs the app. It only appears after Chrome's engagement heuristic (roughly one click plus ~30 s on the page). It never appears in `nuxt dev` (no service worker) or in Firefox (desktop Firefox doesn't support `beforeinstallprompt`).
+- **The update notice could not be verified** by the user. It's still open, but was deliberately put aside for now. Test steps when picking it up: keep a tab open, change visible text, rebuild and restart the server, reload the tab once; the notice should appear and "Reload" should show the new text.
+- Installing on Android needs HTTPS on a real host, so it waits for milestone 8.
 
 ## Next steps
 
-1. Finish milestone 7 with the manual checks above.
+1. Later: verify (or debug) the milestone 7 update notice; put aside on 2026-10-09.
 2. Decide on an icon strategy when a screen first needs icons (see "No icon font bundled"); labeled buttons work until then.
 3. Before milestone 8: smoke-test a minimal Podman dev compose early, given the local-stack networking issue found here.
