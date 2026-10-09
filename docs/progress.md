@@ -2,7 +2,7 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of the commit that recorded the manual milestone 7 check (2026-10-09) (`main`, working tree clean, nothing uncommitted). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of the commit that recorded the e2e gap review (2026-10-09) (`main`, working tree clean, nothing uncommitted). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
@@ -14,7 +14,7 @@ Tracks what's been built against the milestones in [`plan.md`](./plan.md), sessi
 | 4. Shared to-do list CRUD | ✅ Done — clicked through in a browser (add, toggle, remove, reload, second member sees the list) |
 | 5. Realtime sync for to-dos | ✅ Done — proven by the Playwright e2e test (two browsers, incl. reconnect) |
 | 6. Shared shopping list | ✅ Done — CRUD + live sync, covered by unit tests and the Playwright e2e test |
-| 7. PWA installability pass | 🟡 Built; installability + offline page verified by the Playwright `pwa` project. Install button checked manually in Chrome. Update notice not yet verified; Android install waits for the HTTPS deployment (milestone 8) |
+| 7. PWA installability pass | ✅ Done — installability, offline page, update notice and install button covered by the Playwright `pwa` project; the install button also checked by hand in Chrome. Installing on Android moves to milestone 8 (needs HTTPS) |
 | 8. Containerize (Podman) + deploy | ⬜ Not started |
 | 9. Shared whiteboard (deferred phase) | ⬜ Not started |
 | 10. Shared recipes (deferred phase) | ⬜ Not started |
@@ -28,24 +28,27 @@ Tracks what's been built against the milestones in [`plan.md`](./plan.md), sessi
 app/app/
   types/            database.types.ts (generated), household.ts, list.ts, todo.ts, shopping.ts
   composables/      current-user.ts, household-actions.ts, todo-actions.ts, shopping-actions.ts,
-                    household-realtime.ts (+ .spec.ts siblings), use-household-realtime.ts,
+                    household-realtime.ts, reset-stores-on-user-change.ts (+ .spec.ts siblings),
+                    use-household-realtime.ts, use-reset-stores-on-user-change.ts,
                     use-pwa-update-notice.ts
-  utils/            position.ts, list-state.ts, shopping-state.ts (+ .spec.ts siblings), routes.ts
+  utils/            position.ts, list-state.ts, shopping-state.ts, error-message.ts,
+                    inserts-in-flight.ts (+ .spec.ts siblings), routes.ts
   stores/           household.ts, todos.ts, shopping.ts
   pages/            login.vue, confirm.vue, index.vue, todos.vue, shopping.vue, join/[code].vue
   components/       household/{CreateHouseholdForm,InviteDialog}.vue, todo/{TodoList,TodoItem}.vue,
                     shopping/{ShoppingList,ShoppingItem}.vue
   layouts/          default.vue
 app/supabase/migrations/   0001_households.sql … 0011_realtime_publication.sql
-app/tests/support/          supabase-fixtures.ts (disposable users/households via the Admin API, shared by RLS + e2e)
+app/tests/support/          supabase-fixtures.ts (disposable users/households/invites via the Admin API, shared by RLS + e2e),
+                            e2e-ui.ts (sign-in and list steps through the real UI), realtime-socket.ts (cut/watch the Realtime socket)
 app/tests/rls/              household-isolation.spec.ts (two-JWT RLS proof against Supabase Cloud)
-app/tests/e2e/              realtime-sync.e2e.ts (Playwright `sync` project, two browser contexts),
-                            pwa.e2e.ts (Playwright `pwa` project, production build)
+app/tests/e2e/              Playwright `dev` project (against `nuxt dev`): auth, household, lists, realtime-sync,
+                            session-switch, a11y (*.e2e.ts); `pwa` project: pwa.e2e.ts (production build)
 ```
 
 **Design pattern used throughout**: business logic lives in plain `composables/*-actions.ts` functions that take a `SupabaseClient` as a parameter, unit-tested with a mocked client (no Nuxt runtime needed). Pinia stores are thin — they call `useSupabaseClient()`/`useSupabaseUser()` and delegate to those functions. State-transition logic that needs testing on its own (optimistic add/dedup, soft-delete, sort order) is further extracted into pure reducer functions in `utils/`. List logic that doesn't depend on the item type (dedup, soft delete, Realtime events, reconnect merge) is **generic** over `ListItem` (`types/list.ts`) in `utils/list-state.ts` and shared by every list; only the actions, store, components and list-specific ordering are per list. This is the pattern to continue for whiteboard/recipes (later phases).
 
-**Testing**: Vitest, 67 tests passing (including the RLS suite) (`npm test`). Playwright e2e (`npm run test:e2e`, 4 tests in two projects, see the milestone 5 and 7 sections) is separate and not in the pre-push hook. Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
+**Testing**: Vitest, 82 tests passing (including the RLS suite) (`npm test`). Playwright e2e (`npm run test:e2e`, 21 tests in two projects, one of them an expected failure documenting a known bug; see the milestone 5 and 7 sections and "E2E gap review") is separate and not in the pre-push hook. Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
 
 **Database types**: generated from the live schema via `supabase gen types typescript`, saved to `app/app/types/database.types.ts`, picked up automatically by `@nuxtjs/supabase`'s default `types` path. Re-run after any migration changes:
 ```
@@ -96,7 +99,7 @@ Smaller issues found, all fixed afterwards:
 3. The add-to-do input lost focus after each add → `TodoList` refocuses it on submit.
 4. To-do checkboxes had no accessible name (announced as "on") → the title is now the `q-checkbox` `label`, which Quasar also sets as `aria-label`.
 
-Fixes 1, 3 and 4 are covered only by type check/lint, not yet re-checked in a browser.
+Fixes 1, 3 and 4 are now covered by the e2e specs `auth` and `lists` (see "E2E gap review").
 
 Leftover test data in the cloud project: to-dos "Test 1–3" and invite `b005ab07` in household "Neumann".
 
@@ -116,7 +119,7 @@ The layout header shows the signed-in user's email next to "Sign out". Signed ou
 **E2E test** (`npm run test:e2e`, Playwright 1.64, uses the installed Google Chrome via `channel: 'chrome'`, reuses a running `nuxt dev` on :3000 or starts one): two disposable users in one household, two browser contexts. Covers add/toggle/delete arriving live, echo dedup, changes made while disconnected arriving after the reconnect, and the channel leave on sign-out. Verified to fail with the subscription removed and with the resync removed. Things learned building it:
 - Login goes through the real form: the `auth/v1/otp` request is fulfilled in the browser (no email sent) and the code comes from `admin.auth.admin.generateLink({ type: 'magiclink' }).properties.email_otp`, which `verifyOtp({ type: 'email' })` accepts.
 - Chrome's offline emulation (`context.setOffline`) does **not** close an open websocket. The drop is simulated with `context.routeWebSocket` (close the socket, refuse reconnects until "online").
-- A full page load (`page.goto`) right after verifying the code can land back on `/login` (session apparently not persisted yet), so the test navigates in-app.
+- The session cookie is written a moment after the header already shows the user; a full page load in that gap starts signed out. `signIn` (`tests/support/e2e-ui.ts`) therefore waits for the `…-auth-token` cookie, after which `page.goto` is safe.
 - Test files are `*.e2e.ts` so Vitest's `*.spec.ts` glob doesn't pick them up.
 
 ## Milestone 6: Shared shopping list (done 2026-10-08)
@@ -153,11 +156,32 @@ Chrome never reports installability in an incognito-like context, which Playwrig
 
 **Manual check (2026-10-09)**, on a production build (`npx nuxi build && PORT=3100 node .output/server/index.mjs`, so it doesn't clash with `nuxt dev` on :3000):
 - The "Install app" button appears in Chrome and installs the app. It only appears after Chrome's engagement heuristic (roughly one click plus ~30 s on the page). It never appears in `nuxt dev` (no service worker) or in Firefox (desktop Firefox doesn't support `beforeinstallprompt`).
-- **The update notice could not be verified** by the user. It's still open, but was deliberately put aside for now. Test steps when picking it up: keep a tab open, change visible text, rebuild and restart the server, reload the tab once; the notice should appear and "Reload" should show the new text.
+- The update notice could not be verified by hand. It is now covered by the `pwa` project instead (see "E2E gap review"), so this is resolved.
 - Installing on Android needs HTTPS on a real host, so it waits for milestone 8.
+
+## E2E gap review (2026-10-09)
+
+Playwright arrived only in milestone 5, so milestones 3–4 had never been tested end to end. The review added these specs (the Playwright project `sync` is now `dev` and runs every spec except `pwa.e2e.ts`):
+- `auth.e2e.ts`: the auth guard (signed out, `/`, `/todos` and `/shopping` redirect to `/login`; `/join/<code>` stays reachable), the session surviving a reload, sign-out locking the pages again, a wrong code, "Use a different email".
+- `household.e2e.ts`: creating a household as a new user, joining through the invite link from the invite dialog (signed out, with the join page's own sign-in; and signed in, joining right away), unknown/expired/used-up codes.
+- `lists.e2e.ts`: add (Enter and button), empty input ignored, focus kept, check, remove, state after a reload, for both lists; plus checking/removing an item while its add is still saving.
+- `session-switch.e2e.ts`: two users of different households in one tab, without a page load in between.
+- `pwa.e2e.ts`: the update notice (served through a local proxy that changes `sw.js`, since Playwright's routing doesn't see the browser's own service-worker update check) and the install button (synthetic `beforeinstallprompt`).
+- `a11y.e2e.ts`: axe (`@axe-core/playwright`) on every page, failing on serious/critical WCAG 2.1 A/AA findings.
+
+Each new test was checked to fail with its feature broken (auth guard exclude, removed refocus, removed update notice, and the bugs below before their fixes).
+
+**Bugs found and fixed:**
+1. Supabase errors showed as "unknown_error": supabase-js returns PostgREST errors as plain objects, so `e instanceof Error` never matched. `utils/error-message.ts` reads both; the join page explains an invalid or expired invite in a sentence.
+2. A check or remove made while the item's add was still saving was lost: the PATCH could reach the server before the INSERT (0 rows updated), and the insert's confirmed row undid the check in the UI. Updates now wait for the item's insert (`utils/inserts-in-flight.ts`), and `confirmListItem` keeps fields changed locally. `withPending` now removes only its own `pendingIds` entry.
+3. Signing out didn't clear the stores, so the next user in the same tab first joined the previous household's Realtime channel (RLS kept the data out). `useResetStoresOnUserChange` (in the layout, before `useHouseholdRealtime`) resets the stores whenever the user id changes.
+4. No page had a `<title>`, and the grey text of checked items and empty lists had a contrast of about 2.7:1. Pages now set titles via `useHead` (template in `app.vue`; the route announcer now reads them out), and the text uses `text-grey-8`.
+
+**Known bug: resync can undo a change (not fixed yet, user decision).** `mergeListResync` protects only ids still in `pendingIds` when the fetch *returns*. A check or remove saved while a resync fetch (after a reconnect) is in flight is undone in the UI by the older fetch result; the server keeps the change, so a reload shows it again. Reproduced every time by the last test in `realtime-sync.e2e.ts`, marked `test.fail()`. It can also make the "while its add is saving" tests in `lists.e2e.ts` flaky in a full run, when the channel's own resync lands in that window. Proposed fix: record every id changed between the fetch's start and the merge (own writes and Realtime events), let those keep their local version, then remove `test.fail()`.
 
 ## Next steps
 
-1. Later: verify (or debug) the milestone 7 update notice; put aside on 2026-10-09.
+1. Fix the known resync bug (see "E2E gap review"); until then, a full e2e run can occasionally fail in `lists.e2e.ts`.
 2. Decide on an icon strategy when a screen first needs icons (see "No icon font bundled"); labeled buttons work until then.
 3. Before milestone 8: smoke-test a minimal Podman dev compose early, given the local-stack networking issue found here.
+4. Later: the fake Supabase client duplicated across the `*-actions.spec.ts` files (see milestone 6) is a candidate for a shared test helper.
