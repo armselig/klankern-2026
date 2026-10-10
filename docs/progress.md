@@ -2,7 +2,7 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of the Netlify setup for milestone 8 (2026-10-10) (`develop`). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of the first Netlify deploy (2026-10-10) (`develop`). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
@@ -15,7 +15,7 @@ Tracks what's been built against the milestones in [`plan.md`](./plan.md), sessi
 | 5. Realtime sync for to-dos | ✅ Done — proven by the Playwright e2e test (two browsers, incl. reconnect) |
 | 6. Shared shopping list | ✅ Done — CRUD + live sync, covered by unit tests and the Playwright e2e test |
 | 7. PWA installability pass | ✅ Done — installability, offline page, update notice and install button covered by the Playwright `pwa` project; the install button also checked by hand in Chrome. Installing on Android moves to milestone 8 (needs HTTPS) |
-| 8. Deploy (Netlify; containers deferred) | 🟡 Repo side done — `netlify.toml`, static build, `pwa` e2e against it. Creating the Netlify site, the first deploy and the checks on the deployed URL are still open |
+| 8. Deploy (Netlify; containers deferred) | 🟡 Deployed to Netlify from `main`; routing and response headers checked on the deployed URL. The browser checks there (login, join link, install, offline page, update notice, Android) are still open |
 | 9. Shared whiteboard (deferred phase) | ⬜ Not started |
 | 10. Shared recipes (deferred phase) | ⬜ Not started |
 
@@ -217,13 +217,24 @@ Production hosting is **Netlify, as static files** (user decision, deviating fro
 - **Deploys**: Netlify's Git integration builds every push to `main`. It builds independently of CI, so a `main` with failing tests still deploys (accepted). Deploy previews and branch deploys stay **off**: every one of them would use the one production Supabase project.
 - **Environment on Netlify**: only `SUPABASE_URL` and `SUPABASE_KEY`. Never the secret key or the DB password.
 
+**First deploy (2026-10-10).** CI ran the new `pwa` web server on `develop` and passed (the job took about 6 minutes instead of 5, presumably the larger `npm ci`). The Netlify site was created by the user and `main` fast-forwarded to `develop`.
+
+- The site was first created while `main` had no `netlify.toml` and no `_redirects`. That build served deep links with status 404 (Nitro's own catch-all) and deployed the older code. Merge first, then create a site.
+- Checked on the deployed URL with `curl`, after the deploy of the merged `main`:
+  - `/join/<code>` answers 200 with the app shell; so does any other unmatched path.
+  - `sw.js`, the HTML pages and `manifest.webmanifest` have `cache-control: public,max-age=0,must-revalidate`; hashed `/_nuxt/*.js` files are `immutable`.
+  - The page carries the right Supabase URL and a publishable key; the precache list is the expected one.
+- **Manifest content type**: Netlify served `manifest.webmanifest` as `application/octet-stream`. A `[[headers]]` rule in `netlify.toml` now sets `application/manifest+json` (verified on the deployed URL).
+- **`/_nuxt/builds/latest.json` is served `max-age=31536000, immutable`**: of the overlapping rules in the generated `_headers`, the year-long `/_nuxt/*` one applies, not the `max-age=1` one for `/_nuxt/builds/*`. Left as it is: Nuxt requests the file with a timestamp query (`check-outdated-build.client.js`), so a cached copy is never reused.
+- **`/login`, `/todos`, `/shopping` and `/confirm` answer 301 to the same path with a trailing slash**, because `nuxt generate` prerenders them as `<route>/index.html`. Works; left alone.
+- **Netlify adds an HTML comment and a script (`/.netlify/scripts/hud`) to every page.** Not from the build; a setting of the Netlify site, not found or changed yet.
+
 Still open:
 
-1. CI has not run the new `pwa` web server yet. Push `develop` and wait for a green run **before** merging to `main`, since Netlify deploys `main` whatever CI says.
-2. Create the Netlify site (user), set the two environment values, turn previews and branch deploys off, deploy `main`. Check the first deploy log for install failures and how long the install takes.
-3. On the deployed URL: OTP login; a `/join/<code>` link opened directly; "Install app"; the offline page; the update notice after a second deploy; installing on Android (carried over from milestone 7).
-4. Response headers on the deployed URL: `sw.js` and `manifest.webmanifest` must not be cached long (`max-age=0`); a hashed `/_nuxt/*.js` should be `immutable`; `/_nuxt/builds/latest.json` should get the short `max-age=1` rule, not the year-long `/_nuxt/*` one (the generated `_headers` has overlapping rules, and how Netlify combines them could not be checked locally).
-5. Set the Supabase Auth "Site URL" to the deployed URL.
+1. In a browser on the deployed URL (user): OTP login; a `/join/<code>` link opened directly; "Install app"; the offline page; installing on Android (carried over from milestone 7).
+2. The update notice on the deployed site: needs a deploy while the app is open, so check it with the next push to `main`.
+3. Not confirmed yet: deploy previews and branch deploys turned off in Netlify; the Supabase Auth "Site URL" set to the deployed URL; the install step of the Netlify deploy log (failures, duration).
+4. Find and turn off the Netlify setting behind the injected script.
 
 ## Icon strategy (2026-10-10)
 
@@ -239,5 +250,5 @@ Checked by the user in a browser (2026-10-10).
 
 ## Next steps
 
-1. Finish milestone 8: create the Netlify site, deploy `main`, run the checks listed under "Milestone 8" on the deployed URL, install the app on Android.
+1. Finish milestone 8: the open items listed under "Milestone 8" (browser checks on the deployed URL, Android install, Netlify settings).
 2. Optional, later: the Podman production setup (`Containerfile.prod`, Quadlet units, Caddy).
