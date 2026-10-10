@@ -57,9 +57,6 @@ export default defineNuxtConfig({
       // `x.html` to `x` (pretty URLs) -- but this server answers /offline with
       // the app's own page, so the offline page would never be cached.
       manifestTransforms: [],
-      // Nuxt's build-info files (added to globPatterns by the module) aren't
-      // needed offline, and would be precached without a revision.
-      globIgnores: ['_nuxt/builds/**'],
       runtimeCaching: [
         {
           urlPattern: ({ request }) => request.mode === 'navigate',
@@ -71,6 +68,18 @@ export default defineNuxtConfig({
           handler: 'NetworkOnly',
         },
       ],
+    },
+    integration: {
+      // @vite-pwa/nuxt appends a pattern for Nuxt's build-info files, which
+      // aren't needed offline and would be precached without a revision. The
+      // pattern is removed here, right before the service worker is built:
+      // ignoring its files via globIgnores leaves a pattern that matches
+      // nothing, which Workbox warns about on every build.
+      beforeBuildServiceWorker(options) {
+        options.workbox.globPatterns = options.workbox.globPatterns?.filter(
+          (pattern) => !pattern.includes('/builds/'),
+        )
+      },
     },
     client: { installPrompt: true, periodicSyncForUpdates: 3600 },
   },
