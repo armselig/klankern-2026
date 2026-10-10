@@ -9,6 +9,7 @@ import {
   softDeleteShoppingItemRemote,
 } from '~/composables/shopping-actions'
 import { errorMessage } from '~/utils/error-message'
+import { createChangesDuringFetch } from '~/utils/changes-during-fetch'
 import { createInsertsInFlight } from '~/utils/inserts-in-flight'
 import { nextPosition } from '~/utils/position'
 import {
@@ -22,6 +23,9 @@ import { visibleShoppingItems } from '~/utils/shopping-state'
 
 /** Adds still being saved; see createInsertsInFlight. */
 const insertsInFlight = createInsertsInFlight()
+
+/** Items changed while a resync fetch is in flight; see createChangesDuringFetch. */
+const changesDuringFetch = createChangesDuringFetch()
 
 export const useShoppingStore = defineStore('shopping', {
   state: () => ({
@@ -57,6 +61,7 @@ export const useShoppingStore = defineStore('shopping', {
 
     /** Folds a shopping-item change from the household's Realtime channel into state. */
     applyRealtimeEvent(event: ListRealtimeEvent<ShoppingItem>) {
+      changesDuringFetch.record(event.new.id)
       this.itemsById = applyListRealtimeEvent(this.itemsById, event, this.listId)
     },
 
@@ -66,21 +71,29 @@ export const useShoppingStore = defineStore('shopping', {
     async resync() {
       const listId = this.listId
       if (!listId || this.loading) return
+      const changes = changesDuringFetch.start()
       try {
         const items = await fetchShoppingItems(useSupabaseClient(), listId)
         if (listId !== this.listId) return
-        this.itemsById = mergeListResync(this.itemsById, items, this.pendingIds)
+        const keepLocalIds = [...this.pendingIds, ...changes.stop()]
+        this.itemsById = mergeListResync(this.itemsById, items, keepLocalIds)
       } catch (e) {
         this.error = errorMessage(e)
+      } finally {
+        changes.stop()
       }
     },
 
-    /** Runs a server write while its item id counts as pending (see pendingIds). */
+    /** Runs a server write while its item id counts as pending (see pendingIds).
+     * Its end counts as a change: a write that finishes while a resync fetch
+     * is in flight is no longer pending when the fetch returns, yet the
+     * fetch may predate it. */
     async withPending(id: string, write: () => Promise<void>) {
       this.pendingIds = [...this.pendingIds, id]
       try {
         await write()
       } finally {
+        changesDuringFetch.record(id)
         // Only this write's entry: an add and a check of the same item can
         // be pending at the same time.
         const index = this.pendingIds.indexOf(id)

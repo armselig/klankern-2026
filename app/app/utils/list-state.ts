@@ -63,18 +63,19 @@ export function applyListRealtimeEvent<T extends ListItem>(
  * Rebuilds state after a (re)connect, since Realtime doesn't replay events
  * missed while offline. The fetch excludes deleted rows, so an item missing
  * from it was deleted remotely and is dropped. Two kinds of local state win
- * over the fetch: items with a write still in flight (`pendingIds`; the fetch
- * may predate that write) and local tombstones (which the fetch would
- * otherwise resurrect while the delete is still on its way).
+ * over the fetch: `keepLocalIds` -- items the fetch may predate (a write
+ * still in flight, or a write or Realtime event since the fetch started) --
+ * and local tombstones (which the fetch would otherwise resurrect while the
+ * delete is still on its way).
  */
 export function mergeListResync<T extends ListItem>(
   itemsById: ItemsById<T>,
   fetched: T[],
-  pendingIds: readonly string[],
+  keepLocalIds: readonly string[],
 ): ItemsById<T> {
   const merged: ItemsById<T> = Object.fromEntries(fetched.map((item) => [item.id, item]))
   for (const local of Object.values(itemsById)) {
-    if (pendingIds.includes(local.id) || local.deleted_at) merged[local.id] = local
+    if (keepLocalIds.includes(local.id) || local.deleted_at) merged[local.id] = local
   }
   return merged
 }

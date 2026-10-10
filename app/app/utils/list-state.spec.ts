@@ -181,6 +181,13 @@ describe('mergeListResync', () => {
     expect(result['item-1']).toEqual(local)
   })
 
+  it('keeps an item that arrived after the fetch was answered (missing from it)', () => {
+    const arrived = item({ id: 'item-2' })
+    const state = { 'item-1': item(), 'item-2': arrived }
+    const result = mergeListResync(state, [item()], ['item-2'])
+    expect(result['item-2']).toEqual(arrived)
+  })
+
   it('does not resurrect a locally deleted item the fetch still returns as live', () => {
     const tombstone = item({ deleted_at: '2026-01-02T00:00:00Z' })
     const result = mergeListResync({ 'item-1': tombstone }, [item()], [])

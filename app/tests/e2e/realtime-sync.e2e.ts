@@ -144,14 +144,11 @@ test.describe('realtime sync between two members', () => {
     await contextB.close()
   })
 
-  // Known bug, recorded but not fixed yet (see docs/progress.md, "Known
-  // bug: resync can undo a change"): mergeListResync only protects ids still
-  // pending when the fetch returns, so this fails today. Remove test.fail()
-  // together with the fix.
+  // The fetch's rows predate a write saved while it was in flight; the write
+  // is no longer pending when the fetch returns (changes-during-fetch.ts).
   test('a check saved while a resync is fetching is not undone by that fetch', async ({
     browser,
   }) => {
-    test.fail()
     const context = await browser.newContext()
     const socket = await controlRealtimeSocket(context)
     const page = await context.newPage()

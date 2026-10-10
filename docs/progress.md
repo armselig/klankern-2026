@@ -2,7 +2,7 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of the commit that recorded the e2e gap review (2026-10-09) (`main`, working tree clean, nothing uncommitted). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of the commit that fixed the resync race (2026-10-10) (`develop`, working tree clean, nothing uncommitted). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
@@ -32,7 +32,7 @@ app/app/
                     use-household-realtime.ts, use-reset-stores-on-user-change.ts,
                     use-pwa-update-notice.ts
   utils/            position.ts, list-state.ts, shopping-state.ts, error-message.ts,
-                    inserts-in-flight.ts (+ .spec.ts siblings), routes.ts
+                    inserts-in-flight.ts, changes-during-fetch.ts (+ .spec.ts siblings), routes.ts
   stores/           household.ts, todos.ts, shopping.ts
   pages/            login.vue, confirm.vue, index.vue, todos.vue, shopping.vue, join/[code].vue
   components/       household/{CreateHouseholdForm,InviteDialog}.vue, todo/{TodoList,TodoItem}.vue,
@@ -48,7 +48,7 @@ app/tests/e2e/              Playwright `dev` project (against `nuxt dev`): auth,
 
 **Design pattern used throughout**: business logic lives in plain `composables/*-actions.ts` functions that take a `SupabaseClient` as a parameter, unit-tested with a mocked client (no Nuxt runtime needed). Pinia stores are thin — they call `useSupabaseClient()`/`useSupabaseUser()` and delegate to those functions. State-transition logic that needs testing on its own (optimistic add/dedup, soft-delete, sort order) is further extracted into pure reducer functions in `utils/`. List logic that doesn't depend on the item type (dedup, soft delete, Realtime events, reconnect merge) is **generic** over `ListItem` (`types/list.ts`) in `utils/list-state.ts` and shared by every list; only the actions, store, components and list-specific ordering are per list. This is the pattern to continue for whiteboard/recipes (later phases).
 
-**Testing**: Vitest, 82 tests passing (including the RLS suite) (`npm test`). Playwright e2e (`npm run test:e2e`, 21 tests in two projects, one of them an expected failure documenting a known bug; see the milestone 5 and 7 sections and "E2E gap review") is separate and not in the pre-push hook. Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
+**Testing**: Vitest, 86 tests passing (including the RLS suite) (`npm test`). Playwright e2e (`npm run test:e2e`, 21 tests in two projects; see the milestone 5 and 7 sections and "E2E gap review") is separate and not in the pre-push hook. Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
 
 **Database types**: generated from the live schema via `supabase gen types typescript`, saved to `app/app/types/database.types.ts`, picked up automatically by `@nuxtjs/supabase`'s default `types` path. Re-run after any migration changes:
 ```
@@ -110,8 +110,8 @@ The layout header shows the signed-in user's email next to "Sign out". Signed ou
 ## Milestone 5: Realtime sync (done 2026-10-08)
 
 - `0011_realtime_publication.sql` adds `todo_items` and `shopping_items` to `supabase_realtime` (applied to the cloud project).
-- `utils/list-state.ts` (was `todo-state.ts` until milestone 6 made it generic): `applyListRealtimeEvent` (upsert by id so the echo of an optimistic add dedups; ignores other lists and everything before the list is loaded; nothing undoes a local soft delete) and `mergeListResync` (refetch result + items with a write in flight + local tombstones; anything else missing from the fetch was deleted remotely and is dropped). Event shape is the app's own `ListRealtimeEvent<T>` (`types/list.ts`), not realtime-js types.
-- `stores/todos.ts` (and `stores/shopping.ts`): `pendingIds` (wrapped around every server write via `withPending`), `applyRealtimeEvent`, `resync()` (no-op until `init()` has loaded the list).
+- `utils/list-state.ts` (was `todo-state.ts` until milestone 6 made it generic): `applyListRealtimeEvent` (upsert by id so the echo of an optimistic add dedups; ignores other lists and everything before the list is loaded; nothing undoes a local soft delete) and `mergeListResync` (refetch result + items the fetch may predate + local tombstones; anything else missing from the fetch was deleted remotely and is dropped). Event shape is the app's own `ListRealtimeEvent<T>` (`types/list.ts`), not realtime-js types.
+- `stores/todos.ts` (and `stores/shopping.ts`): `pendingIds` (wrapped around every server write via `withPending`), `applyRealtimeEvent`, `resync()` (no-op until `init()` has loaded the list). During a resync fetch, `utils/changes-during-fetch.ts` collects the ids of writes that finish and Realtime events that arrive; those keep their local version in the merge, like `pendingIds`.
 - `composables/household-realtime.ts`: `subscribeToHouseholdChanges` — one channel per household, `postgres_changes` INSERT + UPDATE only (never DELETE: unfilterable and RLS-free; the app only soft-deletes), filter `household_id=eq.<id>`, `onSubscribed` on every `SUBSCRIBED` (first join and every automatic rejoin) → resync.
 - `composables/use-household-realtime.ts`: `useHouseholdRealtime()`, called once in `layouts/default.vue`. Keyed on user **and** household id, because sign-out doesn't clear the household store. Every list adds its listeners to this same channel rather than opening a new one; every `SUBSCRIBED` resyncs every list's store.
 - No `updated_at` trigger exists, so events are last-arrival-wins; don't use `updated_at` for ordering.
@@ -177,11 +177,15 @@ Each new test was checked to fail with its feature broken (auth guard exclude, r
 3. Signing out didn't clear the stores, so the next user in the same tab first joined the previous household's Realtime channel (RLS kept the data out). `useResetStoresOnUserChange` (in the layout, before `useHouseholdRealtime`) resets the stores whenever the user id changes.
 4. No page had a `<title>`, and the grey text of checked items and empty lists had a contrast of about 2.7:1. Pages now set titles via `useHead` (template in `app.vue`; the route announcer now reads them out), and the text uses `text-grey-8`.
 
-**Known bug: resync can undo a change (not fixed yet, user decision).** `mergeListResync` protects only ids still in `pendingIds` when the fetch *returns*. A check or remove saved while a resync fetch (after a reconnect) is in flight is undone in the UI by the older fetch result; the server keeps the change, so a reload shows it again. Reproduced every time by the last test in `realtime-sync.e2e.ts`, marked `test.fail()`. It can also make the "while its add is saving" tests in `lists.e2e.ts` flaky in a full run, when the channel's own resync lands in that window. Proposed fix: record every id changed between the fetch's start and the merge (own writes and Realtime events), let those keep their local version, then remove `test.fail()`.
+**Fixed 2026-10-10: resync could undo a change.** `mergeListResync` protected only ids still in `pendingIds` when the fetch *returned*, so a check or remove saved while a resync fetch was in flight was undone in the UI by the older fetch result. Now every id whose write finishes or whose Realtime event arrives during the fetch is collected (`utils/changes-during-fetch.ts`) and keeps its local version. The last test in `realtime-sync.e2e.ts` covers it (no longer `test.fail()`; verified to fail again with the fix disabled).
+
+**Known bug: Realtime events of one row can arrive out of order (not fixed yet).** Found while verifying the resync fix; this, not the resync, is what makes "shopping: checking or removing an item while its add is saving" in `lists.e2e.ts` fail in roughly 1 of 10 runs. When an item's INSERT and its UPDATE are committed within about 50 ms, Realtime sometimes delivers the UPDATE echo *before* the INSERT echo (recorded frames: UPDATE `checked: true`, `commit_timestamp` …35.485, followed by INSERT `checked: false`, `commit_timestamp` …35.436). `applyListRealtimeEvent` lets the latest arrival win, so the stale INSERT unchecks the item in the UI until a reload; the server keeps the check. Proposed fix: pass the payload's `commit_timestamp` through `ListRealtimeEvent` and ignore an event older than the last one applied to the same item.
+
+**Running e2e tests repeatedly**: long `--repeat-each` runs made sign-ins time out (the session cookie never appears) once a run did more than about 30 sign-ins within 5 minutes — presumably Supabase's rate limit on OTP verifications, not checked in the dashboard. Keep repeat runs below that or pause between them.
 
 ## Next steps
 
-1. Fix the known resync bug (see "E2E gap review"); until then, a full e2e run can occasionally fail in `lists.e2e.ts`.
+1. Fix the out-of-order Realtime events (see "E2E gap review"); until then, a full e2e run can occasionally fail in `lists.e2e.ts`.
 2. Decide on an icon strategy when a screen first needs icons (see "No icon font bundled"); labeled buttons work until then.
 3. Before milestone 8: smoke-test a minimal Podman dev compose early, given the local-stack networking issue found here.
 4. Later: the fake Supabase client duplicated across the `*-actions.spec.ts` files (see milestone 6) is a candidate for a shared test helper.
