@@ -227,14 +227,13 @@ Production hosting is **Netlify, as static files** (user decision, deviating fro
 - **Manifest content type**: Netlify served `manifest.webmanifest` as `application/octet-stream`. A `[[headers]]` rule in `netlify.toml` now sets `application/manifest+json` (verified on the deployed URL).
 - **`/_nuxt/builds/latest.json` is served `max-age=31536000, immutable`**: of the overlapping rules in the generated `_headers`, the year-long `/_nuxt/*` one applies, not the `max-age=1` one for `/_nuxt/builds/*`. Left as it is: Nuxt requests the file with a timestamp query (`check-outdated-build.client.js`), so a cached copy is never reused.
 - **`/login`, `/todos`, `/shopping` and `/confirm` answer 301 to the same path with a trailing slash**, because `nuxt generate` prerenders them as `<route>/index.html`. Works; left alone.
-- **Netlify adds an HTML comment and a script (`/.netlify/scripts/hud`) to every page.** Not from the build; a setting of the Netlify site, not found or changed yet.
+- **Netlify added an HTML comment and a script (`/.netlify/scripts/hud`) to every page.** Not from the build: Netlify's edge servers inject them. The script was the "Powered by Netlify" badge, which is on by default for new projects on the Free plan. Turned off by the user under **Project configuration > General > Powered by Netlify badge** (per project, no redeploy needed); checked with `curl` that no page references the script any more. The comment ("This site is hosted on Netlify. …", with a link to Netlify) is still at the start of every page's `<head>`. No setting for it was found; it is inert and **accepted** (user decision).
 
 Still open:
 
 1. In a browser on the deployed URL (user): OTP login; a `/join/<code>` link opened directly; "Install app"; the offline page; installing on Android (carried over from milestone 7).
 2. The update notice on the deployed site: needs a deploy while the app is open, so check it with the next push to `main`.
 3. Not confirmed yet: deploy previews and branch deploys turned off in Netlify; the Supabase Auth "Site URL" set to the deployed URL; the install step of the Netlify deploy log (failures, duration).
-4. Find and turn off the Netlify setting behind the injected script.
 
 ## Icon strategy (2026-10-10)
 
