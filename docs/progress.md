@@ -2,7 +2,7 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of the first Netlify deploy (2026-10-10) (`develop`). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of milestone 9, the shared whiteboard (2026-10-10) (`develop`). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
@@ -16,7 +16,7 @@ Tracks what's been built against the milestones in [`plan.md`](./plan.md), sessi
 | 6. Shared shopping list | ✅ Done — CRUD + live sync, covered by unit tests and the Playwright e2e test |
 | 7. PWA installability pass | ✅ Done — installability, offline page, update notice and install button covered by the Playwright `pwa` project; the install button also checked by hand in Chrome. Installing on Android moves to milestone 8 (needs HTTPS) |
 | 8. Deploy (Netlify; containers deferred) | 🟡 Deployed to Netlify from `main`; routing and response headers checked on the deployed URL, and login, join link, install, offline page and the Android install checked there in a browser. Only the update notice on the deployed site is still open |
-| 9. Shared whiteboard (deferred phase) | ⬜ Not started |
+| 9. Shared whiteboard | ✅ Built — drawing, eraser, undo, clear and live sync, covered by unit, RLS and Playwright e2e tests. Not yet tried on a real touch screen |
 | 10. Shared recipes (deferred phase) | ⬜ Not started |
 
 ## What's built
@@ -26,33 +26,38 @@ Tracks what's been built against the milestones in [`plan.md`](./plan.md), sessi
 **Project layout** (relative to `app/`, the Nuxt project root):
 ```
 app/app/
-  types/            database.types.ts (generated), household.ts, list.ts, todo.ts, shopping.ts
+  types/            database.types.ts (generated), household.ts, synced-row.ts, list.ts, todo.ts,
+                    shopping.ts, whiteboard.ts
   composables/      current-user.ts, household-actions.ts, todo-actions.ts, shopping-actions.ts,
+                    whiteboard-actions.ts,
                     household-realtime.ts, reset-stores-on-user-change.ts (+ .spec.ts siblings),
                     use-household-realtime.ts, use-reset-stores-on-user-change.ts,
                     use-pwa-update-notice.ts
   utils/            position.ts, list-state.ts, shopping-state.ts, error-message.ts,
-                    inserts-in-flight.ts, changes-during-fetch.ts, realtime-event-order.ts
-                    (+ .spec.ts siblings), routes.ts
-  stores/           household.ts, todos.ts, shopping.ts
-  pages/            login.vue, confirm.vue, index.vue, todos.vue, shopping.vue, join/[code].vue
+                    inserts-in-flight.ts, changes-during-fetch.ts, realtime-event-order.ts,
+                    whiteboard-state.ts, whiteboard-geometry.ts (+ .spec.ts siblings),
+                    whiteboard-pen.ts, routes.ts
+  stores/           household.ts, todos.ts, shopping.ts, whiteboard.ts
+  pages/            login.vue, confirm.vue, index.vue, todos.vue, shopping.vue, whiteboard.vue,
+                    join/[code].vue
   components/       household/{CreateHouseholdForm,InviteDialog}.vue, todo/{TodoList,TodoItem}.vue,
-                    shopping/{ShoppingList,ShoppingItem}.vue
+                    shopping/{ShoppingList,ShoppingItem}.vue,
+                    whiteboard/{SharedWhiteboard,WhiteboardToolbar,WhiteboardSurface,WhiteboardStroke}.vue
   layouts/          default.vue
 app/public/                 offline.html, icons, _redirects (Netlify fallback for client-side routes)
-app/supabase/migrations/   0001_households.sql … 0011_realtime_publication.sql
+app/supabase/migrations/   0001_households.sql … 0012_whiteboard.sql
 app/tests/support/          supabase-fixtures.ts (disposable users/households/invites via the Admin API, shared by RLS + e2e),
                             e2e-ui.ts (sign-in and list steps through the real UI), realtime-socket.ts (cut/watch the Realtime socket, hold back frames),
                             fake-supabase-client.ts (fake query builder + client for the `*-actions.spec.ts` unit tests)
 app/tests/rls/              household-isolation.spec.ts (two-JWT RLS proof against Supabase Cloud)
 app/tests/e2e/              Playwright `dev` project (against `nuxt dev`): auth, household, lists, realtime-sync,
-                            session-switch, a11y (*.e2e.ts); `pwa` project: pwa.e2e.ts (production build)
+                            session-switch, whiteboard, a11y (*.e2e.ts); `pwa` project: pwa.e2e.ts (production build)
 netlify.toml                at the git root: build settings for Netlify
 ```
 
 **Design pattern used throughout**: business logic lives in plain `composables/*-actions.ts` functions that take a `SupabaseClient` as a parameter, unit-tested with a mocked client (no Nuxt runtime needed). Pinia stores are thin — they call `useSupabaseClient()`/`useSupabaseUser()` and delegate to those functions. State-transition logic that needs testing on its own (optimistic add/dedup, soft-delete, sort order) is further extracted into pure reducer functions in `utils/`. List logic that doesn't depend on the item type (dedup, soft delete, Realtime events, reconnect merge) is **generic** over `ListItem` (`types/list.ts`) in `utils/list-state.ts` and shared by every list; only the actions, store, components and list-specific ordering are per list. This is the pattern to continue for whiteboard/recipes (later phases).
 
-**Testing**: Vitest, 93 tests passing (including the RLS suite) (`npm test`). Playwright e2e (`npm run test:e2e`, 22 tests in two projects; see the milestone 5 and 7 sections and "E2E gap review") is separate and not in the pre-push hook; CI runs it on every push to `main` and `develop` (see "CI"). Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
+**Testing**: Vitest, 149 tests passing (including the RLS suite) (`npm test`). Playwright e2e (`npm run test:e2e`, 23 tests in two projects; see the milestone 5 and 7 sections and "E2E gap review") is separate and not in the pre-push hook; CI runs it on every push to `main` and `develop` (see "CI"). Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
 
 **Database types**: generated from the live schema via `supabase gen types typescript`, saved to `app/app/types/database.types.ts`, picked up automatically by `@nuxtjs/supabase`'s default `types` path. Re-run after any migration changes:
 ```
@@ -70,7 +75,7 @@ Fixed by `0007_create_household_rpc.sql` (`create_household` / `create_invite` S
 
 **Function privileges**: Postgres grants `EXECUTE` on every new function to `PUBLIC`, i.e. callable by signed-out clients via `/rest/v1/rpc/...`. Every new function in `public` needs `revoke execute ... from public, anon` plus an explicit `grant ... to authenticated` (see 0007, 0009). The security advisor's remaining "signed-in users can execute SECURITY DEFINER function" warnings for `create_household`, `create_invite`, `redeem_invite` and `is_household_member` are intentional: the first three are the app's RPCs, and RLS policies need `authenticated` to be able to execute `is_household_member`.
 
-**Migrations workflow**: the Supabase MCP server (`.mcp.json`) works in fresh sessions and was used to apply 0007–0009 (`apply_migration`). It records a timestamp version, so the `supabase_migrations.schema_migrations` row was renamed to `0007`–`0009` afterwards (in its own `execute_sql` call — don't batch it with a `begin … rollback` probe, the rollback undoes it) to keep remote history matching the local `NNNN_` filenames — do the same for future migrations applied that way. In auto mode, Claude Code's permission classifier blocks that rename (`update supabase_migrations.schema_migrations ...`) when the agent does it on its own initiative, but lets it through once the user explicitly asks for it. So: ask the user, then run it, with a read-only `select version, name from supabase_migrations.schema_migrations` before and after. 0011 was renamed this way on 2026-10-08.
+**Migrations workflow**: the Supabase MCP server (`.mcp.json`) works in fresh sessions and was used to apply 0007–0009 (`apply_migration`). It records a timestamp version, so the `supabase_migrations.schema_migrations` row was renamed to `0007`–`0009` afterwards (in its own `execute_sql` call — don't batch it with a `begin … rollback` probe, the rollback undoes it) to keep remote history matching the local `NNNN_` filenames — do the same for future migrations applied that way. In auto mode, Claude Code's permission classifier blocks that rename (`update supabase_migrations.schema_migrations ...`) when the agent does it on its own initiative, but lets it through once the user explicitly asks for it. So: ask the user, then run it, with a read-only `select version, name from supabase_migrations.schema_migrations` before and after. 0011 was renamed this way on 2026-10-08. Without the MCP server, `npx supabase db push --db-url "$DB_URL"` (from `app/`; `--dry-run` first) applies the pending files and records the `NNNN` version by itself, so nothing needs renaming; 0012 was applied that way on 2026-10-10 with the user's go-ahead.
 
 ## Other notable decisions / deviations from the plan
 
@@ -248,6 +253,60 @@ Still open:
 
 1. The update notice on the deployed site: needs a deploy while the app is open, so check it with the next push to `main`.
 
+## Milestone 9: Shared whiteboard (built 2026-10-10)
+
+One whiteboard per household at `ROUTES.whiteboard` ("Whiteboard" button on the dashboard): a pen in four colors and three widths, an eraser that removes whole strokes, "Undo" and "Clear board". Decided with the user: one board, a fixed 4:3 board without panning or zooming, and those three tools.
+
+**Deviations from the plan**
+
+- **Rows and `postgres_changes`, not Realtime `broadcast`** (user decision). Every finished stroke is one `board_strokes` row and syncs like a list item, on the existing household channel. The volume is one row per stroke, not per point, and RLS stays the only security boundary. A broadcast channel would need `private: true` plus RLS policies on `realtime.messages`. The price: other members see a stroke when the pen lifts, not while it is drawn. A live preview over broadcast can be added on top.
+- **SVG, not a `<canvas>`.** The surface is an `<svg>` with one `<polyline>` per stroke (a `<circle>` for a tap), rendered by Vue from store state. It scales by itself (`viewBox`), needs no redraw on resize or device-pixel-ratio handling, and the e2e test can read the strokes from the DOM.
+
+**Schema** (`0012_whiteboard.sql`, applied to the cloud project)
+
+- `boards`: one per household, enforced by `unique (household_id)` so two members opening the whiteboard for the first time at the same moment can't create two. Drop the constraint when several boards are wanted.
+- `board_strokes`: `color`, `width`, `points` (jsonb), `created_by`, `deleted_at`, `household_id`. A composite foreign key `(board_id, household_id)` keeps the denormalized `household_id` equal to the board's.
+- **Board units.** The board is 4000 × 3000 units on every screen; `points` is a flat integer array `[x0, y0, x1, y1, …]` and `width` is in the same units. Check constraints limit a stroke to 1000 points with coordinates 0–4000, the color to `#rrggbb` and the width to 1–200, because RLS can't limit how large a row a member inserts. The same numbers are in `utils/whiteboard-geometry.ts`.
+- Policies are the uniform `is_household_member(household_id)` ones. Grants are narrower than for the lists: `authenticated` gets `select, insert` on `boards` and `select, insert, update` on `board_strokes`. There is no `delete`: the app only soft-deletes, and a hard delete would be invisible to the other members.
+- `board_strokes` is in the `supabase_realtime` publication.
+
+**Code**, in the usual layers
+
+- `composables/whiteboard-actions.ts`: `fetchOrCreateBoard` (an insert that ignores the conflict, then a read), `fetchBoardStrokes`, `insertBoardStroke`, `softDeleteBoardStrokeRemote`, `softDeleteAllBoardStrokes`.
+- `stores/whiteboard.ts`, parallel to the list stores (`pendingIds`, `resync()`, the three module-level helpers), plus `drawnIds` for undo.
+- `utils/whiteboard-state.ts` holds only what differs from a list item; the store uses `upsertListItem`, `confirmListItem`, `softDeleteListItem` and `mergeListResync` from `utils/list-state.ts`. Those four are now typed over `SyncedRow` (`types/synced-row.ts`: `id`, `deleted_at`) instead of `ListItem`, with no change in behaviour.
+- `utils/whiteboard-geometry.ts`: point thinning, the eraser's hit test, clamping to the board.
+- `subscribeToHouseholdChanges` has INSERT + UPDATE listeners for `board_strokes` (`onBoardStrokeChange`); `useHouseholdRealtime` resyncs the whiteboard on every `SUBSCRIBED`; `useResetStoresOnUserChange` resets its store.
+
+**Behaviour worth knowing**
+
+- **Realtime leaves `points` out of an UPDATE for a large stroke.** Postgres stores a large value out of line (TOAST) and doesn't put it in the change record when the update didn't touch it. Measured on the cloud project: the UPDATE of a 2-point stroke carries `points`, the UPDATE of a 1000-point stroke has no `points` key at all. The only update the app makes is a soft delete, so `applyStrokeRealtimeEvent` lays the event's row over the local one instead of replacing it (`BoardStrokeChange` in `types/whiteboard.ts` has `points` optional). The same would hit any future table with a large column.
+- **Strokes are fetched in pages of 500, cut by id** (`.gt('id', lastId)`), not by offset: PostgREST returns at most 1000 rows per request, and a stroke erased between two requests would shift an offset. The fetch order doesn't matter; `visibleStrokes` sorts by `created_at`, parsed as a date because the client, PostgREST and Realtime each format it differently.
+- **Undo** removes the member's own newest stroke that is still on the board. It only knows the strokes drawn since the page was loaded (`drawnIds` is in memory), and there is no redo: a redo would be an undelete, which the sync rules rule out.
+- **Clear board** soft-deletes every stroke of the board in one UPDATE, selected by `board_id`, after a confirmation. It therefore also removes a stroke another member saved a moment earlier that this client hasn't seen. Every member gets one Realtime event per stroke.
+- **A stroke that reaches 1000 points** is saved and the line continues in a new stroke.
+- **Pointer input**: Pointer Events with pointer capture, `touch-action: none`, only the primary pointer. `pointercancel` discards the stroke in progress.
+- **Accessibility**: the toolbar is three radio groups and two buttons. The surface is `role="img"` with the name "Whiteboard, N strokes"; the drawing itself has no text alternative, and drawing needs a pointer.
+- Erased strokes stay as rows forever (soft delete); nothing purges them. The partial index `board_strokes_live_idx` keeps loading a board independent of their number.
+
+**Tests**
+
+- Unit: `whiteboard-actions.spec.ts`, `whiteboard-state.spec.ts`, `whiteboard-geometry.spec.ts`, and the stroke listener in `household-realtime.spec.ts`.
+- RLS (`household-isolation.spec.ts`): another household's board and strokes are invisible and can't be drawn on or erased; the composite key rejects a stroke on another household's board; no hard delete; one board per household; each check constraint.
+- E2E (`whiteboard.e2e.ts`): two members; a stroke with its color, width and points arrives on the other; a tap makes a dot; undo; reload; the eraser on another member's stroke of several hundred points (the missing-`points` rule itself is guarded by the unit test, since an erased stroke is hidden either way); clear with its confirmation. It asserts on the surface's accessible name and the strokes' attributes, not on pixels. Verified to fail with the stroke listener disconnected. `a11y.e2e.ts` scans the page and `auth.e2e.ts` checks its auth guard.
+- Not tested separately: a reconnect (same resync as the lists), and touch or pen input (the e2e test draws with the mouse).
+
+**Found on the way**
+
+- A long-running `nuxt dev` did not pick up the new page file (`/whiteboard` answered 404) until the file was moved away and back.
+- **The `pwa` project failed once in the working tree** (all 4 tests, blank page): the HTML in `dist` referenced `/_nuxt/*.js` files that the same build had not written. A fresh copy of the same tree built correctly and passed all 4. Not explained: Playwright always runs `nuxt dev` and the production build side by side, in CI too, so that alone is not the cause.
+- `dragOnWhiteboard` (`tests/support/e2e-ui.ts`) scrolls the board into view first: Playwright's mouse doesn't scroll, and a position under the fixed footer hits the footer.
+
+**Noticed, not changed** (the lists):
+
+- `fetchOrCreateTodoList` and `fetchOrCreateShoppingList` have the race the board's unique constraint prevents: two simultaneous first visits create two lists, after which `.maybeSingle()` fails for that household.
+- `fetchTodoItems` and `fetchShoppingItems` are not paged, so a list with more than 1000 live items would be cut off.
+
 ## Icon strategy (2026-10-10)
 
 Icons are SVG paths from **Material Design Icons v7** (`@quasar/extras`, now a direct dependency), imported where they are used (`import { mdiDeleteOutline } from '@quasar/extras/mdi-v7'`, `:icon="mdiDeleteOutline"`), so only the icons a screen uses are bundled. `quasar.iconSet` is `svg-mdi-v7`, which also makes the icons Quasar's own components draw (select arrows, clear buttons, …) SVG. Chosen by the user over staying with text labels, the Material Icons web font, Iconify and hand-picked SVG files; MDI over Material Icons for its larger catalogue.
@@ -263,4 +322,5 @@ Checked by the user in a browser (2026-10-10).
 ## Next steps
 
 1. Finish milestone 8: check the update notice on the deployed site with the next push to `main` (keep the app open during the deploy).
-2. Optional, later: the Podman production setup (`Containerfile.prod`, Quadlet units, Caddy).
+2. Try the whiteboard by hand on a phone and with a second member (see "Milestone 9").
+3. Optional, later: the Podman production setup (`Containerfile.prod`, Quadlet units, Caddy).
