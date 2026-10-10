@@ -6,42 +6,7 @@ import {
   setShoppingItemChecked,
   softDeleteShoppingItemRemote,
 } from './shopping-actions'
-
-function fakeQueryBuilder(result: { data: unknown; error: unknown }) {
-  const calls: Record<string, unknown[]> = {}
-  const builder: Record<string, unknown> = {
-    then: (resolve: (v: typeof result) => void) => resolve(result),
-  }
-  for (const method of [
-    'insert',
-    'select',
-    'eq',
-    'is',
-    'order',
-    'single',
-    'maybeSingle',
-    'update',
-  ]) {
-    builder[method] = (...args: unknown[]) => {
-      calls[method] = args
-      return builder
-    }
-  }
-  return { builder, calls }
-}
-
-function fakeClient({
-  userId = 'user-1',
-  from,
-}: {
-  userId?: string
-  from?: (table: string) => unknown
-}) {
-  return {
-    auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: userId } }, error: null }) },
-    from: vi.fn(from ?? (() => fakeQueryBuilder({ data: null, error: null }).builder)),
-  }
-}
+import { fakeClient, fakeQueryBuilder } from '../../tests/support/fake-supabase-client'
 
 describe('fetchOrCreateShoppingList', () => {
   it('returns the existing list without creating one', async () => {

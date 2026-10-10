@@ -41,7 +41,8 @@ app/app/
   layouts/          default.vue
 app/supabase/migrations/   0001_households.sql … 0011_realtime_publication.sql
 app/tests/support/          supabase-fixtures.ts (disposable users/households/invites via the Admin API, shared by RLS + e2e),
-                            e2e-ui.ts (sign-in and list steps through the real UI), realtime-socket.ts (cut/watch the Realtime socket, hold back frames)
+                            e2e-ui.ts (sign-in and list steps through the real UI), realtime-socket.ts (cut/watch the Realtime socket, hold back frames),
+                            fake-supabase-client.ts (fake query builder + client for the `*-actions.spec.ts` unit tests)
 app/tests/rls/              household-isolation.spec.ts (two-JWT RLS proof against Supabase Cloud)
 app/tests/e2e/              Playwright `dev` project (against `nuxt dev`): auth, household, lists, realtime-sync,
                             session-switch, a11y (*.e2e.ts); `pwa` project: pwa.e2e.ts (production build)
@@ -134,7 +135,7 @@ No migration needed: `shopping_lists`/`shopping_items` existed since 0003 and `s
 - `subscribeToHouseholdChanges` has INSERT + UPDATE listeners for `shopping_items` on the household channel (`onShoppingItemChange`).
 - E2E: second scenario (add with quantity, check → moves to the bottom, remove), verified to fail with the shopping listener disconnected. Reconnect isn't tested separately for shopping since it uses the same generic merge.
 
-Known duplication: the fake Supabase query builder/client for unit tests is copied in `household-actions.spec.ts`, `todo-actions.spec.ts` and `shopping-actions.spec.ts` — a candidate for a shared test helper.
+The fake Supabase query builder/client for the unit tests was first copied into `household-actions.spec.ts`, `todo-actions.spec.ts` and `shopping-actions.spec.ts`; since 2026-10-10 it is one shared helper, `tests/support/fake-supabase-client.ts`. New `*-actions.spec.ts` files import it from there.
 
 ## Milestone 7: PWA installability (built 2026-10-09)
 
@@ -212,4 +213,3 @@ Checked by the user in a browser (2026-10-10).
 ## Next steps
 
 1. Milestone 8, production only (see "No dev container"): `Containerfile.prod`, Quadlet units behind Caddy, one real HTTPS deploy, then install the app on Android.
-2. Later: the fake Supabase client duplicated across the `*-actions.spec.ts` files (see milestone 6) is a candidate for a shared test helper.

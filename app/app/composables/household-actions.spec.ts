@@ -1,41 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createHousehold, createInvite, fetchMyHousehold, redeemInvite } from './household-actions'
-
-/**
- * A minimal chainable stand-in for the Supabase query builder. Every
- * chain method (`insert`, `select`, `eq`, ...) is recorded and returns the
- * same object; awaiting the chain (or calling `.single()`/`.maybeSingle()`)
- * resolves to whatever `result` the test configured.
- */
-function fakeQueryBuilder(result: { data: unknown; error: unknown }) {
-  const calls: Record<string, unknown[]> = {}
-  const builder: Record<string, unknown> = {
-    then: (resolve: (v: typeof result) => void) => resolve(result),
-  }
-  for (const method of ['insert', 'select', 'eq', 'single', 'maybeSingle', 'update', 'delete']) {
-    builder[method] = (...args: unknown[]) => {
-      calls[method] = args
-      return builder
-    }
-  }
-  return { builder, calls }
-}
-
-function fakeClient({
-  userId = 'user-1',
-  from,
-  rpc,
-}: {
-  userId?: string
-  from?: (table: string) => unknown
-  rpc?: (...args: unknown[]) => unknown
-}) {
-  return {
-    auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: userId } }, error: null }) },
-    from: vi.fn(from ?? (() => fakeQueryBuilder({ data: null, error: null }).builder)),
-    rpc: vi.fn(rpc ?? (() => Promise.resolve({ data: null, error: null }))),
-  }
-}
+import { fakeClient, fakeQueryBuilder } from '../../tests/support/fake-supabase-client'
 
 describe('createHousehold', () => {
   it('calls the create_household RPC and returns the created household', async () => {
