@@ -3,3 +3,6 @@
 
 # Local Netlify folder
 .netlify
+
+# Release tooling installed locally (see .github/workflows/release.yml)
+.github/release/node_modules

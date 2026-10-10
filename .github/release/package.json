@@ -1,0 +1,14 @@
+{
+  "name": "klankern-release",
+  "description": "Release tooling for .github/workflows/release.yml. A package of its own, so that neither the Netlify build nor the CI checks install it.",
+  "private": true,
+  "engines": {
+    "node": ">=24.21.0 <25"
+  },
+  "devDependencies": {
+    "@semantic-release/changelog": "7.0.0",
+    "@semantic-release/git": "11.0.1",
+    "conventional-changelog-conventionalcommits": "9.3.1",
+    "semantic-release": "25.0.9"
+  }
+}

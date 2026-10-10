@@ -1,0 +1,76 @@
+name: Release
+
+# Every push to main is deployed by Netlify, so every push to main is a
+# release: semantic-release (.releaserc.yaml) works out the next version from
+# the commit messages since the last tag, writes CHANGELOG.md, bumps the
+# version in app/, commits both to main, tags that commit and creates the
+# GitHub release. A push without a feat, fix or perf commit releases nothing.
+#
+# It does not wait for the CI workflow, and Netlify doesn't either: the tag
+# marks what was deployed.
+on:
+  push:
+    branches: [main]
+
+# One release at a time: a second push waits until the first release's commit
+# is on main.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      # Pushes the release commit and its tag, creates the GitHub release and
+      # fast-forwards develop.
+      contents: write
+    steps:
+      # Actions are pinned to commit SHAs because this job can write to the
+      # repository.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # semantic-release reads every commit and tag since the last release.
+          fetch-depth: 0
+
+      # Without the npm cache: a cache can be written by other workflow runs,
+      # and what this job installs runs with write access.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: app/.nvmrc
+
+      # The release tooling is a package of its own, so the app's dependencies
+      # are never installed here. No install scripts, for the reason above.
+      - name: Install the release tooling
+        working-directory: .github/release
+        run: npm ci --ignore-scripts
+
+      # From the git root: .releaserc.yaml is found through the working
+      # directory, the plugins next to semantic-release itself.
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: .github/release/node_modules/.bin/semantic-release
+
+      # The release commit exists only on main, so develop would be one commit
+      # behind and the next push from develop to main no fast-forward. A plain
+      # push, never forced: git refuses it if develop has moved on since.
+      #
+      # Runs even when the step above failed, because the release commit and
+      # its tag are pushed before the GitHub release is created. A version tag
+      # on HEAD means this run made a release.
+      - name: Fast-forward develop to the release commit
+        if: ${{ !cancelled() }}
+        run: |
+          if ! git tag --points-at HEAD | grep -q '^v'; then
+            echo "No release was made; develop stays as it is."
+            exit 0
+          fi
+          if ! git push origin HEAD:develop; then
+            echo "::error::develop could not be fast-forwarded to the release commit. Either develop has commits that main lacks (rebase it onto main), or main had workflow changes that develop lacked, which this token may not push (run: git push origin main:develop)."
+            exit 1
+          fi

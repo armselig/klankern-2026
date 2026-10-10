@@ -1,0 +1,46 @@
+# semantic-release, run by .github/workflows/release.yml on every push to
+# main, from the git root, with the tool installed in .github/release.
+
+branches:
+  - main
+
+# The history follows Conventional Commits. The default preset (angular) does
+# not recognise `feat!:` as a breaking change.
+preset: conventionalcommits
+
+plugins:
+  - '@semantic-release/commit-analyzer'
+  - '@semantic-release/release-notes-generator'
+
+  # Order matters from here on: the changelog and the version have to be
+  # written before the git plugin commits them.
+  - - '@semantic-release/changelog'
+    - changelogTitle: '# Changelog'
+
+  # Only bumps the version in app/package.json and app/package-lock.json. The
+  # app is private and never published to npm.
+  - - '@semantic-release/npm'
+    - pkgRoot: app
+      npmPublish: false
+
+  - - '@semantic-release/git'
+    # Listed explicitly: the defaults are package.json and package-lock.json
+    # at the git root, which don't exist here.
+    - assets:
+        - CHANGELOG.md
+        - app/package.json
+        - app/package-lock.json
+      # Without the `[skip ci]` of the plugin's default message: Netlify has to
+      # build this commit, because the app shows the version from
+      # app/package.json. GitHub runs no workflow for it either way, since a
+      # push made with the workflow's own token triggers none.
+      message: "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}"
+
+  # Creates the GitHub release. Comments and labels on issues and pull
+  # requests are off, and so is the issue it would open for a failed release,
+  # so the workflow needs no permission beyond `contents: write`.
+  - - '@semantic-release/github'
+    - successComment: false
+      failComment: false
+      failTitle: false
+      releasedLabels: false
