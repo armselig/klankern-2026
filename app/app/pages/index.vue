@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { mdiCartOutline, mdiFormatListChecks } from '@quasar/extras/mdi-v7'
+import { mdiCartOutline, mdiDraw, mdiFormatListChecks } from '@quasar/extras/mdi-v7'
 
 const householdStore = useHouseholdStore()
 
@@ -32,6 +32,14 @@ onMounted(() => householdStore.fetchMine())
           color="primary"
           :icon="mdiCartOutline"
           label="Shopping"
+          unelevated
+          class="q-ml-sm"
+        />
+        <q-btn
+          :to="ROUTES.whiteboard"
+          color="primary"
+          :icon="mdiDraw"
+          label="Whiteboard"
           unelevated
           class="q-ml-sm"
         />

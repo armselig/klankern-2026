@@ -1,7 +1,17 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 import { ROUTES } from '../../app/utils/routes'
-import { addShoppingItem, addTodo, listItem, openList, signIn, untilSaved } from '../support/e2e-ui'
+import {
+  addShoppingItem,
+  addTodo,
+  dragOnWhiteboard,
+  expectStrokeCount,
+  listItem,
+  openList,
+  openWhiteboard,
+  signIn,
+  untilSaved,
+} from '../support/e2e-ui'
 import {
   createHousehold,
   createTestUser,
@@ -85,5 +95,17 @@ test.describe('accessibility', () => {
     await addShoppingItem(page, 'Bread')
     await untilSaved(page, () => listItem(page, 'Bread').click())
     await expectNoBlockingViolations(page, 'the shopping list')
+
+    await page.getByRole('link', { name: 'Klankern' }).click()
+    await openWhiteboard(page)
+    await expect(page).toHaveTitle('Whiteboard · Klankern')
+    await expectNoBlockingViolations(page, 'the empty whiteboard')
+    await dragOnWhiteboard(page, [
+      [0.2, 0.2],
+      [0.6, 0.6],
+    ])
+    await expectStrokeCount(page, 1)
+    await page.getByRole('radio', { name: 'Eraser' }).click()
+    await expectNoBlockingViolations(page, 'the whiteboard with the eraser selected')
   })
 })

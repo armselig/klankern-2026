@@ -38,12 +38,38 @@ async function addTodoItem(client: SupabaseClient, householdId: string, title: s
   if (itemError) throw itemError
 }
 
+/** A whiteboard for the household, created the way the app does. */
+async function addBoard(client: SupabaseClient, householdId: string): Promise<string> {
+  const { data: board, error } = await client
+    .from('boards')
+    .insert({ household_id: householdId })
+    .select('id')
+    .single()
+  if (error || !board) throw error ?? new Error('board insert failed')
+  return board.id as string
+}
+
+/** A stroke row as the app inserts it; tests override the field under test. */
+function strokeRow(user: TestUser, boardId: string, householdId: string) {
+  return {
+    board_id: boardId,
+    household_id: householdId,
+    color: '#212121',
+    width: 32,
+    points: [0, 0, 100, 100],
+    created_by: user.userId,
+  }
+}
+
 describe('household RLS isolation', () => {
   let userA: TestUser
   let userB: TestUser
   let userC: TestUser
   let householdAId: string
   let householdBId: string
+  let boardAId: string
+  let boardBId: string
+  let strokeAId: string
 
   beforeAll(async () => {
     ;[userA, userB, userC] = await Promise.all([
@@ -57,6 +83,16 @@ describe('household RLS isolation', () => {
 
     await addTodoItem(userA.client, householdAId, 'Buy milk (household A)')
     await addTodoItem(userB.client, householdBId, 'Walk the dog (household B)')
+
+    boardAId = await addBoard(userA.client, householdAId)
+    boardBId = await addBoard(userB.client, householdBId)
+    const { data: stroke, error } = await userA.client
+      .from('board_strokes')
+      .insert(strokeRow(userA, boardAId, householdAId))
+      .select('id')
+      .single()
+    if (error || !stroke) throw error ?? new Error('stroke insert failed')
+    strokeAId = stroke.id as string
   })
 
   afterAll(async () => {
@@ -173,5 +209,95 @@ describe('household RLS isolation', () => {
     const { data, error } = await userB.client.rpc('redeem_invite', { p_code: code })
     expect(data).toBeNull()
     expect(error).not.toBeNull()
+  })
+
+  it("returns zero of household A's whiteboard to a member of household B", async () => {
+    const boards = await userB.client.from('boards').select('id').eq('id', boardAId)
+    expect(boards.error).toBeNull()
+    expect(boards.data).toHaveLength(0)
+
+    const strokes = await userB.client.from('board_strokes').select('id').eq('board_id', boardAId)
+    expect(strokes.error).toBeNull()
+    expect(strokes.data).toHaveLength(0)
+  })
+
+  it("lets a member read their own household's strokes", async () => {
+    const { data, error } = await userA.client
+      .from('board_strokes')
+      .select('id, points')
+      .eq('board_id', boardAId)
+    expect(error).toBeNull()
+    expect(data).toEqual([{ id: strokeAId, points: [0, 0, 100, 100] }])
+  })
+
+  it("blocks drawing on another household's board", async () => {
+    const { error } = await userB.client
+      .from('board_strokes')
+      .insert(strokeRow(userB, boardAId, householdAId))
+    expect(error).not.toBeNull()
+  })
+
+  it("blocks a stroke that names the member's own household but another household's board", async () => {
+    // The policy alone would pass this row (household B is the caller's);
+    // the composite foreign key ties the stroke to its board's household.
+    const { error } = await userB.client
+      .from('board_strokes')
+      .insert(strokeRow(userB, boardAId, householdBId))
+    expect(error).not.toBeNull()
+  })
+
+  it("leaves another household's stroke untouched by an erase (RLS filters, not an error)", async () => {
+    const { error } = await userB.client
+      .from('board_strokes')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', strokeAId)
+    expect(error).toBeNull()
+
+    const { data: stroke } = await admin
+      .from('board_strokes')
+      .select('deleted_at')
+      .eq('id', strokeAId)
+      .single()
+    expect(stroke!.deleted_at).toBeNull()
+  })
+
+  it('does not let a member hard-delete a stroke, only soft-delete it', async () => {
+    const { error } = await userA.client.from('board_strokes').delete().eq('id', strokeAId)
+    expect(error).not.toBeNull()
+
+    const { data: stroke } = await admin
+      .from('board_strokes')
+      .select('id')
+      .eq('id', strokeAId)
+      .single()
+    expect(stroke).toEqual({ id: strokeAId })
+  })
+
+  it('allows only one board per household', async () => {
+    const { error } = await userB.client.from('boards').insert({ household_id: householdBId })
+    expect(error).not.toBeNull()
+  })
+
+  it.each([
+    ['not an array', { points: { x: 1, y: 2 } }],
+    ['no points', { points: [] }],
+    ['an odd number of coordinates', { points: [0, 0, 100] }],
+    ['a coordinate that is not a number', { points: [0, '100'] }],
+    ['a coordinate outside the board', { points: [0, 4001] }],
+    ['more points than a stroke may have', { points: new Array(2002).fill(0) }],
+    ['a color that is not #rrggbb', { color: 'red' }],
+    ['a pen width outside the allowed range', { width: 0 }],
+  ])('rejects a stroke with %s', async (_name, override) => {
+    const { error } = await userB.client
+      .from('board_strokes')
+      .insert({ ...strokeRow(userB, boardBId, householdBId), ...override })
+    expect(error).not.toBeNull()
+  })
+
+  it('accepts a stroke of the largest allowed size', async () => {
+    const { error } = await userB.client
+      .from('board_strokes')
+      .insert({ ...strokeRow(userB, boardBId, householdBId), points: new Array(2000).fill(4000) })
+    expect(error).toBeNull()
   })
 })

@@ -9,10 +9,13 @@ interface FakeQueryResult {
 /** The chain methods the `*-actions.ts` functions call on a query. */
 const CHAIN_METHODS = [
   'insert',
+  'upsert',
   'select',
   'eq',
+  'gt',
   'is',
   'order',
+  'limit',
   'single',
   'maybeSingle',
   'update',

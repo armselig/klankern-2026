@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '~/types/database.types'
 import type { ShoppingItem } from '~/types/shopping'
 import type { TodoItem } from '~/types/todo'
+import type { BoardStroke } from '~/types/whiteboard'
 import { subscribeToHouseholdChanges } from './household-realtime'
 
 type ChangeCallback = (payload: {
@@ -73,8 +74,25 @@ const shoppingRow: ShoppingItem = {
   deleted_at: null,
 }
 
+const strokeRow: BoardStroke = {
+  id: 'stroke-1',
+  board_id: 'board-1',
+  household_id: 'house-1',
+  color: '#212121',
+  width: 32,
+  points: [0, 0, 100, 100],
+  created_by: 'user-1',
+  created_at: '2026-01-01T00:00:00Z',
+  deleted_at: null,
+}
+
 function listeners() {
-  return { onTodoItemChange: vi.fn(), onShoppingItemChange: vi.fn(), onSubscribed: vi.fn() }
+  return {
+    onTodoItemChange: vi.fn(),
+    onShoppingItemChange: vi.fn(),
+    onBoardStrokeChange: vi.fn(),
+    onSubscribed: vi.fn(),
+  }
 }
 
 describe('subscribeToHouseholdChanges', () => {
@@ -84,11 +102,11 @@ describe('subscribeToHouseholdChanges', () => {
     expect(fake.channelFactory).toHaveBeenCalledWith('household:house-1')
   })
 
-  it('listens to INSERT and UPDATE on both item tables, filtered to the household -- never DELETE', () => {
+  it('listens to INSERT and UPDATE on every synced table, filtered to the household -- never DELETE', () => {
     const fake = fakeRealtimeClient()
     subscribeToHouseholdChanges(fake.client, 'house-1', listeners())
 
-    const expected = ['todo_items', 'shopping_items'].flatMap((table) =>
+    const expected = ['todo_items', 'shopping_items', 'board_strokes'].flatMap((table) =>
       ['INSERT', 'UPDATE'].map((event) => [
         'postgres_changes',
         { event, schema: 'public', table, filter: 'household_id=eq.house-1' },
@@ -166,6 +184,38 @@ describe('subscribeToHouseholdChanges', () => {
       commitTimestamp: committedLater,
     })
     expect(l.onTodoItemChange).not.toHaveBeenCalled()
+  })
+
+  it('passes whiteboard strokes on to the stroke listener, with or without their points', () => {
+    const fake = fakeRealtimeClient()
+    const l = listeners()
+    subscribeToHouseholdChanges(fake.client, 'house-1', l)
+    // An UPDATE of a large stroke arrives without the unchanged points.
+    const { points: _omitted, ...erased } = { ...strokeRow, deleted_at: '2026-01-01T00:00:01Z' }
+
+    callbackFor(
+      fake,
+      'board_strokes',
+      'INSERT',
+    )({ eventType: 'INSERT', new: strokeRow, commit_timestamp: committedAt })
+    callbackFor(
+      fake,
+      'board_strokes',
+      'UPDATE',
+    )({ eventType: 'UPDATE', new: erased, commit_timestamp: committedLater })
+
+    expect(l.onBoardStrokeChange).toHaveBeenNthCalledWith(1, {
+      eventType: 'INSERT',
+      new: strokeRow,
+      commitTimestamp: committedAt,
+    })
+    expect(l.onBoardStrokeChange).toHaveBeenNthCalledWith(2, {
+      eventType: 'UPDATE',
+      new: erased,
+      commitTimestamp: committedLater,
+    })
+    expect(l.onTodoItemChange).not.toHaveBeenCalled()
+    expect(l.onShoppingItemChange).not.toHaveBeenCalled()
   })
 
   it('asks for a resync on every SUBSCRIBED, including reconnects, and on nothing else', () => {

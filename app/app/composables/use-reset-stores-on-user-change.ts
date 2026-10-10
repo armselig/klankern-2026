@@ -9,6 +9,6 @@ export function useResetStoresOnUserChange() {
   const user = useSupabaseUser()
   resetStoresOnUserChange(
     () => user.value?.sub,
-    [useHouseholdStore(), useTodoStore(), useShoppingStore()],
+    [useHouseholdStore(), useTodoStore(), useShoppingStore(), useWhiteboardStore()],
   )
 }

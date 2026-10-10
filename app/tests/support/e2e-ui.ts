@@ -128,5 +128,62 @@ export async function delayItemInserts(page: Page, ms: number) {
   })
 }
 
+/**
+ * The whiteboard's drawing surface. Its accessible name carries the number
+ * of strokes ("Whiteboard, 2 strokes"), which is what the specs assert on:
+ * it is what a screen reader user gets, and it doesn't count the stroke
+ * still under the pen.
+ */
+export function whiteboard(page: Page) {
+  return page.getByRole('img', { name: /^Whiteboard, / })
+}
+
+/** The strokes on the board, oldest first. */
+export function whiteboardStrokes(page: Page) {
+  return whiteboard(page).locator('polyline, circle')
+}
+
+export async function expectStrokeCount(page: Page, count: number) {
+  await expect(whiteboard(page)).toHaveAccessibleName(
+    `Whiteboard, ${count} ${count === 1 ? 'stroke' : 'strokes'}`,
+  )
+}
+
+/** Opens the whiteboard from the dashboard and waits until it has loaded. */
+export async function openWhiteboard(page: Page) {
+  await page.getByRole('link', { name: 'Whiteboard' }).click()
+  await expect(page).toHaveURL(new RegExp(`${ROUTES.whiteboard}$`))
+  await expect(whiteboard(page)).toBeVisible()
+}
+
+/** A position on the board as fractions of its width and height (0 to 1). */
+export type BoardFraction = [x: number, y: number]
+
+/**
+ * Drags the mouse over the board along `path`, with the tool selected in the
+ * toolbar: the pen draws one stroke, the eraser removes what it crosses. The
+ * positions are relative to the board's own rectangle, because the surface
+ * around it can be wider than the board. `stepsPerSegment` is the number of
+ * mouse positions reported per segment, i.e. roughly the points of a stroke.
+ */
+export async function dragOnWhiteboard(page: Page, path: BoardFraction[], stepsPerSegment = 5) {
+  const board = whiteboard(page).locator('rect')
+  // The mouse only reaches what is in the viewport, and it doesn't scroll.
+  await board.scrollIntoViewIfNeeded()
+  const box = await board.boundingBox()
+  if (!box) throw new Error('the whiteboard is not on screen')
+  const [start, ...rest] = path.map(([x, y]) => ({
+    x: box.x + x * box.width,
+    y: box.y + y * box.height,
+  }))
+  if (!start) throw new Error('a drag needs a starting position')
+  await page.mouse.move(start.x, start.y)
+  await page.mouse.down()
+  for (const position of rest) {
+    await page.mouse.move(position.x, position.y, { steps: stepsPerSegment })
+  }
+  await page.mouse.up()
+}
+
 /** The text both lists show when they have no items. */
 export const EMPTY_LIST_TEXT = 'Nothing on the list yet.'

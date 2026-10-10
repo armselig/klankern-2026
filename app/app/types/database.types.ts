@@ -3,6 +3,81 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      board_strokes: {
+        Row: {
+          board_id: string
+          color: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          household_id: string
+          id: string
+          points: NonNullable<Json>
+          width: number
+        }
+        ComputedFields: never
+        Insert: {
+          board_id: string
+          color: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          household_id: string
+          id?: string
+          points: NonNullable<Json>
+          width: number
+        }
+        Update: {
+          board_id?: string
+          color?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          household_id?: string
+          id?: string
+          points?: NonNullable<Json>
+          width?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'board_strokes_board_fkey'
+            columns: ['board_id', 'household_id']
+            isOneToOne: false
+            referencedRelation: 'boards'
+            referencedColumns: ['id', 'household_id']
+          },
+        ]
+      }
+      boards: {
+        Row: {
+          created_at: string
+          household_id: string
+          id: string
+          name: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          household_id: string
+          id?: string
+          name?: string
+        }
+        Update: {
+          created_at?: string
+          household_id?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'boards_household_id_fkey'
+            columns: ['household_id']
+            isOneToOne: true
+            referencedRelation: 'households'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       household_invites: {
         Row: {
           code: string

@@ -13,7 +13,7 @@ import {
 // login form, including its error path.
 
 const LOGIN_URL = new RegExp(`${ROUTES.login}(\\?.*)?$`)
-const PROTECTED_ROUTES = [ROUTES.home, ROUTES.todos, ROUTES.shopping]
+const PROTECTED_ROUTES = [ROUTES.home, ROUTES.todos, ROUTES.shopping, ROUTES.whiteboard]
 
 test.describe('auth', () => {
   let user: TestUser
