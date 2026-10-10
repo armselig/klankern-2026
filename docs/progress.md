@@ -2,7 +2,7 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of the decision to drop the dev container (2026-10-10) (`develop`). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of the Netlify setup for milestone 8 (2026-10-10) (`develop`). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
@@ -15,7 +15,7 @@ Tracks what's been built against the milestones in [`plan.md`](./plan.md), sessi
 | 5. Realtime sync for to-dos | ✅ Done — proven by the Playwright e2e test (two browsers, incl. reconnect) |
 | 6. Shared shopping list | ✅ Done — CRUD + live sync, covered by unit tests and the Playwright e2e test |
 | 7. PWA installability pass | ✅ Done — installability, offline page, update notice and install button covered by the Playwright `pwa` project; the install button also checked by hand in Chrome. Installing on Android moves to milestone 8 (needs HTTPS) |
-| 8. Containerize (Podman) + deploy | ⬜ Not started |
+| 8. Deploy (Netlify; containers deferred) | 🟡 Repo side done — `netlify.toml`, static build, `pwa` e2e against it. Creating the Netlify site, the first deploy and the checks on the deployed URL are still open |
 | 9. Shared whiteboard (deferred phase) | ⬜ Not started |
 | 10. Shared recipes (deferred phase) | ⬜ Not started |
 
@@ -39,6 +39,7 @@ app/app/
   components/       household/{CreateHouseholdForm,InviteDialog}.vue, todo/{TodoList,TodoItem}.vue,
                     shopping/{ShoppingList,ShoppingItem}.vue
   layouts/          default.vue
+app/public/                 offline.html, icons, _redirects (Netlify fallback for client-side routes)
 app/supabase/migrations/   0001_households.sql … 0011_realtime_publication.sql
 app/tests/support/          supabase-fixtures.ts (disposable users/households/invites via the Admin API, shared by RLS + e2e),
                             e2e-ui.ts (sign-in and list steps through the real UI), realtime-socket.ts (cut/watch the Realtime socket, hold back frames),
@@ -46,6 +47,7 @@ app/tests/support/          supabase-fixtures.ts (disposable users/households/in
 app/tests/rls/              household-isolation.spec.ts (two-JWT RLS proof against Supabase Cloud)
 app/tests/e2e/              Playwright `dev` project (against `nuxt dev`): auth, household, lists, realtime-sync,
                             session-switch, a11y (*.e2e.ts); `pwa` project: pwa.e2e.ts (production build)
+netlify.toml                at the git root: build settings for Netlify
 ```
 
 **Design pattern used throughout**: business logic lives in plain `composables/*-actions.ts` functions that take a `SupabaseClient` as a parameter, unit-tested with a mocked client (no Nuxt runtime needed). Pinia stores are thin — they call `useSupabaseClient()`/`useSupabaseUser()` and delegate to those functions. State-transition logic that needs testing on its own (optimistic add/dedup, soft-delete, sort order) is further extracted into pure reducer functions in `utils/`. List logic that doesn't depend on the item type (dedup, soft delete, Realtime events, reconnect merge) is **generic** over `ListItem` (`types/list.ts`) in `utils/list-state.ts` and shared by every list; only the actions, store, components and list-specific ordering are per list. This is the pattern to continue for whiteboard/recipes (later phases).
@@ -73,7 +75,7 @@ Fixed by `0007_create_household_rpc.sql` (`create_household` / `create_invite` S
 ## Other notable decisions / deviations from the plan
 
 - **No local Supabase stack.** Development and tests run directly against Supabase Cloud (the plan's fallback), and `supabase start` is not part of the workflow.
-- **No dev container** (decided 2026-10-10, deviating from the plan's `Containerfile.dev` + `podman-compose.yml`). Development stays on the host: Node is pinned (`.nvmrc`, `engine-strict`), and the e2e tests drive the host's Chrome against the host's dev server. A dev container would add a `node_modules` volume, user-namespace mapping and a polling file watcher for little gain; add one if a second machine or contributor needs it. **Milestone 8 is production only**: `Containerfile.prod` (Node 24, not the plan's `node:22-slim`), Quadlet units, Caddy. A throwaway smoke test of a two-container Podman setup (Caddy proxying to a Node server, via compose and via plain `podman run`) passed beforehand.
+- **No dev container** (decided 2026-10-10, deviating from the plan's `Containerfile.dev` + `podman-compose.yml`). Development stays on the host: Node is pinned (`.nvmrc`, `engine-strict`), and the e2e tests drive the host's Chrome against the host's dev server. A dev container would add a `node_modules` volume, user-namespace mapping and a polling file watcher for little gain; add one if a second machine or contributor needs it. Production is hosted on Netlify instead of in a container (see "Milestone 8"). The Podman production setup is **deferred, not dropped**: if it is built later, it is `Containerfile.prod` (Node 24, not the plan's `node:22-slim`), Quadlet units and Caddy. A throwaway smoke test of a two-container Podman setup (Caddy proxying to a Node server, via compose and via plain `podman run`) passed beforehand.
 - **Component path prefixing disabled** (`components: [{ path: '~/components', pathPrefix: false }]` in `nuxt.config.ts`) so `components/household/CreateHouseholdForm.vue` registers as `<CreateHouseholdForm>` rather than Nuxt's default `<HouseholdCreateHouseholdForm>`. Keep using subfolders per feature (`components/todo/`, `components/shopping/`, …) — this config makes that free.
 - **Icons are SVG, not an icon font** (`quasar.iconSet: 'svg-mdi-v7'` in `nuxt.config.ts`). See "Icon strategy".
 - **Route paths live in `ROUTES`** (`app/app/utils/routes.ts`, auto-imported; `nuxt.config.ts` imports it explicitly for the auth redirect config). Never write a literal path like `'/login'` in pages, components or config. Routing itself stays file-based, so renaming a route means changing `ROUTES` **and** renaming the file in `pages/`.
@@ -198,6 +200,31 @@ Each new test was checked to fail with its feature broken (auth guard exclude, r
 
 The first run passed everything except one e2e test: "a new version shows the update notice" (`pwa.e2e.ts`) failed with "execution context was destroyed". A race in the test, not in the app: after clicking "Reload", the poll for the `beforeUpdate` marker landed in the middle of the reload it was waiting for. The poll now treats that error as "not reloaded yet" and tries again.
 
+## Milestone 8: Netlify deploy (repo side built 2026-10-10)
+
+Production hosting is **Netlify, as static files** (user decision, deviating from the plan's Podman + Caddy setup, which is deferred). The app is a client-only SPA with no `server/` directory, so `nuxt generate` output is all it needs: no Netlify Function, no container.
+
+- **`netlify.toml`** (git root): `base = "app"`, `npm run generate`, publish `dist`, `HUSKY=0` (the `prepare` script would otherwise try to install git hooks) and an exact `NODE_VERSION` (`.nvmrc` holds an alias, and `engine-strict` rejects a 24.x below the range in `package.json`; raise both together).
+- **Preset**: on Netlify (`NETLIFY=true`) Nitro picks `netlify-static` by itself and writes to `dist`, adding `_headers` (long-lived caching for `/_nuxt/*`). Elsewhere `nuxt generate` uses the `static` preset, writes to `.output/public` and makes `dist` a link to it. Apart from `_headers`, `_redirects` handling and the build id the two outputs are identical (compared with `diff -r`), so the preset is not pinned.
+- **Fallback for client-side routes** (`/join/<code>` is not prerendered): `app/public/_redirects` with `/* /200.html 200`. It has to be that file, not a rule in `netlify.toml`: without a catch-all in `_redirects`, Nitro's Netlify preset writes `/* /404.html 404` there (the same app shell, but with status 404), and `_redirects` takes precedence over `netlify.toml`. The rule is not forced, so real files (`sw.js`, `offline.html`) are served as they are.
+- **The `pwa` e2e project now tests the deployed build, except Netlify's response headers.** Its web server is `netlify serve --offline` (`netlify-cli`, a devDependency; chosen by the user over a small static test server and `sirv-cli`): it runs the build from `netlify.toml` with the Netlify preset and serves `dist` with the real `_redirects`. `--offline` means no login and no linked site; it also works from a clean checkout with `CI=true` (checked locally with `dist` and `.netlify` removed). `nuxt preview` was tried first and can't do it: it starts the Node server command from the config.
+  - `netlify serve` loads `app/.env` into the build's environment, including the secret key and DB password. Only the public runtime config is baked into the bundle; checked that neither value is in `dist`.
+  - It creates `app/.netlify/` (gitignored) and leaves `dist` as a real directory; a later plain `nuxt generate` does not turn it back into a link, so `dist` can be stale locally. `netlify serve` always rebuilds.
+  - It does **not** apply the generated `_headers`: every file comes back with `cache-control: public, max-age=0`, including `/_nuxt/*`. Caching headers can only be checked on the deployed site.
+  - `netlify-cli` adds 751 packages to the lockfile (no existing package changed version), some with install scripts (`unix-dgram` compiles with node-gyp, `sharp`). They are installed by `npm ci` in CI, where the job holds the secret key, and by every Netlify build, which needs devDependencies anyway (`@vite-pwa/nuxt` is one).
+  - `netlify-cli` raised `npm audit` from 15 to 26 findings (11 more "high", all in its own dependency tree, development only).
+- **Test race fixed**: "Chrome reports the app as installable" failed against the static server with `no-manifest`. The manifest link is added when the app mounts, about 300 ms after the service worker controls the page; the test asked Chrome immediately. It now polls. Not an app bug.
+- **Deploys**: Netlify's Git integration builds every push to `main`. It builds independently of CI, so a `main` with failing tests still deploys (accepted). Deploy previews and branch deploys stay **off**: every one of them would use the one production Supabase project.
+- **Environment on Netlify**: only `SUPABASE_URL` and `SUPABASE_KEY`. Never the secret key or the DB password.
+
+Still open:
+
+1. CI has not run the new `pwa` web server yet. Push `develop` and wait for a green run **before** merging to `main`, since Netlify deploys `main` whatever CI says.
+2. Create the Netlify site (user), set the two environment values, turn previews and branch deploys off, deploy `main`. Check the first deploy log for install failures and how long the install takes.
+3. On the deployed URL: OTP login; a `/join/<code>` link opened directly; "Install app"; the offline page; the update notice after a second deploy; installing on Android (carried over from milestone 7).
+4. Response headers on the deployed URL: `sw.js` and `manifest.webmanifest` must not be cached long (`max-age=0`); a hashed `/_nuxt/*.js` should be `immutable`; `/_nuxt/builds/latest.json` should get the short `max-age=1` rule, not the year-long `/_nuxt/*` one (the generated `_headers` has overlapping rules, and how Netlify combines them could not be checked locally).
+5. Set the Supabase Auth "Site URL" to the deployed URL.
+
 ## Icon strategy (2026-10-10)
 
 Icons are SVG paths from **Material Design Icons v7** (`@quasar/extras`, now a direct dependency), imported where they are used (`import { mdiDeleteOutline } from '@quasar/extras/mdi-v7'`, `:icon="mdiDeleteOutline"`), so only the icons a screen uses are bundled. `quasar.iconSet` is `svg-mdi-v7`, which also makes the icons Quasar's own components draw (select arrows, clear buttons, …) SVG. Chosen by the user over staying with text labels, the Material Icons web font, Iconify and hand-picked SVG files; MDI over Material Icons for its larger catalogue.
@@ -212,4 +239,5 @@ Checked by the user in a browser (2026-10-10).
 
 ## Next steps
 
-1. Milestone 8, production only (see "No dev container"): `Containerfile.prod`, Quadlet units behind Caddy, one real HTTPS deploy, then install the app on Android.
+1. Finish milestone 8: create the Netlify site, deploy `main`, run the checks listed under "Milestone 8" on the deployed URL, install the app on Android.
+2. Optional, later: the Podman production setup (`Containerfile.prod`, Quadlet units, Caddy).

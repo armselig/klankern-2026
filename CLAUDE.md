@@ -19,7 +19,8 @@ Husky is wired for this nesting: hooks live in `app/.husky`, and the `prepare` s
 
 ```bash
 npm run dev            # nuxt dev on :3000
-npm run build          # production build (the only build that generates the service worker)
+npm run build          # production build for a Node server (not what is deployed)
+npm run generate       # static production build; this is what Netlify deploys
 npm run lint           # eslint; lint:fix to autofix
 npm run format:check   # prettier; format to write
 npm run typecheck      # nuxt typecheck (vue-tsc)
@@ -45,7 +46,7 @@ Node `>=24.21.0 <25` is enforced (`engine-strict`), and dependencies are pinned 
 - **`npm test` is not offline.** It includes `tests/rls/household-isolation.spec.ts`, which runs against the real Supabase Cloud project and needs `app/.env` with `SUPABASE_URL`, `SUPABASE_KEY` and `SUPABASE_SECRET_KEY` (see `.env.example`).
 - **Git hooks**: pre-commit runs lint-staged (eslint --fix + prettier on staged files); pre-push runs `npm run typecheck` and `npm test`, so a push needs network and the secrets too. E2E is not in any hook.
 - **CI** (`.github/workflows/ci.yml`) runs lint, format check, typecheck, `npm test` and `npm run test:e2e` on every push to `main` and `develop`, with the three Supabase values as repository secrets. Runs are queued one at a time for the whole repo, because they share the cloud project and its sign-in limit.
-- **E2E** drives the installed Google Chrome (`channel: 'chrome'`, no Playwright browser download) against Supabase Cloud with disposable users. Two projects: `dev` (every spec except `pwa.e2e.ts`, against `nuxt dev` on :3000, reusing a running one) and `pwa` (`pwa.e2e.ts`, against a fresh production build on :3100).
+- **E2E** drives the installed Google Chrome (`channel: 'chrome'`, no Playwright browser download) against Supabase Cloud with disposable users. Two projects: `dev` (every spec except `pwa.e2e.ts`, against `nuxt dev` on :3000, reusing a running one) and `pwa` (`pwa.e2e.ts`, against a fresh static build served by `netlify serve --offline` on :3100, which applies `_redirects` but not the generated `_headers`).
 - E2E sign-ins are rate limited by Supabase: more than about 30 within 5 minutes makes sign-ins time out. Keep `--repeat-each` runs below that.
 - Test file naming matters: Vitest picks up `*.spec.ts`, Playwright `*.e2e.ts`.
 - A Vitest file that uses the secret key must start with `// @vitest-environment node`; supabase-js refuses a secret key when it detects happy-dom's `window`.
@@ -86,6 +87,15 @@ Three pieces of bookkeeping live at module level in each store, outside Pinia st
 
 `layouts/default.vue` mounts this once. Order matters there: `useResetStoresOnUserChange()` runs before `useHouseholdRealtime()`, so a new user never sees the previous user's household.
 
+### Deployment
+
+Production is Netlify, serving the static output of `nuxt generate`; there is no server and no Netlify Function. `netlify.toml` is at the git root (`base = "app"`, publish `dist`). Netlify builds every push to `main` on its own, independently of CI.
+
+- The fallback for client-side routes (`/join/<code>`) is `public/_redirects`, not `netlify.toml`: Nitro's Netlify preset writes its own catch-all into `_redirects` unless one is there, and that file wins.
+- Netlify's environment holds only `SUPABASE_URL` and `SUPABASE_KEY`, baked into the bundle at build time.
+- `NODE_VERSION` in `netlify.toml` is exact; raise it together with `engines` in `package.json`.
+- Deploy previews and branch deploys stay off: they would all use the one production Supabase project.
+
 ### Database and security
 
 RLS is the security boundary; the publishable key ships in the client bundle. Every household-scoped table uses `using (is_household_member(household_id)) with check (is_household_member(household_id))`, where `is_household_member` is a SECURITY DEFINER helper that avoids RLS self-recursion. `household_invites` has no SELECT policy on purpose (codes must not be enumerable); household creation, invite creation and redemption go through the SECURITY DEFINER RPCs `create_household`, `create_invite` and `redeem_invite`.
@@ -113,7 +123,7 @@ npx prettier --write app/types/database.types.ts
 - **Route paths come from `ROUTES`** (`utils/routes.ts`, auto-imported); never write a literal like `'/login'`. Routing stays file-based, so renaming a route means changing `ROUTES` and renaming the file in `pages/`.
 - **Icons are SVG paths from Material Design Icons v7**, imported where used: `import { mdiDeleteOutline } from '@quasar/extras/mdi-v7'` and `:icon="mdiDeleteOutline"`. Never a string name like `icon="delete"`: no icon font is bundled (`quasar.iconSet` is `svg-mdi-v7`), so it renders as literal text. An icon-only button needs an `aria-label`.
 - **Component names have no path prefix** (`pathPrefix: false`): `components/household/InviteDialog.vue` is `<InviteDialog>`. Keep one subfolder per feature.
-- **The service worker only exists in a production build.** PWA behaviour can't be checked in `nuxt dev`; use the `pwa` Playwright project. The Workbox options in `nuxt.config.ts` each work around a specific `@vite-pwa/nuxt` default, as their comments explain. In templates use the global `$pwa`.
+- **The service worker only exists in a production build** (`nuxt generate` or `nuxt build`). PWA behaviour can't be checked in `nuxt dev`; use the `pwa` Playwright project. The Workbox options in `nuxt.config.ts` each work around a specific `@vite-pwa/nuxt` default, as their comments explain. In templates use the global `$pwa`.
 - Supabase errors are plain objects, not `Error` instances; turn them into text with `errorMessage` (`utils/error-message.ts`).
 - Login is email OTP with a code typed into the app, not a magic link (a link would open the system browser instead of the installed PWA). UI text does not name a code length.
 - E2E helpers in `tests/support/` drive the real forms by label and button text, so renaming UI text breaks them. `supabase-fixtures.ts` creates and deletes the disposable users and households for both the RLS and e2e suites.
