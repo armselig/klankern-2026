@@ -123,7 +123,7 @@ The layout header shows the signed-in user's email next to "Sign out". Signed ou
 **E2E test** (`npm run test:e2e`, Playwright 1.64, uses the installed Google Chrome via `channel: 'chrome'`, reuses a running `nuxt dev` on :3000 or starts one): two disposable users in one household, two browser contexts. Covers add/toggle/delete arriving live, echo dedup, changes made while disconnected arriving after the reconnect, and the channel leave on sign-out. Verified to fail with the subscription removed and with the resync removed. Things learned building it:
 - Login goes through the real form: the `auth/v1/otp` request is fulfilled in the browser (no email sent) and the code comes from `admin.auth.admin.generateLink({ type: 'magiclink' }).properties.email_otp`, which `verifyOtp({ type: 'email' })` accepts.
 - Chrome's offline emulation (`context.setOffline`) does **not** close an open websocket. The drop is simulated with `context.routeWebSocket` (close the socket, refuse reconnects until "online").
-- The session cookie is written a moment after the header already shows the user; a full page load in that gap starts signed out. `signIn` (`tests/support/e2e-ui.ts`) therefore waits for the `…-auth-token` cookie, after which `page.goto` is safe.
+- The session cookie is written a moment after the header already shows the user; a full page load in that gap starts signed out. `signIn` (`tests/support/e2e-ui.ts`) therefore waits for the `…-auth-token` cookie, after which `page.goto` is safe. Since 2026-10-10 it first waits for the home URL and for the email in the header (see "CI").
 - Test files are `*.e2e.ts` so Vitest's `*.spec.ts` glob doesn't pick them up.
 
 ## Milestone 6: Shared shopping list (done 2026-10-08)
@@ -199,6 +199,16 @@ Each new test was checked to fail with its feature broken (auth guard exclude, r
 - Actions are pinned to commit SHAs.
 
 The first run passed everything except one e2e test: "a new version shows the update notice" (`pwa.e2e.ts`) failed with "execution context was destroyed". A race in the test, not in the app: after clicking "Reload", the poll for the `beforeUpdate` marker landed in the middle of the reload it was waiting for. The poll now treats that error as "not reloaded yet" and tries again.
+
+**Fixed 2026-10-10: `signIn` returned before the app had left the login page.** "the session survives a reload" (`auth.e2e.ts`) failed in four CI runs in a row, on docs-only commits, while passing locally. The Playwright trace showed a race in the test helper, not in the app:
+
+- `getByText(user.email)` was meant to match the header but matched the code step's own text ("We sent a login code to …"), so it passed before the code was even verified.
+- The session cookie is written as the verify request returns, before `router.push(ROUTES.home)` in `login.vue` has finished. The test's reload then loaded `/login`, which is excluded from the auth guard and shows the login form to a signed-in user.
+
+`signIn` now waits for the home URL and looks for the email inside the header (`getByRole('banner')`) before it waits for the cookie. The next CI run passed. Why the race started to lose every time in CI, without a code change, was not found.
+
+- The same CI run on `develop` once also failed "a signed-out family member joins through the invite link" (`household.e2e.ts`) with the 120 s test timeout, in the step where the member opens the join link. It overlapped with a local e2e run; not explained, and it has not recurred.
+- Not changed: a signed-in user who opens `/login` directly sees the login form.
 
 ## Milestone 8: Netlify deploy (repo side built 2026-10-10)
 
