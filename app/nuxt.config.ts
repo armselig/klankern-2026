@@ -1,5 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import { ROUTES } from './app/utils/routes'
+import packageJson from './package.json'
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -7,6 +8,14 @@ export default defineNuxtConfig({
   ssr: false,
   modules: ['@pinia/nuxt', 'nuxt-quasar-ui', '@vite-pwa/nuxt', '@nuxtjs/supabase'],
   components: [{ path: '~/components', pathPrefix: false }],
+  runtimeConfig: {
+    public: {
+      // Shown in the footer. semantic-release writes the version into
+      // package.json with each release (.releaserc.yaml at the git root), so
+      // the build of a release commit carries that release's number.
+      appVersion: packageJson.version,
+    },
+  },
   app: {
     head: {
       meta: [{ name: 'theme-color', content: '#1976D2' }],

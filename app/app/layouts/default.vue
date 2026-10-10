@@ -5,6 +5,7 @@ const user = useSupabaseUser()
 const client = useSupabaseClient()
 const router = useRouter()
 const route = useRoute()
+const { appVersion } = useRuntimeConfig().public
 
 // Before useHouseholdRealtime, so it never sees a new user with old data.
 useResetStoresOnUserChange()
@@ -56,6 +57,6 @@ async function signOut() {
       <slot />
     </q-page-container>
 
-    <q-footer>&copy; armselig</q-footer>
+    <q-footer>&copy; armselig &middot; Version {{ appVersion }}</q-footer>
   </q-layout>
 </template>
