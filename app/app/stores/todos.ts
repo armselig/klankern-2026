@@ -12,6 +12,7 @@ import { errorMessage } from '~/utils/error-message'
 import { createChangesDuringFetch } from '~/utils/changes-during-fetch'
 import { createInsertsInFlight } from '~/utils/inserts-in-flight'
 import { nextPosition } from '~/utils/position'
+import { createRealtimeEventOrder } from '~/utils/realtime-event-order'
 import {
   applyListRealtimeEvent,
   confirmListItem,
@@ -26,6 +27,9 @@ const insertsInFlight = createInsertsInFlight()
 
 /** Items changed while a resync fetch is in flight; see createChangesDuringFetch. */
 const changesDuringFetch = createChangesDuringFetch()
+
+/** Drops Realtime events delivered out of commit order; see createRealtimeEventOrder. */
+const realtimeEventOrder = createRealtimeEventOrder()
 
 export const useTodoStore = defineStore('todos', {
   state: () => ({
@@ -61,6 +65,7 @@ export const useTodoStore = defineStore('todos', {
 
     /** Folds a to-do change from the household's Realtime channel into state. */
     applyRealtimeEvent(event: ListRealtimeEvent<TodoItem>) {
+      if (!realtimeEventOrder.accept(event.new.id, event.commitTimestamp)) return
       changesDuringFetch.record(event.new.id)
       this.itemsById = applyListRealtimeEvent(this.itemsById, event, this.listId)
     },

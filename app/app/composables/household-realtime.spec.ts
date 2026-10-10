@@ -5,7 +5,11 @@ import type { ShoppingItem } from '~/types/shopping'
 import type { TodoItem } from '~/types/todo'
 import { subscribeToHouseholdChanges } from './household-realtime'
 
-type ChangeCallback = (payload: { eventType: string; new: unknown }) => void
+type ChangeCallback = (payload: {
+  eventType: string
+  new: unknown
+  commit_timestamp: string
+}) => void
 type StatusCallback = (status: string) => void
 
 function fakeRealtimeClient() {
@@ -38,6 +42,9 @@ function fakeRealtimeClient() {
     emitStatus: (status: string) => statusCallback(status),
   }
 }
+
+const committedAt = '2026-01-01T00:00:00.000Z'
+const committedLater = '2026-01-01T00:00:01.000Z'
 
 const row: TodoItem = {
   id: 'item-1',
@@ -104,13 +111,26 @@ describe('subscribeToHouseholdChanges', () => {
     const l = listeners()
     subscribeToHouseholdChanges(fake.client, 'house-1', l)
 
-    callbackFor(fake, 'todo_items', 'INSERT')({ eventType: 'INSERT', new: row })
-    callbackFor(fake, 'todo_items', 'UPDATE')({ eventType: 'UPDATE', new: { ...row, done: true } })
+    callbackFor(
+      fake,
+      'todo_items',
+      'INSERT',
+    )({ eventType: 'INSERT', new: row, commit_timestamp: committedAt })
+    callbackFor(
+      fake,
+      'todo_items',
+      'UPDATE',
+    )({ eventType: 'UPDATE', new: { ...row, done: true }, commit_timestamp: committedLater })
 
-    expect(l.onTodoItemChange).toHaveBeenNthCalledWith(1, { eventType: 'INSERT', new: row })
+    expect(l.onTodoItemChange).toHaveBeenNthCalledWith(1, {
+      eventType: 'INSERT',
+      new: row,
+      commitTimestamp: committedAt,
+    })
     expect(l.onTodoItemChange).toHaveBeenNthCalledWith(2, {
       eventType: 'UPDATE',
       new: { ...row, done: true },
+      commitTimestamp: committedLater,
     })
     expect(l.onShoppingItemChange).not.toHaveBeenCalled()
   })
@@ -120,7 +140,11 @@ describe('subscribeToHouseholdChanges', () => {
     const l = listeners()
     subscribeToHouseholdChanges(fake.client, 'house-1', l)
 
-    callbackFor(fake, 'shopping_items', 'INSERT')({ eventType: 'INSERT', new: shoppingRow })
+    callbackFor(
+      fake,
+      'shopping_items',
+      'INSERT',
+    )({ eventType: 'INSERT', new: shoppingRow, commit_timestamp: committedAt })
     callbackFor(
       fake,
       'shopping_items',
@@ -128,15 +152,18 @@ describe('subscribeToHouseholdChanges', () => {
     )({
       eventType: 'UPDATE',
       new: { ...shoppingRow, checked: true },
+      commit_timestamp: committedLater,
     })
 
     expect(l.onShoppingItemChange).toHaveBeenNthCalledWith(1, {
       eventType: 'INSERT',
       new: shoppingRow,
+      commitTimestamp: committedAt,
     })
     expect(l.onShoppingItemChange).toHaveBeenNthCalledWith(2, {
       eventType: 'UPDATE',
       new: { ...shoppingRow, checked: true },
+      commitTimestamp: committedLater,
     })
     expect(l.onTodoItemChange).not.toHaveBeenCalled()
   })

@@ -108,7 +108,7 @@ function event(
   eventType: ListRealtimeEvent<TodoItem>['eventType'],
   row: TodoItem,
 ): ListRealtimeEvent<TodoItem> {
-  return { eventType, new: row }
+  return { eventType, new: row, commitTimestamp: '2026-01-01T00:00:00.000Z' }
 }
 
 describe('applyListRealtimeEvent', () => {

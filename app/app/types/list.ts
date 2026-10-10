@@ -18,4 +18,8 @@ export type ItemsById<T extends ListItem> = Record<string, T>
 export interface ListRealtimeEvent<T extends ListItem> {
   eventType: 'INSERT' | 'UPDATE'
   new: T
+  /** When the database committed the change (ISO 8601). Realtime doesn't
+   * guarantee delivery in commit order, so this, not the arrival order, says
+   * which of two events of one item is newer (see createRealtimeEventOrder). */
+  commitTimestamp: string
 }

@@ -43,10 +43,11 @@ export function softDeleteListItem<T extends ListItem>(
 
 /**
  * Folds a Realtime change into local state. Upserting by id makes the echo of
- * our own optimistic add a no-op. There is no reliable updated_at to order
- * events by, so the latest event wins -- except that nothing may undo a local
- * soft delete, since the app has no undelete and a late event would otherwise
- * bring the item back.
+ * our own optimistic add a no-op. Events that arrive out of commit order are
+ * the caller's to drop (see createRealtimeEventOrder); here the event given
+ * wins -- except that nothing may undo a local soft delete, since the app has
+ * no undelete and an event from before the delete would otherwise bring the
+ * item back.
  */
 export function applyListRealtimeEvent<T extends ListItem>(
   itemsById: ItemsById<T>,

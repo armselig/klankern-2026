@@ -220,4 +220,53 @@ test.describe('realtime sync between two members', () => {
 
     await context.close()
   })
+
+  // Realtime sometimes delivers an item's UPDATE before its INSERT when both
+  // are committed close together; the INSERT's row predates the check
+  // (realtime-event-order.ts). Forced here by holding the INSERT back.
+  test('an INSERT event arriving after the UPDATE of the same item does not undo the check', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext()
+    const socket = await controlRealtimeSocket(context)
+    const page = await context.newPage()
+    const title = `Late insert ${runId}`
+    const isEventForItem = (frame: string, eventType: 'INSERT' | 'UPDATE') =>
+      frame.includes(`"${eventType}"`) && frame.includes(title)
+
+    await signIn(page, userA)
+    await openList(page, 'Shopping')
+    await expect
+      .poll(() => socket.receivedFrames.some((frame) => frame.includes('Subscribed to PostgreSQL')))
+      .toBe(true)
+    const deliverInsert = socket.holdReceivedFrames((frame) => isEventForItem(frame, 'INSERT'))
+
+    await test.step('the item is added and checked; only the UPDATE event reaches the app', async () => {
+      const added = page.waitForResponse(
+        (response) =>
+          response.url().includes('/shopping_items') && response.request().method() === 'POST',
+      )
+      await addShoppingItem(page, title)
+      await added
+      await untilSaved(page, () => listItem(page, title).click())
+      await expect
+        .poll(() => socket.receivedFrames.some((frame) => isEventForItem(frame, 'INSERT')))
+        .toBe(true)
+      await expect
+        .poll(() =>
+          socket.receivedFrames.some(
+            (frame) => isEventForItem(frame, 'UPDATE') && /"checked":\s*true/.test(frame),
+          ),
+        )
+        .toBe(true)
+    })
+
+    await test.step('the late INSERT event does not uncheck the item', async () => {
+      deliverInsert()
+      await page.waitForTimeout(1_000)
+      await expect(listItem(page, title)).toBeChecked()
+    })
+
+    await context.close()
+  })
 })

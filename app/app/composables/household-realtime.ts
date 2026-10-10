@@ -1,10 +1,28 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '~/types/database.types'
-import type { ListRealtimeEvent } from '~/types/list'
+import type { ListItem, ListRealtimeEvent } from '~/types/list'
 import type { ShoppingItem } from '~/types/shopping'
 import type { TodoItem } from '~/types/todo'
 
 type Client = SupabaseClient<Database>
+
+/** The fields of a realtime-js INSERT or UPDATE payload the stores need. */
+interface ListItemChangePayload<T extends ListItem> {
+  eventType: ListRealtimeEvent<T>['eventType']
+  new: T
+  commit_timestamp: string
+}
+
+/** Keeps realtime-js's payload shape out of the stores and reducers. */
+function toListRealtimeEvent<T extends ListItem>(
+  payload: ListItemChangePayload<T>,
+): ListRealtimeEvent<T> {
+  return {
+    eventType: payload.eventType,
+    new: payload.new,
+    commitTimestamp: payload.commit_timestamp,
+  }
+}
 
 export interface HouseholdChangeListeners {
   onTodoItemChange: (event: ListRealtimeEvent<TodoItem>) => void
@@ -38,16 +56,16 @@ export function subscribeToHouseholdChanges(
   const channel = client
     .channel(`household:${householdId}`)
     .on<TodoItem>('postgres_changes', { ...todoItems, event: 'INSERT' }, (payload) =>
-      listeners.onTodoItemChange({ eventType: payload.eventType, new: payload.new }),
+      listeners.onTodoItemChange(toListRealtimeEvent(payload)),
     )
     .on<TodoItem>('postgres_changes', { ...todoItems, event: 'UPDATE' }, (payload) =>
-      listeners.onTodoItemChange({ eventType: payload.eventType, new: payload.new }),
+      listeners.onTodoItemChange(toListRealtimeEvent(payload)),
     )
     .on<ShoppingItem>('postgres_changes', { ...shoppingItems, event: 'INSERT' }, (payload) =>
-      listeners.onShoppingItemChange({ eventType: payload.eventType, new: payload.new }),
+      listeners.onShoppingItemChange(toListRealtimeEvent(payload)),
     )
     .on<ShoppingItem>('postgres_changes', { ...shoppingItems, event: 'UPDATE' }, (payload) =>
-      listeners.onShoppingItemChange({ eventType: payload.eventType, new: payload.new }),
+      listeners.onShoppingItemChange(toListRealtimeEvent(payload)),
     )
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') listeners.onSubscribed()
