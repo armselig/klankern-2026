@@ -73,8 +73,11 @@ test.describe('PWA', () => {
       await loadControlledPage(page)
       const cdp = await context.newCDPSession(page)
 
-      const { installabilityErrors } = await cdp.send('Page.getInstallabilityErrors')
-      expect(installabilityErrors).toEqual([])
+      // Polled: the manifest link is added once the app has mounted, which can
+      // be a moment after the service worker controls the page.
+      await expect
+        .poll(async () => (await cdp.send('Page.getInstallabilityErrors')).installabilityErrors)
+        .toEqual([])
 
       const { errors, data } = await cdp.send('Page.getAppManifest')
       expect(errors).toEqual([])

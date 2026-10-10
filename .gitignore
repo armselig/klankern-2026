@@ -1,2 +1,5 @@
 # Local-only Claude Code settings (per-machine permission/MCP approvals)
 .claude/settings.local.json
+
+# Local Netlify folder
+.netlify

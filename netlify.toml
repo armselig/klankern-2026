@@ -1,0 +1,23 @@
+# Netlify builds the app as static files (`nuxt generate`); there is no server
+# and no Netlify Function. SUPABASE_URL and SUPABASE_KEY are set in the Netlify
+# UI and baked into the bundle at build time. The secret key and the database
+# password are test tooling only and must never be added there.
+
+[build]
+  # The git root is not the Nuxt project.
+  base = "app"
+  command = "npm run generate"
+  # Relative to `base`. On Netlify, Nitro picks its `netlify-static` preset and
+  # writes here; elsewhere `dist` is a link to `.output/public`.
+  publish = "dist"
+
+[build.environment]
+  # Keeps the `prepare` script from installing git hooks on the builder.
+  HUSKY = "0"
+  # Exact, because `.nvmrc` holds an alias and `engine-strict` rejects a 24.x
+  # older than the range in package.json.
+  NODE_VERSION = "24.21.0"
+
+# The fallback for client-side routes such as /join/<code> is in
+# app/public/_redirects, not here: Nitro writes its own catch-all into
+# `_redirects`, and that file takes precedence over rules in this one.

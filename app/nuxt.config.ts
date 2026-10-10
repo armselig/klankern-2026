@@ -57,8 +57,9 @@ export default defineNuxtConfig({
       // nothing the offline page needs.
       globPatterns: ['offline.html', 'pwa-*.png', 'favicon.ico'],
       // Replaces @vite-pwa/nuxt's default transform, which renames precached
-      // `x.html` to `x` (pretty URLs) -- but this server answers /offline with
-      // the app's own page, so the offline page would never be cached.
+      // `x.html` to `x` (pretty URLs) -- but a server that falls back to the
+      // app shell for unknown paths may answer /offline with the app's own
+      // page, and then the offline page would never be cached.
       manifestTransforms: [],
       runtimeCaching: [
         {

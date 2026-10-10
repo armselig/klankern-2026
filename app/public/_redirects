@@ -1,0 +1,5 @@
+# Netlify: a path that matches no file gets the app shell, so client-side
+# routes such as /join/<code> load when opened directly. Without this rule
+# Nitro's Netlify preset adds `/* /404.html 404`, which serves the same shell
+# with status 404. Real files (sw.js, offline.html, ...) are served as they are.
+/* /200.html 200
