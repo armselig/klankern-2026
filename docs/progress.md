@@ -193,7 +193,7 @@ Each new test was checked to fail with its feature broken (auth guard exclude, r
 - Traces of failed tests are uploaded as an artifact for 7 days. They contain the publishable key and sessions of disposable test users, not the secret key. Reconsider the upload if the repo becomes public.
 - Actions are pinned to commit SHAs.
 
-Not yet confirmed by a run: the workflow was written on 2026-10-10 and has not run on GitHub yet.
+The first run passed everything except one e2e test: "a new version shows the update notice" (`pwa.e2e.ts`) failed with "execution context was destroyed". A race in the test, not in the app: after clicking "Reload", the poll for the `beforeUpdate` marker landed in the middle of the reload it was waiting for. The poll now treats that error as "not reloaded yet" and tries again.
 
 ## Next steps
 

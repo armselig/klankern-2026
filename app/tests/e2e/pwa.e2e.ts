@@ -129,9 +129,13 @@ test.describe('PWA', () => {
       await page.evaluate(() => ((window as { beforeUpdate?: boolean }).beforeUpdate = true))
       await page.getByRole('button', { name: 'Reload' }).click()
 
+      // An evaluate that lands in the middle of the reload itself throws
+      // ("execution context was destroyed"): not reloaded yet, so poll again.
       await expect
         .poll(() =>
-          page.evaluate(() => (window as { beforeUpdate?: boolean }).beforeUpdate ?? false),
+          page
+            .evaluate(() => (window as { beforeUpdate?: boolean }).beforeUpdate ?? false)
+            .catch(() => true),
         )
         .toBe(false)
       await expect(page.getByText('Sign in to Klankern')).toBeVisible()
