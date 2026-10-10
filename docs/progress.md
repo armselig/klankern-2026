@@ -206,10 +206,9 @@ Icons are SVG paths from **Material Design Icons v7** (`@quasar/extras`, now a d
 - **Test**: `lists.e2e.ts` checks that the Remove button contains an `svg` and no text; verified to fail with a string icon name.
 - Not auto-imported via `extras.svgIcons`: that would register about 7,400 global names.
 
-Not yet looked at by the user in a browser (icon choice, header width on a phone).
+Checked by the user in a browser (2026-10-10).
 
 ## Next steps
 
-1. Look at the new icons in a browser, especially the header on a narrow screen (see "Icon strategy").
-2. Before milestone 8: smoke-test a minimal Podman dev compose early (see "No local Supabase stack").
-3. Later: the fake Supabase client duplicated across the `*-actions.spec.ts` files (see milestone 6) is a candidate for a shared test helper.
+1. Before milestone 8: smoke-test a minimal Podman dev compose early (see "No local Supabase stack").
+2. Later: the fake Supabase client duplicated across the `*-actions.spec.ts` files (see milestone 6) is a candidate for a shared test helper.
