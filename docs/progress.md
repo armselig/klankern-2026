@@ -2,7 +2,7 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of the commit that fixed the resync race (2026-10-10) (`develop`, working tree clean, nothing uncommitted). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of the commit that recorded the open Realtime-ordering decision (2026-10-10) (`develop`, working tree clean, nothing uncommitted). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
@@ -179,13 +179,17 @@ Each new test was checked to fail with its feature broken (auth guard exclude, r
 
 **Fixed 2026-10-10: resync could undo a change.** `mergeListResync` protected only ids still in `pendingIds` when the fetch *returned*, so a check or remove saved while a resync fetch was in flight was undone in the UI by the older fetch result. Now every id whose write finishes or whose Realtime event arrives during the fetch is collected (`utils/changes-during-fetch.ts`) and keeps its local version. The last test in `realtime-sync.e2e.ts` covers it (no longer `test.fail()`; verified to fail again with the fix disabled).
 
-**Known bug: Realtime events of one row can arrive out of order (not fixed yet).** Found while verifying the resync fix; this, not the resync, is what makes "shopping: checking or removing an item while its add is saving" in `lists.e2e.ts` fail in roughly 1 of 10 runs. When an item's INSERT and its UPDATE are committed within about 50 ms, Realtime sometimes delivers the UPDATE echo *before* the INSERT echo (recorded frames: UPDATE `checked: true`, `commit_timestamp` …35.485, followed by INSERT `checked: false`, `commit_timestamp` …35.436). `applyListRealtimeEvent` lets the latest arrival win, so the stale INSERT unchecks the item in the UI until a reload; the server keeps the check. Proposed fix: pass the payload's `commit_timestamp` through `ListRealtimeEvent` and ignore an event older than the last one applied to the same item.
+**Known bug: Realtime events of one row can arrive out of order (not fixed yet).** Found while verifying the resync fix; this, not the resync, is what makes "shopping: checking or removing an item while its add is saving" in `lists.e2e.ts` fail in roughly 1 of 10 runs. When an item's INSERT and its UPDATE are committed within about 50 ms, Realtime sometimes delivers the UPDATE echo *before* the INSERT echo (recorded frames: UPDATE `checked: true`, `commit_timestamp` …35.485, followed by INSERT `checked: false`, `commit_timestamp` …35.436). `applyListRealtimeEvent` lets the latest arrival win, so the stale INSERT unchecks the item in the UI until a reload; the server keeps the check. **Open decision (user)** — whether to fix it, and which way:
+- **A, ignore a late INSERT:** drop an INSERT event for an item that's already in state (an INSERT can never be newer than an UPDATE of the same row; the optimistic add is already reconciled by `confirmListItem`). A one-line change in `applyListRealtimeEvent`. Covers the order actually observed, but not two UPDATEs arriving swapped (not observed so far).
+- **B, order by `commit_timestamp`:** pass the payload's `commit_timestamp` through `ListRealtimeEvent` and ignore an event older than the last one applied to the same item. Covers both cases, but needs a change to the event type and per-item bookkeeping (outside store state, like `inserts-in-flight.ts`).
+
+Recommendation: B, since it fixes the ordering in general rather than this one case.
 
 **Running e2e tests repeatedly**: long `--repeat-each` runs made sign-ins time out (the session cookie never appears) once a run did more than about 30 sign-ins within 5 minutes — presumably Supabase's rate limit on OTP verifications, not checked in the dashboard. Keep repeat runs below that or pause between them.
 
 ## Next steps
 
-1. Fix the out-of-order Realtime events (see "E2E gap review"); until then, a full e2e run can occasionally fail in `lists.e2e.ts`.
+1. Decide between options A and B for the out-of-order Realtime events, then fix it (see "E2E gap review"); until then, a full e2e run can occasionally fail in `lists.e2e.ts`.
 2. Decide on an icon strategy when a screen first needs icons (see "No icon font bundled"); labeled buttons work until then.
 3. Before milestone 8: smoke-test a minimal Podman dev compose early, given the local-stack networking issue found here.
 4. Later: the fake Supabase client duplicated across the `*-actions.spec.ts` files (see milestone 6) is a candidate for a shared test helper.
