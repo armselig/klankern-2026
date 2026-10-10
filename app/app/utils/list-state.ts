@@ -1,11 +1,18 @@
 import type { ItemsById, ListItem, ListRealtimeEvent } from '~/types/list'
+import type { SyncedRow } from '~/types/synced-row'
+
+// The reducers typed over SyncedRow need only a row's id and deleted_at, so
+// they also serve rows that are not list items (whiteboard strokes).
 
 /**
  * Keyed by client-generated UUID (set at optimistic-insert time): the
  * server-confirmed row -- and later, the Realtime echo of the same INSERT --
  * upserts under the same id instead of appending a duplicate.
  */
-export function upsertListItem<T extends ListItem>(itemsById: ItemsById<T>, item: T): ItemsById<T> {
+export function upsertListItem<T extends SyncedRow>(
+  itemsById: ItemsById<T>,
+  item: T,
+): ItemsById<T> {
   return { ...itemsById, [item.id]: item }
 }
 
@@ -16,7 +23,7 @@ export function upsertListItem<T extends ListItem>(itemsById: ItemsById<T>, item
  * timestamps) comes from the confirmed row. Nothing is added back when the
  * item is no longer in state at all (e.g. the stores were reset).
  */
-export function confirmListItem<T extends ListItem>(
+export function confirmListItem<T extends SyncedRow>(
   itemsById: ItemsById<T>,
   optimistic: T,
   confirmed: T,
@@ -32,7 +39,7 @@ export function confirmListItem<T extends ListItem>(
 
 /** Deletes are soft (deleted_at set) rather than removed from state, so an
  * out-of-order confirmation/Realtime event can't resurrect a deleted item. */
-export function softDeleteListItem<T extends ListItem>(
+export function softDeleteListItem<T extends SyncedRow>(
   itemsById: ItemsById<T>,
   id: string,
 ): ItemsById<T> {
@@ -69,7 +76,7 @@ export function applyListRealtimeEvent<T extends ListItem>(
  * and local tombstones (which the fetch would otherwise resurrect while the
  * delete is still on its way).
  */
-export function mergeListResync<T extends ListItem>(
+export function mergeListResync<T extends SyncedRow>(
   itemsById: ItemsById<T>,
   fetched: T[],
   keepLocalIds: readonly string[],
