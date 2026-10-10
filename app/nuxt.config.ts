@@ -22,9 +22,12 @@ export default defineNuxtConfig({
   },
   quasar: {
     plugins: ['Notify', 'Dialog'],
+    // An SVG set, so only the icons a screen imports are bundled. With a font
+    // set (the module's default is 'material-icons') the module ships the
+    // whole icon font, whatever extras.fontIcons says.
+    iconSet: 'svg-mdi-v7',
     extras: {
       font: 'roboto-font',
-      fontIcons: [],
     },
   },
   pwa: {

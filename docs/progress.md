@@ -2,7 +2,7 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of the fix for out-of-order Realtime events (2026-10-10) (`develop`). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of the icon strategy (2026-10-10) (`develop`). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
@@ -73,7 +73,7 @@ Fixed by `0007_create_household_rpc.sql` (`create_household` / `create_invite` S
 
 - **No local Supabase stack.** Development and tests run directly against Supabase Cloud (the plan's fallback), and `supabase start` is not part of the workflow. For **milestone 8**, smoke-test `Containerfile.dev`/`podman-compose.yml` early rather than assuming the container setup will just work.
 - **Component path prefixing disabled** (`components: [{ path: '~/components', pathPrefix: false }]` in `nuxt.config.ts`) so `components/household/CreateHouseholdForm.vue` registers as `<CreateHouseholdForm>` rather than Nuxt's default `<HouseholdCreateHouseholdForm>`. Keep using subfolders per feature (`components/todo/`, `components/shopping/`, …) — this config makes that free.
-- **No icon font bundled** (`quasar.extras.fontIcons: []` in `nuxt.config.ts`, to keep the Workbox precache small per the PWA plan). This means Quasar's `icon="..."` prop (Material Icons ligatures) silently renders as literal text, not an icon. Caught once already (the invite-copy button) — **use labeled buttons, not icon-only ones**, until/unless we deliberately add an icon strategy (SVG-based, most likely) in the PWA milestone.
+- **Icons are SVG, not an icon font** (`quasar.iconSet: 'svg-mdi-v7'` in `nuxt.config.ts`). See "Icon strategy".
 - **Route paths live in `ROUTES`** (`app/app/utils/routes.ts`, auto-imported; `nuxt.config.ts` imports it explicitly for the auth redirect config). Never write a literal path like `'/login'` in pages, components or config. Routing itself stays file-based, so renaming a route means changing `ROUTES` **and** renaming the file in `pages/`.
 - **`household_id` is denormalized onto every item table** (`todo_items`, `shopping_items`, etc.) per the plan, specifically so RLS policies and Realtime channel filters don't need a join.
 
@@ -196,8 +196,20 @@ Each new test was checked to fail with its feature broken (auth guard exclude, r
 
 The first run passed everything except one e2e test: "a new version shows the update notice" (`pwa.e2e.ts`) failed with "execution context was destroyed". A race in the test, not in the app: after clicking "Reload", the poll for the `beforeUpdate` marker landed in the middle of the reload it was waiting for. The poll now treats that error as "not reloaded yet" and tries again.
 
+## Icon strategy (2026-10-10)
+
+Icons are SVG paths from **Material Design Icons v7** (`@quasar/extras`, now a direct dependency), imported where they are used (`import { mdiDeleteOutline } from '@quasar/extras/mdi-v7'`, `:icon="mdiDeleteOutline"`), so only the icons a screen uses are bundled. `quasar.iconSet` is `svg-mdi-v7`, which also makes the icons Quasar's own components draw (select arrows, clear buttons, …) SVG. Chosen by the user over staying with text labels, the Material Icons web font, Iconify and hand-picked SVG files; MDI over Material Icons for its larger catalogue.
+
+- **The "no icon font" setup never worked as intended.** `nuxt-quasar-ui` adds the font of the configured `iconSet` (default `material-icons`) to `extras.fontIcons` on its own (`autoIncludeIconSet`), so `fontIcons: []` had no effect and every production build shipped the 128 KB Material Icons font unused. With an SVG `iconSet` it is gone; `fontIcons: []` was removed from the config.
+- **Never use a string icon name** (`icon="delete"`): without the font it renders as literal text.
+- **Existing buttons**: the per-row "Remove" button of both lists is icon-only with `aria-label="Remove"` (keeps rows narrow on phones); Add, Copy, "Invite a family member", the dashboard's To-dos/Shopping and the header's Install app/Sign out/Log in have an icon next to their label. Form submit buttons, "Use a different email" and "Close" stay text only. Accessible names are unchanged, so the e2e helpers needed no change.
+- **Test**: `lists.e2e.ts` checks that the Remove button contains an `svg` and no text; verified to fail with a string icon name.
+- Not auto-imported via `extras.svgIcons`: that would register about 7,400 global names.
+
+Not yet looked at by the user in a browser (icon choice, header width on a phone).
+
 ## Next steps
 
-1. Decide on an icon strategy when a screen first needs icons (see "No icon font bundled"); labeled buttons work until then.
+1. Look at the new icons in a browser, especially the header on a narrow screen (see "Icon strategy").
 2. Before milestone 8: smoke-test a minimal Podman dev compose early (see "No local Supabase stack").
 3. Later: the fake Supabase client duplicated across the `*-actions.spec.ts` files (see milestone 6) is a candidate for a shared test helper.

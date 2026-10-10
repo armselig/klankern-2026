@@ -61,6 +61,13 @@ test.describe('lists for a single member', () => {
       await expect(page.getByRole('checkbox')).toHaveText(['Water the plants', 'Take out the bins'])
     })
 
+    // A string icon name would render as text (or need an icon font) instead.
+    await test.step('the remove button is a drawn icon, named for screen readers', async () => {
+      const removeButton = page.getByRole('button', { name: 'Remove' }).first()
+      await expect(removeButton.locator('svg')).toBeVisible()
+      await expect(removeButton).toHaveText('')
+    })
+
     await test.step('check one, remove the other', async () => {
       await untilSaved(page, () => listItem(page, 'Water the plants').click())
       await expect(listItem(page, 'Water the plants')).toBeChecked()

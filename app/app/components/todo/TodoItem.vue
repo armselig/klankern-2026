@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { mdiDeleteOutline } from '@quasar/extras/mdi-v7'
 import type { TodoItem } from '~/types/todo'
 
 defineProps<{ item: TodoItem }>()
@@ -17,7 +18,15 @@ const emit = defineEmits<{ toggle: [id: string]; remove: [id: string] }>()
       />
     </q-item-section>
     <q-item-section side>
-      <q-btn flat dense label="Remove" @click="emit('remove', item.id)" />
+      <!-- Icon only, to keep rows narrow on phones; the name comes from aria-label. -->
+      <q-btn
+        flat
+        dense
+        round
+        :icon="mdiDeleteOutline"
+        aria-label="Remove"
+        @click="emit('remove', item.id)"
+      />
     </q-item-section>
   </q-item>
 </template>

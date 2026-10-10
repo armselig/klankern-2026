@@ -111,7 +111,7 @@ npx prettier --write app/types/database.types.ts
 
 - **User id is `useSupabaseUser().value?.sub`**, never `.id`: in `@nuxtjs/supabase` v2 the ref holds JWT claims, and the type check does not catch `.id`. In `*-actions.ts`, use `getCurrentUserId(client)`.
 - **Route paths come from `ROUTES`** (`utils/routes.ts`, auto-imported); never write a literal like `'/login'`. Routing stays file-based, so renaming a route means changing `ROUTES` and renaming the file in `pages/`.
-- **No icon font is bundled** (`quasar.extras.fontIcons: []`), so Quasar's `icon="..."` renders as literal text. Use labeled buttons.
+- **Icons are SVG paths from Material Design Icons v7**, imported where used: `import { mdiDeleteOutline } from '@quasar/extras/mdi-v7'` and `:icon="mdiDeleteOutline"`. Never a string name like `icon="delete"`: no icon font is bundled (`quasar.iconSet` is `svg-mdi-v7`), so it renders as literal text. An icon-only button needs an `aria-label`.
 - **Component names have no path prefix** (`pathPrefix: false`): `components/household/InviteDialog.vue` is `<InviteDialog>`. Keep one subfolder per feature.
 - **The service worker only exists in a production build.** PWA behaviour can't be checked in `nuxt dev`; use the `pwa` Playwright project. The Workbox options in `nuxt.config.ts` each work around a specific `@vite-pwa/nuxt` default, as their comments explain. In templates use the global `$pwa`.
 - Supabase errors are plain objects, not `Error` instances; turn them into text with `errorMessage` (`utils/error-message.ts`).

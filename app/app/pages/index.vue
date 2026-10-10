@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { mdiCartOutline, mdiFormatListChecks } from '@quasar/extras/mdi-v7'
+
 const householdStore = useHouseholdStore()
 
 onMounted(() => householdStore.fetchMine())
@@ -18,8 +20,21 @@ onMounted(() => householdStore.fetchMine())
         <InviteDialog />
       </q-card-section>
       <q-card-section>
-        <q-btn :to="ROUTES.todos" color="primary" label="To-dos" unelevated />
-        <q-btn :to="ROUTES.shopping" color="primary" label="Shopping" unelevated class="q-ml-sm" />
+        <q-btn
+          :to="ROUTES.todos"
+          color="primary"
+          :icon="mdiFormatListChecks"
+          label="To-dos"
+          unelevated
+        />
+        <q-btn
+          :to="ROUTES.shopping"
+          color="primary"
+          :icon="mdiCartOutline"
+          label="Shopping"
+          unelevated
+          class="q-ml-sm"
+        />
       </q-card-section>
     </q-card>
   </q-page>

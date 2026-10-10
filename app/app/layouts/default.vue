@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { mdiDownload, mdiLogin, mdiLogout } from '@quasar/extras/mdi-v7'
+
 const user = useSupabaseUser()
 const client = useSupabaseClient()
 const router = useRouter()
@@ -32,14 +34,21 @@ async function signOut() {
         <q-btn
           v-if="$pwa?.showInstallPrompt && !$pwa.isPWAInstalled"
           flat
+          :icon="mdiDownload"
           label="Install app"
           @click="$pwa.install()"
         />
         <template v-if="user">
           <span>{{ user.email }}</span>
-          <q-btn flat label="Sign out" @click="signOut" />
+          <q-btn flat :icon="mdiLogout" label="Sign out" @click="signOut" />
         </template>
-        <q-btn v-else-if="showLoginButton" flat label="Log in" :to="ROUTES.login" />
+        <q-btn
+          v-else-if="showLoginButton"
+          flat
+          :icon="mdiLogin"
+          label="Log in"
+          :to="ROUTES.login"
+        />
       </q-toolbar>
     </q-header>
 

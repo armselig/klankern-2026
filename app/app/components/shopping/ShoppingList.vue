@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { mdiPlus } from '@quasar/extras/mdi-v7'
+
 const props = defineProps<{ householdId: string }>()
 const shoppingStore = useShoppingStore()
 
@@ -26,7 +28,7 @@ async function add() {
     <q-form class="row q-gutter-sm q-mb-md" @submit.prevent="add">
       <q-input ref="titleInput" v-model="newTitle" label="Item" class="col" autofocus />
       <q-input v-model="newQuantity" label="Quantity (optional)" class="col-4" />
-      <q-btn type="submit" color="primary" label="Add" unelevated />
+      <q-btn type="submit" color="primary" :icon="mdiPlus" label="Add" unelevated />
     </q-form>
 
     <q-spinner v-if="shoppingStore.loading" color="primary" />

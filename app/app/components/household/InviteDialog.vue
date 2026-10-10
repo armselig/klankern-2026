@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { mdiAccountPlusOutline, mdiContentCopy } from '@quasar/extras/mdi-v7'
 import { copyToClipboard, Notify } from 'quasar'
 
 const householdStore = useHouseholdStore()
@@ -30,7 +31,13 @@ async function copy() {
 </script>
 
 <template>
-  <q-btn color="primary" label="Invite a family member" unelevated @click="show" />
+  <q-btn
+    color="primary"
+    :icon="mdiAccountPlusOutline"
+    label="Invite a family member"
+    unelevated
+    @click="show"
+  />
 
   <q-dialog v-model="open">
     <q-card style="width: 100%; max-width: 420px">
@@ -50,7 +57,7 @@ async function copy() {
         <p>Share this link or code -- it works for 7 days.</p>
         <q-input :model-value="inviteUrl" readonly label="Invite link">
           <template #append>
-            <q-btn flat dense label="Copy" @click="copy" />
+            <q-btn flat dense :icon="mdiContentCopy" label="Copy" @click="copy" />
           </template>
         </q-input>
         <p class="text-h5 text-center q-mt-md">{{ code }}</p>
