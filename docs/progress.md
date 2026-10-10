@@ -15,7 +15,7 @@ Tracks what's been built against the milestones in [`plan.md`](./plan.md), sessi
 | 5. Realtime sync for to-dos | ✅ Done — proven by the Playwright e2e test (two browsers, incl. reconnect) |
 | 6. Shared shopping list | ✅ Done — CRUD + live sync, covered by unit tests and the Playwright e2e test |
 | 7. PWA installability pass | ✅ Done — installability, offline page, update notice and install button covered by the Playwright `pwa` project; the install button also checked by hand in Chrome. Installing on Android moves to milestone 8 (needs HTTPS) |
-| 8. Deploy (Netlify; containers deferred) | 🟡 Deployed to Netlify from `main`; routing and response headers checked on the deployed URL. The browser checks there (login, join link, install, offline page, update notice, Android) are still open |
+| 8. Deploy (Netlify; containers deferred) | 🟡 Deployed to Netlify from `main`; routing and response headers checked on the deployed URL, and login, join link, install, offline page and the Android install checked there in a browser. Only the update notice on the deployed site is still open |
 | 9. Shared whiteboard (deferred phase) | ⬜ Not started |
 | 10. Shared recipes (deferred phase) | ⬜ Not started |
 
@@ -229,11 +229,14 @@ Production hosting is **Netlify, as static files** (user decision, deviating fro
 - **`/login`, `/todos`, `/shopping` and `/confirm` answer 301 to the same path with a trailing slash**, because `nuxt generate` prerenders them as `<route>/index.html`. Works; left alone.
 - **Netlify added an HTML comment and a script (`/.netlify/scripts/hud`) to every page.** Not from the build: Netlify's edge servers inject them. The script was the "Powered by Netlify" badge, which is on by default for new projects on the Free plan. Turned off by the user under **Project configuration > General > Powered by Netlify badge** (per project, no redeploy needed); checked with `curl` that no page references the script any more. The comment ("This site is hosted on Netlify. …", with a link to Netlify) is still at the start of every page's `<head>`. No setting for it was found; it is inert and **accepted** (user decision).
 
+**Checked by the user on the deployed URL (2026-10-10):**
+
+- In a browser: OTP login; a `/join/<code>` link opened directly; "Install app"; the offline page; installing on Android (carried over from milestone 7).
+- Settings: deploy previews and branch deploys are off in Netlify; the Supabase Auth "Site URL" is the deployed URL; the install step of the Netlify deploy log was looked at.
+
 Still open:
 
-1. In a browser on the deployed URL (user): OTP login; a `/join/<code>` link opened directly; "Install app"; the offline page; installing on Android (carried over from milestone 7).
-2. The update notice on the deployed site: needs a deploy while the app is open, so check it with the next push to `main`.
-3. Not confirmed yet: deploy previews and branch deploys turned off in Netlify; the Supabase Auth "Site URL" set to the deployed URL; the install step of the Netlify deploy log (failures, duration).
+1. The update notice on the deployed site: needs a deploy while the app is open, so check it with the next push to `main`.
 
 ## Icon strategy (2026-10-10)
 
@@ -249,5 +252,5 @@ Checked by the user in a browser (2026-10-10).
 
 ## Next steps
 
-1. Finish milestone 8: the open items listed under "Milestone 8" (browser checks on the deployed URL, Android install, Netlify settings).
+1. Finish milestone 8: check the update notice on the deployed site with the next push to `main` (keep the app open during the deploy).
 2. Optional, later: the Podman production setup (`Containerfile.prod`, Quadlet units, Caddy).
