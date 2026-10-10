@@ -42,14 +42,19 @@ export async function waitForSessionCookie(page: Page) {
 }
 
 /**
- * Signs in through the real login form. Returns once the header shows the
- * user and the session is stored, so the test may load pages directly.
+ * Signs in through the real login form. Returns once the app has left the
+ * login page, the header shows the user and the session is stored, so the
+ * test may load or reload pages directly. The cookie alone is not enough: it
+ * is written before the app navigates, and a reload in that gap stays on the
+ * login page. The email is looked up in the header because the code step
+ * shows it too ("We sent a login code to ...").
  */
 export async function signIn(page: Page, user: TestUser) {
   await stubOtpRequest(page)
   await page.goto(ROUTES.login)
   await enterLoginCode(page, user.email, 'Verify')
-  await expect(page.getByText(user.email)).toBeVisible()
+  await expect(page).toHaveURL(ROUTES.home)
+  await expect(page.getByRole('banner').getByText(user.email)).toBeVisible()
   await waitForSessionCookie(page)
 }
 
