@@ -21,3 +21,9 @@
 # The fallback for client-side routes such as /join/<code> is in
 # app/public/_redirects, not here: Nitro writes its own catch-all into
 # `_redirects`, and that file takes precedence over rules in this one.
+
+# Netlify serves `.webmanifest` as application/octet-stream by default.
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
