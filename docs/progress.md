@@ -21,7 +21,7 @@ Tracks what's been built against the milestones in [`plan.md`](./plan.md), sessi
 
 ## What's built
 
-**Stack as scaffolded**: Nuxt **4** (not 3 — 4 is what `nuxi init` installs now; API is compatible, folder convention differs: app code lives under `app/app/`, not `app/`), SPA mode (`ssr: false`), `nuxt-quasar-ui`, `@vite-pwa/nuxt`, `@nuxtjs/supabase`, Pinia. Supabase Cloud project `qlgkbqxvdsvpoayxprdj`.
+**Stack as scaffolded**: Nuxt **4** (not 3 — 4 is what `nuxi init` installs now; API is compatible, folder convention differs: app code lives under `app/app/`, not `app/`), SPA mode (`ssr: false`), `nuxt-quasar-ui`, `@vite-pwa/nuxt`, `@nuxtjs/supabase`, Pinia. Backend is a Supabase Cloud project.
 
 **Project layout** (relative to `app/`, the Nuxt project root):
 ```
@@ -71,12 +71,11 @@ Fixed by `0007_create_household_rpc.sql` (`create_household` / `create_invite` S
 
 ## Other notable decisions / deviations from the plan
 
-- **Local Supabase stack doesn't work on this host.** `supabase start` via Podman fails: Podman's rootless networking (netavark/nftables) works for single containers but races when the Supabase CLI starts its ~10 containers concurrently. Not fixed — the plan's fallback (develop directly against Supabase Cloud) is what's actually in use, so this hasn't blocked anything, but it means **milestone 8's `Containerfile.dev`/`podman-compose.yml` should be tested carefully** when we get there, since it's unclear if the same concurrency issue would affect a simpler (1–2 container) dev compose setup. Worth an early smoke test rather than assuming it'll just work.
+- **No local Supabase stack.** Development and tests run directly against Supabase Cloud (the plan's fallback), and `supabase start` is not part of the workflow. For **milestone 8**, smoke-test `Containerfile.dev`/`podman-compose.yml` early rather than assuming the container setup will just work.
 - **Component path prefixing disabled** (`components: [{ path: '~/components', pathPrefix: false }]` in `nuxt.config.ts`) so `components/household/CreateHouseholdForm.vue` registers as `<CreateHouseholdForm>` rather than Nuxt's default `<HouseholdCreateHouseholdForm>`. Keep using subfolders per feature (`components/todo/`, `components/shopping/`, …) — this config makes that free.
 - **No icon font bundled** (`quasar.extras.fontIcons: []` in `nuxt.config.ts`, to keep the Workbox precache small per the PWA plan). This means Quasar's `icon="..."` prop (Material Icons ligatures) silently renders as literal text, not an icon. Caught once already (the invite-copy button) — **use labeled buttons, not icon-only ones**, until/unless we deliberately add an icon strategy (SVG-based, most likely) in the PWA milestone.
 - **Route paths live in `ROUTES`** (`app/app/utils/routes.ts`, auto-imported; `nuxt.config.ts` imports it explicitly for the auth redirect config). Never write a literal path like `'/login'` in pages, components or config. Routing itself stays file-based, so renaming a route means changing `ROUTES` **and** renaming the file in `pages/`.
 - **`household_id` is denormalized onto every item table** (`todo_items`, `shopping_items`, etc.) per the plan, specifically so RLS policies and Realtime channel filters don't need a join.
-- Repo name is `klankern-2026`; there's an **unrelated prior project at `/home/hendrik/src/klankern`** (no `-2026` suffix) from ~Sep 30, using pnpm + Drizzle + self-hosted Supabase — explicitly out of scope per the user, left untouched. Don't confuse the two when searching this machine.
 
 ## Environment / secrets
 
@@ -86,7 +85,7 @@ Fixed by `0007_create_household_rpc.sql` (`create_household` / `create_invite` S
 
 Supabase's default email templates only contain a magic link. Fixed in the dashboard by the user: custom SMTP via **Resend**, and `{{ .Token }}` (no `{{ .ConfirmationURL }}`) in **both** the "Magic link" template (existing users) and the "Confirm signup" template (a brand-new user's first `signInWithOtp`). Missing the second one is easy: the first code request for a new address uses "Confirm signup".
 
-Click-through accounts: A = `hndrk.nmnn@gmail.com` (owner), B = `hndrk.nmnn+b@gmail.com` (member), both in household "Neumann". Codes are pasted into the app by the user — the agent doesn't read the inbox.
+Click-through accounts: two real accounts, A (owner) and B (member), in one household. Codes are pasted into the app by the user — the agent doesn't read the inbox.
 
 ## Browser click-through of milestones 3–4 (2026-10-08)
 
@@ -102,7 +101,7 @@ Smaller issues found, all fixed afterwards:
 
 Fixes 1, 3 and 4 are now covered by the e2e specs `auth` and `lists` (see "E2E gap review").
 
-Leftover test data in the cloud project: to-dos "Test 1–3" and invite `b005ab07` in household "Neumann".
+Leftover test data in the cloud project: to-dos "Test 1–3" and one invite in the click-through household.
 
 ## Header shows the signed-in user (2026-10-08)
 
@@ -149,7 +148,7 @@ Added:
 - "Install app" header button, shown when `$pwa.showInstallPrompt && !$pwa.isPWAInstalled`. Use the global `$pwa` in templates: Vue reserves `$`-prefixed setup bindings.
 - `theme-color` meta and `apple-touch-icon` link (`app.head` in `nuxt.config.ts`).
 
-**Verification**: Lighthouse dropped its PWA category in v12 (13.5 is installed here), so the planned Lighthouse audit is replaced by the Playwright `pwa` project (`tests/e2e/pwa.e2e.ts`). It runs against a fresh production build served on port 3100 (`E2E_PRODUCTION_PORT`), built on every `npm run test:e2e`. It covers:
+**Verification**: Lighthouse dropped its PWA category in v12, so the planned Lighthouse audit is replaced by the Playwright `pwa` project (`tests/e2e/pwa.e2e.ts`). It runs against a fresh production build served on port 3100 (`E2E_PRODUCTION_PORT`), built on every `npm run test:e2e`. It covers:
 - Chrome's own installability check (`Page.getInstallabilityErrors` is empty) and the manifest contents.
 - Offline page loads show `offline.html`; back online, the app loads again.
 
@@ -187,5 +186,5 @@ Each new test was checked to fail with its feature broken (auth guard exclude, r
 ## Next steps
 
 1. Decide on an icon strategy when a screen first needs icons (see "No icon font bundled"); labeled buttons work until then.
-2. Before milestone 8: smoke-test a minimal Podman dev compose early, given the local-stack networking issue found here.
+2. Before milestone 8: smoke-test a minimal Podman dev compose early (see "No local Supabase stack").
 3. Later: the fake Supabase client duplicated across the `*-actions.spec.ts` files (see milestone 6) is a candidate for a shared test helper.

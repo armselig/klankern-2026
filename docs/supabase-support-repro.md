@@ -1,6 +1,6 @@
 # Resolved: "new row violates row-level security policy" on insert (not a Supabase bug)
 
-**Project ref:** qlgkbqxvdsvpoayxprdj · **Resolved:** 2026-10-08 · **Fix:** migrations `0007_create_household_rpc.sql`, `0008_service_role_grants.sql`
+**Resolved:** 2026-10-08 · **Fix:** migrations `0007_create_household_rpc.sql`, `0008_service_role_grants.sql`
 
 This file was originally a bug report for Supabase support, claiming PostgREST ignored
 role-scoped (`to authenticated`) RLS policies. That diagnosis was wrong. It was never

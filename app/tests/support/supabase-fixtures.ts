@@ -4,10 +4,9 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 // Shared by the RLS suite (Vitest) and the e2e suite (Playwright). Both run
 // against the real Supabase Cloud project with disposable users created via
-// the Admin API, since this host's Podman cannot run the local Supabase stack
-// (netavark/nftables race on concurrent container starts) and OTP email
-// can't be read headlessly. Must run under Node: supabase-js refuses to use
-// a secret key whenever it detects a browser-like global scope.
+// the Admin API, since the project doesn't use a local Supabase stack and OTP
+// email can't be read headlessly. Must run under Node: supabase-js refuses to
+// use a secret key whenever it detects a browser-like global scope.
 
 loadEnv({ quiet: true })
 

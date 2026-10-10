@@ -2,7 +2,7 @@
 
 ## Context
 
-The repo (`/home/hendrik/src/klankern-2026`) is completely empty — this is a greenfield build. The goal is a PWA that helps a family organize shared life together, starting with **shared to-do lists** and **shared shopping lists** (MVP priority), with **shared whiteboard** and **shared cooking recipes** as explicit later phases. The schema and auth model must not preclude those later features, but we are not building them now.
+The repo is completely empty — this is a greenfield build. The goal is a PWA that helps a family organize shared life together, starting with **shared to-do lists** and **shared shopping lists** (MVP priority), with **shared whiteboard** and **shared cooking recipes** as explicit later phases. The schema and auth model must not preclude those later features, but we are not building them now.
 
 Confirmed stack and decisions:
 - **Frontend**: Nuxt 3 + TypeScript, SPA mode (`ssr: false`), `nuxt-quasar-ui` for Quasar components, Pinia for state, `@vite-pwa/nuxt` for the PWA/service worker.
