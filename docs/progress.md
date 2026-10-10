@@ -2,7 +2,7 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of the icon strategy (2026-10-10) (`develop`). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of the decision to drop the dev container (2026-10-10) (`develop`). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
@@ -71,7 +71,8 @@ Fixed by `0007_create_household_rpc.sql` (`create_household` / `create_invite` S
 
 ## Other notable decisions / deviations from the plan
 
-- **No local Supabase stack.** Development and tests run directly against Supabase Cloud (the plan's fallback), and `supabase start` is not part of the workflow. For **milestone 8**, smoke-test `Containerfile.dev`/`podman-compose.yml` early rather than assuming the container setup will just work.
+- **No local Supabase stack.** Development and tests run directly against Supabase Cloud (the plan's fallback), and `supabase start` is not part of the workflow.
+- **No dev container** (decided 2026-10-10, deviating from the plan's `Containerfile.dev` + `podman-compose.yml`). Development stays on the host: Node is pinned (`.nvmrc`, `engine-strict`), and the e2e tests drive the host's Chrome against the host's dev server. A dev container would add a `node_modules` volume, user-namespace mapping and a polling file watcher for little gain; add one if a second machine or contributor needs it. **Milestone 8 is production only**: `Containerfile.prod` (Node 24, not the plan's `node:22-slim`), Quadlet units, Caddy. A throwaway smoke test of a two-container Podman setup (Caddy proxying to a Node server, via compose and via plain `podman run`) passed beforehand.
 - **Component path prefixing disabled** (`components: [{ path: '~/components', pathPrefix: false }]` in `nuxt.config.ts`) so `components/household/CreateHouseholdForm.vue` registers as `<CreateHouseholdForm>` rather than Nuxt's default `<HouseholdCreateHouseholdForm>`. Keep using subfolders per feature (`components/todo/`, `components/shopping/`, …) — this config makes that free.
 - **Icons are SVG, not an icon font** (`quasar.iconSet: 'svg-mdi-v7'` in `nuxt.config.ts`). See "Icon strategy".
 - **Route paths live in `ROUTES`** (`app/app/utils/routes.ts`, auto-imported; `nuxt.config.ts` imports it explicitly for the auth redirect config). Never write a literal path like `'/login'` in pages, components or config. Routing itself stays file-based, so renaming a route means changing `ROUTES` **and** renaming the file in `pages/`.
@@ -210,5 +211,5 @@ Checked by the user in a browser (2026-10-10).
 
 ## Next steps
 
-1. Before milestone 8: smoke-test a minimal Podman dev compose early (see "No local Supabase stack").
+1. Milestone 8, production only (see "No dev container"): `Containerfile.prod`, Quadlet units behind Caddy, one real HTTPS deploy, then install the app on Android.
 2. Later: the fake Supabase client duplicated across the `*-actions.spec.ts` files (see milestone 6) is a candidate for a shared test helper.
