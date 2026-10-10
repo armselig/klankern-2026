@@ -2,7 +2,7 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of milestone 9, the shared whiteboard (2026-10-10) (`develop`). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of milestone 9, the shared whiteboard, and the release automation (2026-10-10) (`develop`). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
@@ -319,8 +319,33 @@ Icons are SVG paths from **Material Design Icons v7** (`@quasar/extras`, now a d
 
 Checked by the user in a browser (2026-10-10).
 
+## Releases: automated versions and changelog (built 2026-10-10, first real run pending)
+
+Every push to `main` is now a release, cut by semantic-release in `.github/workflows/release.yml`: the version follows from the commit messages since the last tag, and `CHANGELOG.md` (git root), the version in `app/package.json`, the tag and the GitHub release are written by the workflow. How it works day to day is in `CLAUDE.md` ("Releases").
+
+Decisions:
+
+- **Every push to `main`, not a release pull request.** Netlify deploys every push to `main`, so that push already is the release. The price is a bot commit on `main` after almost every push: the workflow fast-forwards `develop` to it, and both local branches have to be pulled before the next push.
+- **The first release is 1.0.0 and lists the whole history** (the 20 `feat` and `fix` commits so far, plus whatever the first push adds). semantic-release has no 0.x mode: without a tag it starts at 1.0.0.
+- **Not gated on CI.** Netlify doesn't wait for CI either, so the tag marks what was deployed. Gating would also delay the release commit by a full CI run, and `develop` would more often have moved on by then.
+- **Own package in `.github/release`.** In `app/package.json` the tooling would add 348 lockfile entries (it bundles the npm CLI) to every Netlify build and to the CI job that holds the secret key. The release job installs only this package, with `--ignore-scripts` and without the npm cache, because it can write to the repository.
+- **The version is shown in the footer** (`Version X.Y.Z`, from `runtimeConfig.public.appVersion`, read from `package.json` at build time). So the release commit has no `[skip ci]`: Netlify builds twice per release, and until the second build is live the site shows the previous version.
+- **commitlint in a `commit-msg` hook** (`@commitlint/config-conventional`, 45 lockfile entries, none with install scripts). All 59 earlier commit messages pass it unchanged.
+- The GitHub plugin's comments and labels on issues and pull requests are off, so the job needs only `contents: write`.
+
+Found while building it:
+
+- `conventional-changelog-conventionalcommits` 10.x does not work with the notes plugin semantic-release ships ("Missing helper"); 9.3.1 is the version that plugin is tested with.
+- `--dry-run` skips exactly the steps that needed checking (changelog, version bump, commit). The setup was instead run for real in a scratch clone against a scratch bare repository, with the files as committed apart from the GitHub plugin: a first release (1.0.0, three files in the commit, tag on it, `develop` fast-forwarded), a run with nothing to release, and a `fix` commit giving 1.0.1.
+- **A leftover `app/.output` breaks the local `pwa` e2e project.** If `app/.output/public` exists from an earlier `nuxt generate` without the Netlify preset, a later `netlify serve` build takes the old HTML from there for every route that folder has, instead of rendering it; the pages then point at script files that no longer exist, and the four `pwa.e2e.ts` tests fail on "Sign in to Klankern". Deleting `app/.output` fixes it: the leftover found here was deleted on 2026-10-10, and the four tests pass again. Not caused by the release work, and CI and Netlify build from a fresh checkout. Why the prerender step reads that folder was not traced in Nitro's source, so the folder can come back with the next local `nuxt generate`.
+
+Not checked yet, because it needs the real repository: the workflow run itself, the GitHub release, and that Netlify builds the release commit.
+
+Tests: `app-version.e2e.ts` (the footer shows the version from `package.json`; written first and seen to fail), and the `a11y` and `pwa` specs pass with the change.
+
 ## Next steps
 
-1. Finish milestone 8: check the update notice on the deployed site with the next push to `main` (keep the app open during the deploy).
-2. Try the whiteboard by hand on a phone and with a second member (see "Milestone 9").
-3. Optional, later: the Podman production setup (`Containerfile.prod`, Quadlet units, Caddy).
+1. The first push to `main` with the release setup cuts v1.0.0. Push `develop` first or together with it (`git push origin develop main`), since the workflow's token may not bring the new workflow file to `develop`. Check the "Release" workflow run, the GitHub release, that `develop` was fast-forwarded, and that the deployed footer shows `Version 1.0.0` once Netlify's second build is live. Then pull both branches.
+2. Finish milestone 8: check the update notice on the deployed site with the next push to `main` (keep the app open during the deploy).
+3. Try the whiteboard by hand on a phone and with a second member (see "Milestone 9").
+4. Optional, later: the Podman production setup (`Containerfile.prod`, Quadlet units, Caddy).

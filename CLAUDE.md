@@ -44,7 +44,7 @@ Node `>=24.21.0 <25` is enforced (`engine-strict`), and dependencies are pinned 
 ### What the tests need
 
 - **`npm test` is not offline.** It includes `tests/rls/household-isolation.spec.ts`, which runs against the real Supabase Cloud project and needs `app/.env` with `SUPABASE_URL`, `SUPABASE_KEY` and `SUPABASE_SECRET_KEY` (see `.env.example`).
-- **Git hooks**: pre-commit runs lint-staged (eslint --fix + prettier on staged files); pre-push runs `npm run typecheck` and `npm test`, so a push needs network and the secrets too. E2E is not in any hook.
+- **Git hooks**: pre-commit runs lint-staged (eslint --fix + prettier on staged files); commit-msg runs commitlint (`@commitlint/config-conventional`, configured in `package.json`), because the commit messages decide the next version (see "Releases"); pre-push runs `npm run typecheck` and `npm test`, so a push needs network and the secrets too. E2E is not in any hook.
 - **CI** (`.github/workflows/ci.yml`) runs lint, format check, typecheck, `npm test` and `npm run test:e2e` on every push to `main` and `develop`, with the three Supabase values as repository secrets. Runs are queued one at a time for the whole repo, because they share the cloud project and its sign-in limit.
 - **E2E** drives the installed Google Chrome (`channel: 'chrome'`, no Playwright browser download) against Supabase Cloud with disposable users. Two projects: `dev` (every spec except `pwa.e2e.ts`, against `nuxt dev` on :3000, reusing a running one) and `pwa` (`pwa.e2e.ts`, against a fresh static build served by `netlify serve --offline` on :3100, which applies `_redirects` but not the generated `_headers`).
 - E2E sign-ins are rate limited by Supabase: more than about 30 within 5 minutes makes sign-ins time out. Keep `--repeat-each` runs below that.
@@ -99,6 +99,16 @@ Production is Netlify, serving the static output of `nuxt generate`; there is no
 - Netlify's environment holds only `SUPABASE_URL` and `SUPABASE_KEY`, baked into the bundle at build time.
 - `NODE_VERSION` in `netlify.toml` is exact; raise it together with `engines` in `package.json`.
 - Deploy previews and branch deploys stay off: they would all use the one production Supabase project.
+
+### Releases
+
+Every push to `main` is a release. `.github/workflows/release.yml` runs semantic-release (`.releaserc.yaml` at the git root), which works out the next version from the Conventional Commits since the last `vX.Y.Z` tag: `fix` and `perf` give a patch, `feat` a minor, `!` or a `BREAKING CHANGE:` footer a major, and a push with none of these releases nothing. It writes `CHANGELOG.md` at the git root, bumps `version` in `app/package.json` and `app/package-lock.json`, pushes both to `main` as a `chore(release): X.Y.Z` commit, tags that commit and creates the GitHub release. Don't edit `CHANGELOG.md` or the version by hand.
+
+- **The release commit is made on `main` by the workflow**, which then fast-forwards `develop` to it. Both local branches are one commit behind after a release; `git pull --ff-only` them before the next push. If `develop` moved on in the meantime, the fast-forward step fails and `develop` has to be rebased onto `main`. It also fails when `main` got a change under `.github/workflows/` that `develop` didn't have yet, because the workflow's token may not push workflow files; push `develop` before `main` (`git push origin develop main`), or repair it with `git push origin main:develop`.
+- The release does not wait for CI, and its commit starts no workflow run, because it is pushed with the workflow's own token. Netlify does build it, and has to: the footer shows `runtimeConfig.public.appVersion`, which `nuxt.config.ts` reads from `package.json` at build time. So the release commit's message must not contain `[skip ci]`.
+- The tooling is a package of its own in `.github/release`, with its own lockfile, so that neither the Netlify build nor the CI checks install it. Run its `npm` commands there. `conventional-changelog-conventionalcommits` stays on 9.x until `@semantic-release/release-notes-generator` ships `conventional-changelog-writer` 9; with 10.x the notes step fails with "Missing helper".
+- `CHANGELOG.md` is outside `app/` on purpose: Prettier would reject the generated format.
+- `--dry-run` skips the steps that write the changelog, the version and the commit. To try a change to the release config, run a real release in a scratch clone whose only remote is a scratch bare repository, with the GitHub plugin removed and no token set.
 
 ### Database and security
 
