@@ -4,8 +4,9 @@ import { copyToClipboard, Notify } from "quasar";
 
 const householdStore = useHouseholdStore();
 
-/** Whether the dialog is shown. Its opener is elsewhere (the account menu
- * in the header), so the state is the parent's. */
+/** Whether the dialog is shown. Its openers are elsewhere (the account menu
+ * in the header, the roster on the dashboard), so the state is the
+ * parent's. */
 const open = defineModel<boolean>({ required: true });
 const code = ref<string | null>(null);
 const loading = ref(false);

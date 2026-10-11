@@ -3,6 +3,7 @@ import {
   accountButton,
   addShoppingItem,
   addTodo,
+  dashboardTile,
   EMPTY_LIST_TEXT,
   enterLoginCode,
   listItem,
@@ -64,11 +65,16 @@ test.describe("switching users in the same tab", () => {
     await test.step("A adds items to both lists", async () => {
       await signIn(page, userA);
       await openList(page, "To-dos");
+      // Left open: the dashboard previews only what is still to do.
+      await addTodo(page, "Still open for A");
       await untilSaved(page, async () => {
         await addTodo(page, "Only for A");
         await listItem(page, "Only for A").click();
       });
       await page.getByRole("link", { name: "Klankern" }).click();
+      await expect(dashboardTile(page, "To-dos")).toContainText(
+        "Still open for A",
+      );
       await openList(page, "Shopping");
       await untilSaved(page, async () => {
         await addShoppingItem(page, "Only for A too");
@@ -87,6 +93,11 @@ test.describe("switching users in the same tab", () => {
       // A's dashboard had loaded A's members; none of them may be left.
       await expect(memberAvatar(page, userB.email)).toBeVisible();
       await expect(memberAvatar(page, userA.email)).toHaveCount(0);
+      // Nor anything of A's lists in the tiles, which A's dashboard showed.
+      await expect(dashboardTile(page, "To-dos")).toContainText(
+        "Nothing to do.",
+      );
+      await expect(page.getByText("Still open for A")).toHaveCount(0);
     });
 
     for (const list of ["To-dos", "Shopping"] as const) {

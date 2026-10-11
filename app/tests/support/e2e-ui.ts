@@ -106,6 +106,29 @@ export function memberAvatar(page: Page, email: string) {
   return memberRoster(page).getByRole("img", { name: email });
 }
 
+/** The names of the dashboard's tiles, which are their links' names. */
+export type DashboardTileName =
+  "To-dos" | "Shopping" | "Whiteboard" | "Recipes";
+
+/**
+ * A tile of the dashboard, with everything it shows. Found by its link: the
+ * tile itself has no name, and the entries it previews are list items too,
+ * but none of them holds a link.
+ */
+export function dashboardTile(page: Page, name: DashboardTileName) {
+  return page
+    .getByRole("navigation", { name: "Lists, whiteboard and recipes" })
+    .getByRole("listitem")
+    .filter({ has: page.getByRole("link", { name, exact: true }) });
+}
+
+/** The drawing in the whiteboard's tile; there is none for an empty board. */
+export function whiteboardPreview(page: Page) {
+  return dashboardTile(page, "Whiteboard").getByRole("img", {
+    name: "Preview of the whiteboard",
+  });
+}
+
 /** Both lists render an item as a checkbox labelled with its text. */
 export function listItem(page: Page, label: string) {
   return page.getByRole("checkbox", { name: label, exact: true });

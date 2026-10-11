@@ -4,7 +4,7 @@ import { mdiPlus } from "@quasar/extras/mdi-v7";
 const props = defineProps<{ householdId: string }>();
 const shoppingStore = useShoppingStore();
 
-onMounted(() => shoppingStore.init(props.householdId));
+onMounted(() => shoppingStore.load(props.householdId));
 
 const newTitle = ref("");
 const newQuantity = ref("");

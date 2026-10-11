@@ -5,7 +5,7 @@ import type { WhiteboardTool } from "~/types/whiteboard";
 const props = defineProps<{ householdId: string }>();
 const whiteboardStore = useWhiteboardStore();
 
-onMounted(() => whiteboardStore.init(props.householdId));
+onMounted(() => whiteboardStore.load(props.householdId));
 
 const tool = ref<WhiteboardTool>("pen");
 const color = ref(DEFAULT_PEN_COLOR);

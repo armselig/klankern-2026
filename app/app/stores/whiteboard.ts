@@ -38,6 +38,11 @@ const changesDuringFetch = createChangesDuringFetch();
 /** Drops Realtime events delivered out of commit order; see createRealtimeEventOrder. */
 const realtimeEventOrder = createRealtimeEventOrder();
 
+/** The first fetch while it runs, for a second caller to wait for instead of
+ * fetching again: the dashboard starts one, and the whiteboard page a member
+ * opens from it asks for the same board a moment later. */
+let initInFlight: Promise<void> | null = null;
+
 export const useWhiteboardStore = defineStore("whiteboard", {
   state: () => ({
     householdId: null as string | null,
@@ -59,26 +64,49 @@ export const useWhiteboardStore = defineStore("whiteboard", {
       lastUndoableStrokeId(state.strokesById, state.drawnIds),
   },
   actions: {
-    /** Loads (creating if needed) the household's single shared board and its strokes. */
+    /**
+     * Makes the household's single shared board available, creating it if
+     * needed. The dashboard, for its preview, and the whiteboard page both
+     * call this, and members move between them all the time, so only the
+     * first call fetches everything behind a spinner. Later ones repair
+     * state in the background (see resync): replacing it would drop a
+     * stroke that is still being saved. A call while the first is still
+     * fetching waits for that one.
+     */
+    async load(householdId: string) {
+      if (this.householdId === householdId) {
+        if (this.loading && initInFlight) return initInFlight;
+        if (this.boardId) return this.resync();
+      }
+      initInFlight = this.init(householdId);
+      return initInFlight;
+    },
+
+    /** The first fetch, which replaces state; only load() calls it. */
     async init(householdId: string) {
       this.loading = true;
       this.error = null;
+      this.householdId = householdId;
+      // A reset in the meantime (the user changed) ended this load; what it
+      // fetched is the previous user's.
+      const ended = () => this.householdId !== householdId;
       try {
-        this.householdId = householdId;
         const board = await fetchOrCreateBoard(
           useSupabaseClient(),
           householdId,
         );
+        if (ended()) return;
         if (board.id !== this.boardId) this.drawnIds = [];
         this.boardId = board.id;
         const strokes = await fetchBoardStrokes(useSupabaseClient(), board.id);
+        if (ended()) return;
         this.strokesById = Object.fromEntries(
           strokes.map((stroke) => [stroke.id, stroke]),
         );
       } catch (e) {
-        this.error = errorMessage(e);
+        if (!ended()) this.error = errorMessage(e);
       } finally {
-        this.loading = false;
+        if (!ended()) this.loading = false;
       }
     },
 
@@ -95,8 +123,8 @@ export const useWhiteboardStore = defineStore("whiteboard", {
     },
 
     /** Repairs state after a (re)connect, since Realtime doesn't replay missed
-     * events. Skipped until init() has loaded the board (the channel can
-     * connect first) and while init() is still fetching. */
+     * events. Skipped until load() has loaded the board (the channel can
+     * connect first) and while load() is still fetching. */
     async resync() {
       const boardId = this.boardId;
       if (!boardId || this.loading) return;

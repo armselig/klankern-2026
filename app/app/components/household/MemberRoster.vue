@@ -1,31 +1,63 @@
 <script setup lang="ts">
+import { mdiPlus } from "@quasar/extras/mdi-v7";
+
+/** Inviting needs a dialog, which the dashboard page holds; the roster only
+ * reports that it was asked for. */
+const emit = defineEmits<{ invite: [] }>();
+
 const householdStore = useHouseholdStore();
 
 const AVATAR_SIZE = 48;
+
+/** The same size for the place next to the members that is still empty. */
+const emptyPlaceSize = `${AVATAR_SIZE}px`;
 </script>
 
 <template>
-  <!-- Renders what the store holds; the dashboard page decides when the
-       members are fetched. role="list" because Safari stops announcing a
-       list once its bullets are styled away. -->
-  <ul role="list" aria-label="Household members" class="member-roster">
-    <li
-      v-for="member in householdStore.members"
-      :key="member.user_id"
-      class="member-roster__member column items-center"
+  <div class="member-roster">
+    <!-- Renders what the store holds; the dashboard page decides when the
+         members are fetched. role="list" because Safari stops announcing a
+         list once its bullets are styled away. -->
+    <ul
+      role="list"
+      aria-label="Household members"
+      class="member-roster__members"
     >
-      <!-- The whole address is the avatar's name and tooltip. The caption
-           is only the part before the @, which fits under an avatar. -->
-      <user-avatar
-        :email="member.email"
-        :size="AVATAR_SIZE"
-        :label="member.email"
-      />
-      <span class="member-roster__name text-caption ellipsis">
-        {{ emailLocalPart(member.email) }}
+      <li
+        v-for="member in householdStore.members"
+        :key="member.user_id"
+        class="member-roster__member column items-center"
+      >
+        <!-- The whole address is the avatar's name and tooltip. The caption
+             is only the part before the @, which fits under an avatar. -->
+        <user-avatar
+          :email="member.email"
+          :size="AVATAR_SIZE"
+          :label="member.email"
+        />
+        <span class="member-roster__name text-caption ellipsis">
+          {{ emailLocalPart(member.email) }}
+        </span>
+      </li>
+    </ul>
+    <!-- Where the next member would stand, but beside the list, not in it:
+         it is no member. No color, so it gets the theme's highlight for a
+         flat button (assets/css/hover-contrast.css). -->
+    <q-btn
+      flat
+      no-caps
+      padding="0"
+      class="member-roster__member"
+      @click="emit('invite')"
+    >
+      <span class="column items-center">
+        <span class="member-roster__empty-place">
+          <q-icon :name="mdiPlus" size="24px" aria-hidden="true" />
+        </span>
+        <span class="text-caption">Invite</span>
       </span>
-    </li>
-  </ul>
+    </q-btn>
+  </div>
 
   <p v-if="householdStore.membersError" class="text-negative">
     Couldn't load the household members. Reload the page to try again.
@@ -33,16 +65,26 @@ const AVATAR_SIZE = 48;
 </template>
 
 <style scoped>
-.member-roster {
+/* The button follows the members in their row; once they fill more than
+   one row, it stands below them. */
+.member-roster,
+.member-roster__members {
   display: flex;
   flex-wrap: wrap;
   gap: 8px 16px;
+}
+
+.member-roster {
   margin: 8px 0 0;
-  padding: 0;
-  list-style: none;
-  /* An avatar and one line of caption, so the card keeps its height while
+  /* An avatar and one line of caption, so the page keeps its layout while
      the members are still on their way. */
   min-height: 68px;
+}
+
+.member-roster__members {
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 /* Wider than the avatar, to leave room for a name. */
@@ -52,5 +94,17 @@ const AVATAR_SIZE = 48;
 
 .member-roster__name {
   max-width: 100%;
+}
+
+/* A circle of an avatar's size with nobody in it yet. */
+.member-roster__empty-place {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: v-bind(emptyPlaceSize);
+  height: v-bind(emptyPlaceSize);
+  border: 2px dashed var(--theme-outline);
+  border-radius: 50%;
 }
 </style>

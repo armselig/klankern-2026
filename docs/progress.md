@@ -2,7 +2,7 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of milestone 9, the shared whiteboard, the first automated release, v1.0.0 (2026-10-10), the member avatars with the hover-contrast fix, the header with the wordmark and the account menu, the Catppuccin theme with light and dark mode, the two font replacements that were tried and dropped, release v1.3.1, the fix for the `pwa` e2e project with a leftover `.output`, milestone 8 finished with the update notice checked on the deployed site, milestone 10, the shared recipes, released as v1.4.0, and the fix of the success notices' colors (all 2026-10-11). `main` and `develop` are level at v1.4.0, except for that last fix, which is on `develop` only. Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of milestone 9, the shared whiteboard, the first automated release, v1.0.0 (2026-10-10), the member avatars with the hover-contrast fix, the header with the wordmark and the account menu, the Catppuccin theme with light and dark mode, the two font replacements that were tried and dropped, release v1.3.1, the fix for the `pwa` e2e project with a leftover `.output`, milestone 8 finished with the update notice checked on the deployed site, milestone 10, the shared recipes, released as v1.4.0, the fix of the success notices' colors, and the dashboard with live tiles (all 2026-10-11). `main` and `develop` are level at v1.4.0, except for that fix and the dashboard, which are on `develop` only. Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
@@ -27,7 +27,7 @@ Tracks what's been built against the milestones in [`plan.md`](./plan.md), sessi
 ```
 app/app/
   types/            database.types.ts (generated), household.ts, synced-row.ts, list.ts, todo.ts,
-                    shopping.ts, whiteboard.ts, recipe.ts
+                    shopping.ts, whiteboard.ts, recipe.ts, dashboard.ts
   composables/      current-user.ts, household-actions.ts, todo-actions.ts, shopping-actions.ts,
                     whiteboard-actions.ts, recipe-actions.ts,
                     household-realtime.ts, reset-stores-on-user-change.ts,
@@ -38,13 +38,15 @@ app/app/
                     inserts-in-flight.ts, changes-during-fetch.ts, realtime-event-order.ts,
                     whiteboard-state.ts, whiteboard-geometry.ts, recipe-state.ts, recipe-draft.ts,
                     gravatar.ts, avatar-rosette.ts, email.ts (+ .spec.ts siblings),
-                    whiteboard-pen.ts, ink.ts (+ .spec.ts), routes.ts
+                    whiteboard-pen.ts, ink.ts (+ .spec.ts), routes.ts,
+                    list-preview.ts, whiteboard-preview.ts (+ .spec.ts siblings)
   stores/           household.ts, todos.ts, shopping.ts, whiteboard.ts, recipes.ts
   pages/            login.vue, confirm.vue, index.vue, todos.vue, shopping.vue, whiteboard.vue,
                     join/[code].vue, recipes/{index,new}.vue, recipes/[id]/{index,edit}.vue
   components/       household/{CreateHouseholdForm,InviteDialog,MemberRoster}.vue,
+                    dashboard/{DashboardTile,TileListPreview}.vue,
                     todo/{TodoList,TodoItem}.vue, shopping/{ShoppingList,ShoppingItem}.vue,
-                    whiteboard/{SharedWhiteboard,WhiteboardToolbar,WhiteboardSurface,WhiteboardStroke}.vue,
+                    whiteboard/{SharedWhiteboard,WhiteboardToolbar,WhiteboardSurface,WhiteboardStroke,WhiteboardPreview}.vue,
                     recipe/{RecipeList,RecipeView,RecipeIngredients,RecipeEditor,RecipeForm}.vue,
                     user/{UserAvatar,AccountMenu}.vue
   layouts/          default.vue
@@ -58,13 +60,13 @@ app/tests/support/          supabase-fixtures.ts (disposable users/households/in
 app/tests/rls/              household-isolation.spec.ts (two-JWT RLS proof against Supabase Cloud)
 app/tests/unit/             environment.spec.ts (the Vitest environment mounts a Vue component)
 app/tests/e2e/              Playwright `dev` project (against `nuxt dev`): auth, household, lists, realtime-sync,
-                            session-switch, whiteboard, recipes, avatars, a11y, app-version (*.e2e.ts); `pwa` project: pwa.e2e.ts (production build)
+                            session-switch, whiteboard, recipes, avatars, dashboard, a11y, app-version (*.e2e.ts); `pwa` project: pwa.e2e.ts (production build)
 netlify.toml                at the git root: build settings for Netlify
 ```
 
 **Design pattern used throughout**: business logic lives in plain `composables/*-actions.ts` functions that take a `SupabaseClient` as a parameter, unit-tested with a mocked client (no Nuxt runtime needed). Pinia stores are thin — they call `useSupabaseClient()`/`useSupabaseUser()` and delegate to those functions. State-transition logic that needs testing on its own (optimistic add/dedup, soft-delete, sort order) is further extracted into pure reducer functions in `utils/`. List logic that doesn't depend on the item type (dedup, soft delete, Realtime events, reconnect merge) is **generic** over `ListItem` (`types/list.ts`) in `utils/list-state.ts` and shared by every list; only the actions, store, components and list-specific ordering are per list. The whiteboard follows it too (see "Milestone 9"), and so do the recipes (see "Milestone 10").
 
-**Testing**: Vitest, 263 tests in 25 files passing (including the RLS suite) (`npm test`, run 2026-10-11). Playwright e2e (`npm run test:e2e`, 30 tests in 11 files and two projects; see the milestone 5 and 7 sections and "E2E gap review") is separate and not in the pre-push hook; CI runs it on every push to `main` and `develop` (see "CI"). Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
+**Testing**: Vitest, 271 tests in 27 files passing (including the RLS suite) (`npm test`, run 2026-10-11). Playwright e2e (`npm run test:e2e`, 31 tests in 12 files and two projects; see the milestone 5 and 7 sections and "E2E gap review") is separate and not in the pre-push hook; CI runs it on every push to `main` and `develop` (see "CI"). Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
 
 **Database types**: generated from the live schema via `supabase gen types typescript`, saved to `app/app/types/database.types.ts`, picked up automatically by `@nuxtjs/supabase`'s default `types` path. Re-run after any migration changes:
 ```
@@ -623,7 +625,7 @@ The household's recipes at `ROUTES.recipes` ("Recipes" button on the dashboard):
 **Noticed, not changed**
 
 - The list stores and the whiteboard store put a row back after a failed write without checking that the store wasn't reset in between (a change of user). The recipe store checks.
-- `init()` of the list stores keeps the result of a fetch that ends after a reset; `load()` of the recipe store drops it.
+- `init()` of the list stores keeps the result of a fetch that ends after a reset; `load()` of the recipe store drops it. (Fixed with the dashboard, see "Dashboard with live tiles".)
 
 ## Success notices readable in both modes (fixed 2026-10-11)
 
@@ -633,10 +635,38 @@ Found in the click-through of milestone 10: the notice "1 item added to the shop
 - **Both notices now use the primary color with `textColor: "on-accent"`**, as the update notice already did: 4.79:1 in light mode and 8.07:1 in dark mode. There is no `positive` notice left. A notice without a color (the "This recipe was removed." of the recipe form) is Quasar's dark grey with white text in both modes, at 12.82:1.
 - **A notice was never scanned**: it is gone after a few seconds, and `a11y.e2e.ts` only scanned pages at rest. It now adds a recipe's ingredients to the shopping list and scans while the notice shows, in both modes. Verified to fail on the notice's text before the fix, in both modes. "Invite link copied" is not scanned (it needs the clipboard); it is the same two options.
 
+## Dashboard with live tiles (built 2026-10-11)
+
+The dashboard was one card in the middle of the screen: the household's name, the roster and four identical buttons that said nothing about what was behind them. Now the name and the roster stand at the top, and below them are four tiles, two by two, each showing what its page holds. On the reference phone all of it is on one screen.
+
+- **What a tile shows.** To-dos: how many are open and the first of them. Shopping: the same for what is still to buy. Recipes: how many there are and the first by title. Whiteboard: the board itself, small. `utils/list-preview.ts` cuts a list to a tile's four lines; a longer list gives its last line to "and N more", so a tile never says "and 1 more" where the entry would have fitted. An empty tile says so in words ("Nothing to do.") instead of a zero.
+- **The dashboard loads all four stores**, where it loaded none. The to-do, shopping and whiteboard stores got a `load()` like the recipe store's: the first call fetches behind a spinner (`init()`, which only `load()` calls now), later ones merge in the background. `TodoList`, `ShoppingList` and `SharedWhiteboard` call it too, so a page opened from the dashboard is there at once. A call during the first fetch waits for that fetch; `ensureLoaded()` of the shopping store depends on it, because a recipe page can ask for the list while the dashboard's fetch is still running.
+- **`init()` drops its result after a reset.** "Noticed, not changed" of milestone 10 listed that the list stores kept the result of a fetch that ended after a change of user. With every sign-in starting four fetches that mattered more, so `init()` of the three stores now checks that the store still belongs to the household it fetched for.
+- **The cost.** Every visit to the dashboard fetches every stroke with its points, and so does every reconnect from the first visit on, where both happened only once the whiteboard had been opened. Accepted for a preview that is live.
+- **The link of a tile is its heading's text**, stretched over the card with `::after`. A link around the whole tile would be named by everything in it ("To-dos 3 open Call the plumber ..."), which is a poor name and would have broken `openRecipes`, which asks for the exact name. The helpers in `tests/support/e2e-ui.ts` that open a page from the dashboard are unchanged. The tiles are a list in a `nav`.
+- **Hover and focus are an outline.** The theme's veil for a surface is calibrated for the text color; under it the muted text of a tile is at 3.77:1 in light mode and 3.58:1 in dark mode. The outlines are at 3.49:1 or more against what is behind them.
+- **"Invite" on the roster**, as the place where the next member would stand: a dashed circle with a plus. It is beside the list of members, not in it (`avatars.e2e.ts` asserts the list's items, and it is no member), and it is named "Invite", not "Invite a family member": that is the account menu's entry, which stays, and the tests find it by that name with the menu open. The dashboard has an `<invite-dialog>` of its own. Quasar's dialog gives the focus back to the button itself here, because the button is still there when the dialog closes; the account menu has to do that by hand.
+- **No spinner on a return visit.** `fetchMine()` still runs on every visit, but the spinner only shows while there is no household to show, so the tiles of a household that is known stay on screen.
+- **The preview draws no stroke thinner than 48 board units** (`utils/whiteboard-preview.ts`): the thin pen's 16 units would be half a pixel at a tile's width.
+
+**Tests**
+
+- Unit: `list-preview.spec.ts`, `whiteboard-preview.spec.ts`.
+- `dashboard.e2e.ts`, with two members: A stays on the dashboard while B adds a to-do and checks it, adds five shopping items, draws a stroke and saves a recipe; A's tiles follow each change. Then the roster's button with the keyboard, and a tile pressed away from its link.
+- `a11y.e2e.ts`: the scan of a highlighted filled button used the dashboard's buttons, which are gone; it now uses "Add" on the to-do page. New: a tile hovered and focused, and the dashboard with filled tiles, both in both modes.
+- `session-switch.e2e.ts`: the second user's tiles show nothing of the first user's lists.
+- `untilFadesEnd` of `a11y.e2e.ts` looked for running fades once, right after the account menu appeared. A fade starts a frame or two after its element is in the page, so the look could come too early; on the fuller dashboard it did, and the menu was scanned half faded in (seen in the trace's frames, light mode, once in one run). It now waits until the page has been still for three frames in a row.
+
+**Not done**
+
+- A layout for wide screens: the dashboard stays one column of 480px.
+- Nobody has used it on a phone by touch yet.
+
 ## Next steps
 
 Every milestone of the plan is built. The four checks that were listed here are done (the Gravatar photo, the whiteboard by hand, the update notice and the footer version on the deployed site, all 2026-10-11). The sections on the header and the theme still name a few things nobody has looked at, mostly in dark mode.
 
 1. Try milestone 10 by hand where the click-through didn't reach: on a phone by touch, with a second member, in light mode and on the deployed site.
-2. The fix of the success notices is on `develop`; it is released (as a patch) with the next push to `main`.
-3. Optional, later: the Podman production setup (`Containerfile.prod`, Quadlet units, Caddy).
+2. The fix of the success notices and the dashboard are on `develop`; they are released (as a minor, 1.5.0) with the next push to `main`.
+3. Try the dashboard on a phone by touch, and with a second member changing things.
+4. Optional, later: the Podman production setup (`Containerfile.prod`, Quadlet units, Caddy).

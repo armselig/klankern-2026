@@ -31,6 +31,11 @@ const changesDuringFetch = createChangesDuringFetch();
 /** Drops Realtime events delivered out of commit order; see createRealtimeEventOrder. */
 const realtimeEventOrder = createRealtimeEventOrder();
 
+/** The first fetch while it runs, for a second caller to wait for instead of
+ * fetching again: the dashboard starts one, and the page a member opens
+ * from it asks for the same list a moment later. */
+let initInFlight: Promise<void> | null = null;
+
 export const useShoppingStore = defineStore("shopping", {
   state: () => ({
     householdId: null as string | null,
@@ -44,27 +49,55 @@ export const useShoppingStore = defineStore("shopping", {
   }),
   getters: {
     visible: (state) => visibleShoppingItems(state.itemsById),
+    /** What is still to buy, in list order: what the dashboard counts and
+     * previews. */
+    toBuy(): ShoppingItem[] {
+      return this.visible.filter((item) => !item.checked);
+    },
   },
   actions: {
-    /** Loads (creating if needed) the household's single shared shopping list and its items. */
+    /**
+     * Makes the household's single shared shopping list available, creating
+     * it if needed. The dashboard and the shopping page both call this, and
+     * members move between them all the time, so only the first call
+     * fetches everything behind a spinner. Later ones repair state in the
+     * background (see resync): replacing it would drop a write that is
+     * still on its way. A call while the first is still fetching waits for
+     * that one.
+     */
+    async load(householdId: string) {
+      if (this.householdId === householdId) {
+        if (this.loading && initInFlight) return initInFlight;
+        if (this.listId) return this.resync();
+      }
+      initInFlight = this.init(householdId);
+      return initInFlight;
+    },
+
+    /** The first fetch, which replaces state; only load() calls it. */
     async init(householdId: string) {
       this.loading = true;
       this.error = null;
+      this.householdId = householdId;
+      // A reset in the meantime (the user changed) ended this load; what it
+      // fetched is the previous user's.
+      const ended = () => this.householdId !== householdId;
       try {
-        this.householdId = householdId;
         const list = await fetchOrCreateShoppingList(
           useSupabaseClient(),
           householdId,
         );
+        if (ended()) return;
         this.listId = list.id;
         const items = await fetchShoppingItems(useSupabaseClient(), list.id);
+        if (ended()) return;
         this.itemsById = Object.fromEntries(
           items.map((item) => [item.id, item]),
         );
       } catch (e) {
-        this.error = errorMessage(e);
+        if (!ended()) this.error = errorMessage(e);
       } finally {
-        this.loading = false;
+        if (!ended()) this.loading = false;
       }
     },
 
@@ -81,8 +114,8 @@ export const useShoppingStore = defineStore("shopping", {
     },
 
     /** Repairs state after a (re)connect, since Realtime doesn't replay missed
-     * events. Skipped until init() has loaded the list (the channel can
-     * connect first) and while init() is still fetching. */
+     * events. Skipped until load() has loaded the list (the channel can
+     * connect first) and while load() is still fetching. */
     async resync() {
       const listId = this.listId;
       if (!listId || this.loading) return;
@@ -179,8 +212,9 @@ export const useShoppingStore = defineStore("shopping", {
      * other than the shopping list that adds to it (a recipe's ingredients):
      * add() needs the list's id, and the items for the next position. */
     async ensureLoaded(householdId: string) {
-      if (this.listId && this.householdId === householdId) return;
-      await this.init(householdId);
+      const loaded = this.listId && this.householdId === householdId;
+      if (loaded && !this.loading) return;
+      await this.load(householdId);
     },
 
     /**

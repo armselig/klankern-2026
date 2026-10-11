@@ -4,7 +4,7 @@ import { mdiPlus } from "@quasar/extras/mdi-v7";
 const props = defineProps<{ householdId: string }>();
 const todoStore = useTodoStore();
 
-onMounted(() => todoStore.init(props.householdId));
+onMounted(() => todoStore.load(props.householdId));
 
 const newTitle = ref("");
 const titleInput = useTemplateRef<{ focus: () => void }>("titleInput");

@@ -5,6 +5,7 @@ import {
   accountButton,
   addShoppingItem,
   addTodo,
+  dashboardTile,
   dragOnWhiteboard,
   expectStrokeCount,
   fillRecipeForm,
@@ -19,6 +20,7 @@ import {
   saveRecipeForm,
   signIn,
   untilSaved,
+  whiteboardPreview,
 } from "../support/e2e-ui";
 import {
   createHousehold,
@@ -98,13 +100,32 @@ async function untilHighlightShown(control: Locator) {
  * Waits until nothing on the page is fading in or out any more. The account
  * menu fades, and a scan in the middle of that reports its half-transparent
  * text as too low in contrast.
+ *
+ * One look is not enough: a fade starts a frame or two after its element is
+ * put into the page, so a look right after the element appeared can find
+ * nothing running yet. The page has to stay still for a few frames in a row.
+ * An animation without an end (a spinner) is not waited for.
  */
 async function untilFadesEnd(page: Page) {
-  await page.evaluate(() =>
-    Promise.allSettled(
-      document.getAnimations().map((animation) => animation.finished),
-    ),
-  );
+  await page.evaluate(async () => {
+    const STILL_FRAMES = 3;
+    const nextFrame = () =>
+      new Promise((resolve) => requestAnimationFrame(resolve));
+    for (let stillFrames = 0; stillFrames < STILL_FRAMES;) {
+      const ending = document
+        .getAnimations()
+        .filter(
+          (animation) =>
+            animation.effect?.getComputedTiming().endTime !== Infinity,
+        );
+      if (ending.length === 0) stillFrames++;
+      else {
+        stillFrames = 0;
+        await Promise.allSettled(ending.map((animation) => animation.finished));
+      }
+      await nextFrame();
+    }
+  });
 }
 
 for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
@@ -145,39 +166,52 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       await signIn(page, user);
       await expect(page.getByText(`E2E a11y ${runId}`)).toBeVisible();
       await expect(page).toHaveTitle("Klankern");
-      // The members arrive after the household; the scan should see them.
+      // The members and the tiles' content arrive after the household; the
+      // scan should see them.
       await expect(memberAvatar(page, user.email)).toBeVisible();
+      await expect(dashboardTile(page, "To-dos")).toContainText(
+        "Nothing to do.",
+      );
+      await expect(dashboardTile(page, "Shopping")).toContainText(
+        "Nothing to buy.",
+      );
+      await expect(dashboardTile(page, "Whiteboard")).toContainText(
+        "Nothing drawn yet.",
+      );
+      await expect(dashboardTile(page, "Recipes")).toContainText(
+        "None saved yet.",
+      );
       await expectNoBlockingViolations(page, "the dashboard");
 
-      // In light mode the text on the primary color is close to the contrast
-      // limit, and a highlight that moves the background towards the text
-      // takes it below (see assets/css/hover-contrast.css). Checked for hover
-      // and for keyboard focus, which is marked more strongly than hover.
-      await test.step("highlighted controls on the primary color keep their contrast", async () => {
+      // A tile marks hover and keyboard focus with an outline; scanned with
+      // each, so that a highlight laid over a tile's text one day is seen.
+      await test.step("a highlighted tile keeps its contrast", async () => {
         const todosLink = page.getByRole("link", { name: "To-dos" });
         await todosLink.hover();
-        await untilHighlightShown(todosLink);
         await expectNoBlockingViolations(
           page,
-          "the dashboard with a filled button hovered",
+          "the dashboard with a tile hovered",
         );
 
         // Tab from "To-dos" moves the keyboard focus to "Shopping".
         await todosLink.focus();
         await page.keyboard.press("Tab");
-        const shoppingLink = page.getByRole("link", { name: "Shopping" });
-        await expect(shoppingLink).toBeFocused();
-        await untilHighlightShown(shoppingLink);
+        await expect(
+          page.getByRole("link", { name: "Shopping" }),
+        ).toBeFocused();
         await expectNoBlockingViolations(
           page,
-          "the dashboard with a filled button focused",
+          "the dashboard with a tile focused",
         );
+      });
 
+      await test.step("a highlighted header button shows the theme's veil", async () => {
         // axe can't judge anything in the header: the header's shadow layer
         // lies over it, so axe reports the background as undetermined. A
-        // button there has the same highlight as a filled one, so the check
-        // is that its highlight is the theme's veil as well, shown in full:
-        // Quasar's own would be a share of the text color at 15 percent.
+        // button there has the same highlight as a filled one (see the
+        // to-do page below), so the check is that its highlight is the
+        // theme's veil as well, shown in full: Quasar's own would be a
+        // share of the text color at 15 percent.
         const headerButton = accountButton(page, user.email);
         await headerButton.hover();
         await untilHighlightShown(headerButton);
@@ -209,6 +243,36 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       await openList(page, "To-dos");
       await expect(page).toHaveTitle("To-dos · Klankern");
       await expectNoBlockingViolations(page, "the empty to-do list");
+
+      // In light mode the text on the primary color is close to the contrast
+      // limit, and a highlight that moves the background towards the text
+      // takes it below (see assets/css/hover-contrast.css). Checked for hover
+      // and for keyboard focus, which is marked more strongly than hover.
+      await test.step("highlighted controls on the primary color keep their contrast", async () => {
+        const addButton = page.getByRole("button", {
+          name: "Add",
+          exact: true,
+        });
+        await addButton.hover();
+        await untilHighlightShown(addButton);
+        await expectNoBlockingViolations(
+          page,
+          "the to-do list with a filled button hovered",
+        );
+
+        // Off the button, so the focus is scanned without the hover. Tab
+        // from the field moves the keyboard focus to "Add".
+        await page.mouse.move(0, 0);
+        await page.getByLabel("Add a to-do").focus();
+        await page.keyboard.press("Tab");
+        await expect(addButton).toBeFocused();
+        await untilHighlightShown(addButton);
+        await expectNoBlockingViolations(
+          page,
+          "the to-do list with a filled button focused",
+        );
+      });
+
       await addTodo(page, "Open item");
       await addTodo(page, "Done item");
       await untilSaved(page, () => listItem(page, "Done item").click());
@@ -266,6 +330,12 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       });
 
       await page.getByRole("link", { name: "Klankern" }).click();
+      // The tiles with what the steps above left behind: counts, entries
+      // and the drawing.
+      await expect(dashboardTile(page, "To-dos")).toContainText("1 open");
+      await expect(dashboardTile(page, "Shopping")).toContainText("1 to buy");
+      await expect(whiteboardPreview(page)).toBeVisible();
+      await expectNoBlockingViolations(page, "the dashboard with filled tiles");
       await openRecipes(page);
       await expect(page).toHaveTitle("Recipes · Klankern");
       await expect(page.getByText(NO_RECIPES_TEXT)).toBeVisible();
