@@ -8,17 +8,19 @@ import {
 } from "./shopping-actions";
 import {
   fakeClient,
+  fakeClientWithQueries,
   fakeQueryBuilder,
 } from "../../tests/support/fake-supabase-client";
 
 describe("fetchOrCreateShoppingList", () => {
+  const list = {
+    id: "list-1",
+    household_id: "h1",
+    name: "Shopping",
+    created_at: "now",
+  };
+
   it("returns the existing list without creating one", async () => {
-    const list = {
-      id: "list-1",
-      household_id: "h1",
-      name: "Shopping",
-      created_at: "now",
-    };
     const query = fakeQueryBuilder({ data: list, error: null });
     const client = fakeClient({ from: () => query.builder });
 
@@ -26,32 +28,39 @@ describe("fetchOrCreateShoppingList", () => {
       list,
     );
     expect(query.calls.eq).toEqual(["household_id", "h1"]);
-    expect(query.calls.insert).toBeUndefined();
+    expect(query.calls.upsert).toBeUndefined();
   });
 
-  it("creates a list when none exists yet", async () => {
-    const created = {
-      id: "list-1",
-      household_id: "h1",
-      name: "Shopping",
-      created_at: "now",
-    };
-    // First .from() call is the lookup (no list), the second the insert.
-    let call = 0;
-    const inserts = fakeQueryBuilder({ data: created, error: null });
-    const from = vi.fn(() => {
-      call++;
-      return call === 1
-        ? fakeQueryBuilder({ data: null, error: null }).builder
-        : inserts.builder;
-    });
-    const client = fakeClient({ from });
+  it("creates a list when none exists yet, and reads it back", async () => {
+    const lookup = fakeQueryBuilder({ data: null, error: null });
+    const create = fakeQueryBuilder({ data: null, error: null });
+    const readBack = fakeQueryBuilder({ data: list, error: null });
+    const { client, from } = fakeClientWithQueries([lookup, create, readBack]);
 
     expect(await fetchOrCreateShoppingList(client as never, "h1")).toEqual(
-      created,
+      list,
     );
     expect(from).toHaveBeenCalledWith("shopping_lists");
-    expect(inserts.calls.insert).toEqual([{ household_id: "h1" }]);
+    // Ignoring the conflict is what makes two simultaneous first visits safe.
+    expect(create.calls.upsert).toEqual([
+      { household_id: "h1" },
+      { onConflict: "household_id", ignoreDuplicates: true },
+    ]);
+    // No RETURNING on the insert: an ignored insert returns no row.
+    expect(create.calls.select).toBeUndefined();
+    expect(readBack.calls.eq).toEqual(["household_id", "h1"]);
+  });
+
+  it("throws when creating the list fails", async () => {
+    const error = { message: "boom" };
+    const { client } = fakeClientWithQueries([
+      fakeQueryBuilder({ data: null, error: null }),
+      fakeQueryBuilder({ data: null, error }),
+    ]);
+
+    await expect(fetchOrCreateShoppingList(client as never, "h1")).rejects.toBe(
+      error,
+    );
   });
 });
 

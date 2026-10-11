@@ -10,7 +10,13 @@ type Client = SupabaseClient<Database>;
  * household-actions.ts for why these are kept separate from the Pinia store.
  */
 
-/** MVP scope is one shared shopping list per household: find it, or create it on first use. */
+/**
+ * MVP scope is one shared shopping list per household: find it, or create it on
+ * first use. The insert ignores a conflict on the household (the table allows
+ * one list each), so two members opening the list for the first time at the
+ * same moment end up on the same list; it is read back afterwards because an
+ * ignored insert returns no row.
+ */
 export async function fetchOrCreateShoppingList(
   client: Client,
   householdId: string,
@@ -23,12 +29,20 @@ export async function fetchOrCreateShoppingList(
   if (fetchError) throw fetchError;
   if (existing) return existing;
 
-  const { data: created, error: createError } = await client
+  const { error: createError } = await client
     .from("shopping_lists")
-    .insert({ household_id: householdId })
-    .select()
-    .single();
+    .upsert(
+      { household_id: householdId },
+      { onConflict: "household_id", ignoreDuplicates: true },
+    );
   if (createError) throw createError;
+
+  const { data: created, error: readError } = await client
+    .from("shopping_lists")
+    .select()
+    .eq("household_id", householdId)
+    .single();
+  if (readError) throw readError;
   return created;
 }
 
