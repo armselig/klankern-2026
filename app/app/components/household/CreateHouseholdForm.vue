@@ -11,7 +11,7 @@ async function submit() {
 <template>
   <q-card style="width: 100%; max-width: 360px">
     <q-card-section>
-      <div class="text-h6">Set up your household</div>
+      <h2 class="text-h6 q-my-none">Set up your household</h2>
       <p>Give your household a name to start sharing lists with your family.</p>
     </q-card-section>
 

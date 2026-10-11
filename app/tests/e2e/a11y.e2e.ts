@@ -2,12 +2,14 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { ROUTES } from "../../app/utils/routes";
 import {
+  accountButton,
   addShoppingItem,
   addTodo,
   dragOnWhiteboard,
   expectStrokeCount,
   listItem,
   memberAvatar,
+  openAccountMenu,
   openList,
   openWhiteboard,
   signIn,
@@ -63,6 +65,19 @@ async function untilHighlightShown(control: Locator) {
       el
         .getAnimations({ subtree: true })
         .map((animation) => animation.finished),
+    ),
+  );
+}
+
+/**
+ * Waits until nothing on the page is fading in or out any more. The account
+ * menu fades, and a scan in the middle of that reports its half-transparent
+ * text as too low in contrast.
+ */
+async function untilFadesEnd(page: Page) {
+  await page.evaluate(() =>
+    Promise.allSettled(
+      document.getAnimations().map((animation) => animation.finished),
     ),
   );
 }
@@ -130,23 +145,34 @@ test.describe("accessibility", () => {
 
       // axe can't judge anything in the header: the header's shadow layer
       // lies over it, so axe reports the background as undetermined. A
-      // button there has the same text and the same highlight as a filled
-      // one, so the check is that its highlight is the dark one as well.
-      const signOutButton = page.getByRole("button", { name: "Sign out" });
-      await signOutButton.hover();
-      await untilHighlightShown(signOutButton);
+      // button there has the same highlight as a filled one, so the check
+      // is that its highlight is the dark one as well, and the stronger one
+      // the header asks for.
+      const headerButton = accountButton(page, user.email);
+      await headerButton.hover();
+      await untilHighlightShown(headerButton);
+      const headerHighlight = headerButton.locator(".q-focus-helper");
       await expect
-        .soft(
-          signOutButton.locator(".q-focus-helper"),
-          "the highlight of a header button",
-        )
+        .soft(headerHighlight, "the highlight of a header button")
         .toHaveCSS("background-color", "rgb(0, 0, 0)");
+      await expect
+        .soft(headerHighlight, "the strength of a header button's highlight")
+        .toHaveCSS("opacity", "0.3");
     });
 
+    await openAccountMenu(page);
+    await untilFadesEnd(page);
+    await expectNoBlockingViolations(page, "the account menu");
     await page.getByRole("button", { name: "Invite a family member" }).click();
     await expect(page.getByLabel("Invite link")).toHaveValue(/.+/);
+    // The dialog takes the menu's place; the scan waits until it is gone.
+    await expect(page.getByRole("group", { name: "Account" })).toHaveCount(0);
+    await untilFadesEnd(page);
     await expectNoBlockingViolations(page, "the invite dialog");
     await page.getByRole("button", { name: "Close" }).click();
+    // The menu entry that opened the dialog is gone; the focus must not be
+    // lost with it.
+    await expect(accountButton(page, user.email)).toBeFocused();
 
     await openList(page, "To-dos");
     await expect(page).toHaveTitle("To-dos · Klankern");

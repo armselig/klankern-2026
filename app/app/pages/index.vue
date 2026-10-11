@@ -28,11 +28,8 @@ watch(
 
     <q-card v-else style="width: 100%; max-width: 480px">
       <q-card-section>
-        <div class="text-h6">{{ householdStore.household.name }}</div>
+        <h2 class="text-h6 q-my-none">{{ householdStore.household.name }}</h2>
         <member-roster />
-      </q-card-section>
-      <q-card-section>
-        <invite-dialog />
       </q-card-section>
       <q-card-section>
         <q-btn

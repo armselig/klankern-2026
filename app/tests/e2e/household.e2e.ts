@@ -1,8 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 import { ROUTES } from "../../app/utils/routes";
 import {
+  accountButton,
   enterLoginCode,
   memberAvatar,
+  openAccountMenu,
   signIn,
   stubOtpRequest,
   waitForSessionCookie,
@@ -99,6 +101,7 @@ test.describe("household setup and invites", () => {
 
     const inviteUrl =
       await test.step("the owner gets an invite link", async () => {
+        await openAccountMenu(ownerPage);
         await ownerPage
           .getByRole("button", { name: "Invite a family member" })
           .click();
@@ -127,7 +130,7 @@ test.describe("household setup and invites", () => {
       await enterLoginCode(memberPage, member.email, "Join household");
       await expect(memberPage).toHaveURL(HOME_URL);
       await expect(memberPage.getByText(name)).toBeVisible();
-      await expect(memberPage.getByText(member.email)).toBeVisible();
+      await expect(accountButton(memberPage, member.email)).toBeVisible();
       expect(await findHouseholdId(member)).toBe(householdId);
     });
 

@@ -4,8 +4,8 @@ const props = defineProps<{
   /** Width and height in CSS pixels. */
   size: number;
   /** Names the person for assistive technology and as a tooltip. Left out
-   * where the address is written right beside the avatar, which then is
-   * decoration. */
+   * where something around the avatar names the person already (the
+   * header's account button), which makes the avatar decoration. */
   label?: string;
 }>();
 

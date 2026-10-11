@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { mdiAccountPlusOutline, mdiContentCopy } from "@quasar/extras/mdi-v7";
+import { mdiContentCopy } from "@quasar/extras/mdi-v7";
 import { copyToClipboard, Notify } from "quasar";
 
 const householdStore = useHouseholdStore();
 
-const open = ref(false);
+/** Whether the dialog is shown. Its opener is elsewhere (the account menu
+ * in the header), so the state is the parent's. */
+const open = defineModel<boolean>({ required: true });
 const code = ref<string | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
@@ -13,8 +15,9 @@ const inviteUrl = computed(() =>
   code.value ? `${location.origin}${ROUTES.join(code.value)}` : "",
 );
 
-async function show() {
-  open.value = true;
+/** Every opening asks for a new code: one from an earlier opening may have
+ * been used or have expired since. */
+async function requestInviteCode() {
   loading.value = true;
   error.value = null;
   try {
@@ -26,6 +29,10 @@ async function show() {
   }
 }
 
+watch(open, (isOpen) => {
+  if (isOpen) void requestInviteCode();
+});
+
 async function copy() {
   await copyToClipboard(inviteUrl.value);
   Notify.create({ message: "Invite link copied", color: "positive" });
@@ -33,14 +40,6 @@ async function copy() {
 </script>
 
 <template>
-  <q-btn
-    color="primary"
-    :icon="mdiAccountPlusOutline"
-    label="Invite a family member"
-    unelevated
-    @click="show"
-  />
-
   <q-dialog v-model="open">
     <q-card style="width: 100%; max-width: 420px">
       <q-card-section>

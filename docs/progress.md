@@ -2,7 +2,7 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of milestone 9, the shared whiteboard, the first automated release, v1.0.0 (2026-10-10), and the member avatars with the hover-contrast fix (2026-10-11) (`develop`). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of milestone 9, the shared whiteboard, the first automated release, v1.0.0 (2026-10-10), the member avatars with the hover-contrast fix, and the header with the wordmark and the account menu (2026-10-11) (`develop`). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
@@ -45,7 +45,7 @@ app/app/
   components/       household/{CreateHouseholdForm,InviteDialog,MemberRoster}.vue,
                     todo/{TodoList,TodoItem}.vue, shopping/{ShoppingList,ShoppingItem}.vue,
                     whiteboard/{SharedWhiteboard,WhiteboardToolbar,WhiteboardSurface,WhiteboardStroke}.vue,
-                    user/UserAvatar.vue
+                    user/{UserAvatar,AccountMenu}.vue
   layouts/          default.vue
   assets/css/       hover-contrast.css (the only global stylesheet)
 app/public/                 offline.html, icons, _redirects (Netlify fallback for client-side routes)
@@ -118,7 +118,7 @@ Leftover test data in the cloud project: to-dos "Test 1–3" and one invite in t
 
 ## Header shows the signed-in user (2026-10-08)
 
-The layout header shows the signed-in user's email next to "Sign out". Signed out, it shows a "Log in" link, except on `/login` and `/join/<code>` (a detour from the join page to `/login` would drop the invite code). Tested in a browser by the user.
+The layout header shows the signed-in user's avatar, which opens the account menu with the email and "Sign out" (see "Header: wordmark and account menu"). Signed out, it shows a "Log in" link, except on `/login` and `/join/<code>` (a detour from the join page to `/login` would drop the invite code). Tested in a browser by the user.
 
 ## Milestone 5: Realtime sync (done 2026-10-08)
 
@@ -317,7 +317,7 @@ Icons are SVG paths from **Material Design Icons v7** (`@quasar/extras`, now a d
 
 - **The "no icon font" setup never worked as intended.** `nuxt-quasar-ui` adds the font of the configured `iconSet` (default `material-icons`) to `extras.fontIcons` on its own (`autoIncludeIconSet`), so `fontIcons: []` had no effect and every production build shipped the 128 KB Material Icons font unused. With an SVG `iconSet` it is gone; `fontIcons: []` was removed from the config.
 - **Never use a string icon name** (`icon="delete"`): without the font it renders as literal text.
-- **Existing buttons**: the per-row "Remove" button of both lists is icon-only with `aria-label="Remove"` (keeps rows narrow on phones); Add, Copy, "Invite a family member", the dashboard's To-dos/Shopping and the header's Install app/Sign out/Log in have an icon next to their label. Form submit buttons, "Use a different email" and "Close" stay text only. Accessible names are unchanged, so the e2e helpers needed no change.
+- **Existing buttons**: the per-row "Remove" button of both lists is icon-only with `aria-label="Remove"` (keeps rows narrow on phones); Add, Copy, "Invite a family member", the dashboard's To-dos/Shopping and the header's Install app/Sign out/Log in (since 2026-10-11 "Install app" is icon-only, and "Invite a family member" and "Sign out" are in the account menu) have an icon next to their label. Form submit buttons, "Use a different email" and "Close" stay text only. Accessible names are unchanged, so the e2e helpers needed no change.
 - **Test**: `lists.e2e.ts` checks that the Remove button contains an `svg` and no text; verified to fail with a string icon name.
 - Not auto-imported via `extras.svgIcons`: that would register about 7,400 global names.
 
@@ -356,14 +356,14 @@ Still open: whether Netlify built the release commit. Netlify reports nothing ba
 
 ## Member avatars from Gravatar (built 2026-10-10)
 
-Every user has an avatar: the signed-in user's in the header, in front of the email, and one for each member of the household in a row on the dashboard (`MemberRoster`), under the household's name. The picture is the person's Gravatar; whoever has none gets a drawing the app makes itself.
+Every user has an avatar: the signed-in user's in the header (since 2026-10-11 as the account button), and one for each member of the household in a row on the dashboard (`MemberRoster`), under the household's name. The picture is the person's Gravatar; whoever has none gets a drawing the app makes itself.
 
 Decided with the user:
 
 - **Header and member row only.** No avatars on list items or strokes ("added by").
 - **Members of a household can read each other's email address.** It is the avatar's accessible name and tooltip. The caption under an avatar is the part before the `@` (`utils/email.ts`), because the app has no display names.
 - **The app draws the fallback itself**, rather than using one of Gravatar's generated defaults: it works offline and in tests and adds no further third-party content.
-- **The header keeps the email text and the "Sign out" button**, so the e2e sign-in helper is unchanged.
+- **The header kept the email text and the "Sign out" button**, so the e2e sign-in helper was unchanged. No longer so since 2026-10-11 (see "Header: wordmark and account menu").
 
 **How an avatar is made** (`components/user/UserAvatar.vue`)
 
@@ -373,9 +373,9 @@ Decided with the user:
 - The inks are a list of their own, not `PEN_COLORS`: the ink is picked by its place in the list, so a new whiteboard pen would otherwise change everyone's picture.
 - The rosette shows as soon as the hash is known. The Gravatar `<img>` lies over it and is empty while it loads. On `load` the rosette is removed (a Gravatar may be transparent); on `error` (404 or offline) the image is. Until the hash is there, the avatar is a grey disc.
 - The image is `loading="lazy"`, so a slow gravatar.com can't hold up the page's `load` event, and `referrerpolicy="no-referrer"`.
-- With a `label` the avatar is `role="img"` with that name and `title`. Without one it is `aria-hidden`: the header, where the address is written beside it.
+- With a `label` the avatar is `role="img"` with that name and `title`. Without one it is `aria-hidden`: the header, where the account button around it carries the name.
 
-**The header on a narrow phone** (user decision): the email gives way. The title keeps at least its own width, the email is cut with an ellipsis, "Sign out" doesn't wrap, and an avatar never shrinks (`flex-shrink: 0` in `UserAvatar`).
+**The header on a narrow phone** (user decision; replaced on 2026-10-11, see "Header: wordmark and account menu"): the email gives way. The title keeps at least its own width, the email is cut with an ellipsis, "Sign out" doesn't wrap, and an avatar never shrinks (`flex-shrink: 0` in `UserAvatar`).
 
 - Before, the title was the only part of the header that could shrink. With the avatar added it was squeezed to one letter at 360 px, and a long address wrapped onto three lines.
 - Looked at in screenshots at 360, 412 and 1280 px: about 70 px (at 360) and 122 px (at 412) remain for the address, and nothing changes on a wide screen. No automated check.
@@ -432,6 +432,42 @@ The `a11y` scan of the dashboard failed with `color-contrast` on the "To-dos" bu
 ## Changelog moved into `app/` (2026-10-11)
 
 On the user's request `CHANGELOG.md` moved from the git root to `app/CHANGELOG.md`: `changelogFile` and the git plugin's `assets` in `.releaserc.yaml` point there, and `app/.prettierignore` lists the file, because Prettier rejects the generated format and `format:check` would fail on every release commit. **Not yet tried with a release**: `--dry-run` doesn't write the changelog, so the next push to `main` with a `feat` or `fix` is the first real run of this path.
+
+## Header: wordmark and account menu (built 2026-10-11)
+
+The header had become too full for a phone: title, "Install app", avatar, email and "Sign out" in one row, with the email cut to a few letters. It now holds the app's name on the left and one or two round buttons on the right. This replaces "The header on a narrow phone" in the avatar section and the header description under milestone 4.
+
+Decided with the user:
+
+- **The app's name is the `<h1>` of every page** and links to the dashboard. The page titles (To-dos, Shopping, Whiteboard) and the card titles (sign in, join, set up a household, the household's name) are `<h2>`. The invite dialog's title is still a `<div>`.
+- **The avatar is in the account button** and so is always on screen. Its menu (`components/user/AccountMenu.vue`) shows the whole email address, "Invite a family member" and "Sign out".
+- **"Invite a family member" moved from the dashboard into that menu.** It is only there while the household store holds a household.
+- **"Install app" is an icon-only button** with that `aria-label` and a tooltip. It stays in the header because the offer also comes on the login page, where there is no account menu. "Log in" keeps its label.
+
+How it is built:
+
+- **The wordmark** is Roboto 700 with a hand-drawn pen stroke under it, an inline SVG that is hidden from assistive technology, so the link's name stays "Klankern". No new font or dependency. Hover and keyboard focus thicken the stroke; focus also draws a white outline. Quasar styles a bare `h1` at 6rem, so the layout's scoped style resets it.
+- **The account button's name is "Account, <email>"**, and the avatar inside has no label. The e2e helpers find the signed-in user by that name (`accountButton` in `tests/support/e2e-ui.ts`), since the address is no longer text in the header.
+- **The menu is `role="group"`, and its entries are real buttons.** `role="menu"` allows only menu items, and the address is none; a clickable `q-item` is a list item with no role that says it can be pressed.
+- **`InviteDialog` no longer has its own button.** It is a dialog with a `v-model`, rendered beside the menu, and asks for a code each time it opens. Inside the menu it would be removed together with the menu's content.
+- **Closing the invite dialog puts the keyboard focus on the account button.** The menu entry that opened the dialog is gone by then, and the focus was left on `<body>`. `a11y.e2e.ts` checks it.
+- Signing out stays in the layout, which holds the Supabase client; the menu emits `signOut`.
+- The wordmark link and the header buttons are 44px high.
+
+**The account button as a pill, and stronger highlights** (same day, user decision): the bare avatar didn't look like a button, and the hover was hard to see, because the avatar hid most of Quasar's veil.
+
+- The button is a pill on a slightly darker blue (15% black) with the avatar and a chevron. While the menu is open the pill is darker (40%) and the chevron points up. A tooltip says "Account".
+- Hover and keyboard focus put a white ring around the avatar; focus also draws a white outline around the pill.
+- **Every highlight in the header is a 30% veil** instead of Quasar's 15 to 22% (`.app-header` in `layouts/default.vue`). It is still black, so the contrast only rises. This holds for "Install app" and "Log in" too.
+- The wordmark gets the same 30% behind it on hover and focus, and its pen stroke thickens from 2 to 4.5px.
+- Hover rules are inside `@media (any-hover: hover)`, as Quasar's are, so a hover doesn't stick after a tap on a phone.
+- `a11y.e2e.ts` checks the veil's 30% on the account button. Seen in screenshots at 375px: at rest, hovered, open and the wordmark hovered. The keyboard focus outline of the pill has not been looked at.
+
+Tests:
+
+- `signOut` and the invite steps open the account menu first (`openAccountMenu`). `a11y.e2e.ts` scans the open menu, and checks the dark hover highlight on the account button instead of on "Sign out".
+- **A scan right after the menu opens fails on contrast**: the menu fades in, and axe measures the half-transparent text. The same happens to the invite dialog's scan while the menu fades out. `untilFadesEnd` in `a11y.e2e.ts` waits for the page's animations.
+- axe still can't judge the header itself (see the previous section), so the wordmark's contrast is not scanned. It is white on the primary color, like the header's text before.
 
 ## Next steps
 

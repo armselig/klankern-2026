@@ -1,6 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { ROUTES } from "../../app/utils/routes";
-import { signIn, signOut, stubOtpRequest } from "../support/e2e-ui";
+import {
+  accountButton,
+  signIn,
+  signOut,
+  stubOtpRequest,
+} from "../support/e2e-ui";
 import {
   createHousehold,
   createTestUser,
@@ -60,7 +65,7 @@ test.describe("auth", () => {
 
     await test.step("a full reload keeps the user signed in", async () => {
       await page.reload();
-      await expect(page.getByText(user.email)).toBeVisible();
+      await expect(accountButton(page, user.email)).toBeVisible();
       await expect(page.getByText(`E2E auth ${runId}`)).toBeVisible();
     });
 

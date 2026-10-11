@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
+  accountButton,
   addShoppingItem,
   addTodo,
   EMPTY_LIST_TEXT,
@@ -79,7 +80,7 @@ test.describe("switching users in the same tab", () => {
       await signOut(page);
       joinedChannels.length = 0;
       await enterLoginCode(page, userB.email, "Verify");
-      await expect(page.getByText(userB.email)).toBeVisible();
+      await expect(accountButton(page, userB.email)).toBeVisible();
       await waitForSessionCookie(page);
       await expect(page.getByText(`E2E switch B ${runId}`)).toBeVisible();
       await expect(page.getByText(`E2E switch A ${runId}`)).toHaveCount(0);

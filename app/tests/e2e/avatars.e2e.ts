@@ -79,8 +79,8 @@ test.describe("avatars", () => {
   test("every member has an avatar: their Gravatar, or the drawing", async ({
     page,
   }) => {
-    // Decoration to assistive technology (the address is written beside it),
-    // so it has no role to find it by.
+    // Decoration to assistive technology (the account button around it
+    // carries the name), so it has no role to find it by.
     const headerAvatar = page.getByRole("banner").locator(".q-avatar");
 
     await test.step("without a Gravatar, everyone gets the drawing", async () => {

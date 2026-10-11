@@ -51,7 +51,7 @@ async function verifyCode() {
   <q-page class="flex flex-center">
     <q-card style="width: 100%; max-width: 360px">
       <q-card-section>
-        <div class="text-h6">Sign in to Klankern</div>
+        <h2 class="text-h6 q-my-none">Sign in to Klankern</h2>
       </q-card-section>
 
       <q-card-section v-if="step === 'email'">

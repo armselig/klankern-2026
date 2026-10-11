@@ -54,20 +54,43 @@ export async function waitForSessionCookie(page: Page) {
  * login page, the header shows the user and the session is stored, so the
  * test may load or reload pages directly. The cookie alone is not enough: it
  * is written before the app navigates, and a reload in that gap stays on the
- * login page. The email is looked up in the header because the code step
- * shows it too ("We sent a login code to ...").
+ * login page. The user is looked up in the header, by the account button's
+ * name, because the code step shows the email too ("We sent a login code to
+ * ...").
  */
 export async function signIn(page: Page, user: TestUser) {
   await stubOtpRequest(page);
   await page.goto(ROUTES.login);
   await enterLoginCode(page, user.email, "Verify");
   await expect(page).toHaveURL(ROUTES.home);
-  await expect(page.getByRole("banner").getByText(user.email)).toBeVisible();
+  await expect(accountButton(page, user.email)).toBeVisible();
   await waitForSessionCookie(page);
 }
 
-/** Signs out through the header and waits for the login page. */
+/**
+ * The header's account button of the user with this email. It shows only
+ * the avatar, and its name carries the address, so it tells who is signed
+ * in without opening the menu.
+ */
+export function accountButton(page: Page, email: string) {
+  return page
+    .getByRole("banner")
+    .getByRole("button", { name: `Account, ${email}`, exact: true });
+}
+
+/** Opens the header's account menu, which holds "Invite a family member"
+ * and "Sign out". */
+export async function openAccountMenu(page: Page) {
+  await page
+    .getByRole("banner")
+    .getByRole("button", { name: /^Account/ })
+    .click();
+  await expect(page.getByRole("group", { name: "Account" })).toBeVisible();
+}
+
+/** Signs out through the account menu and waits for the login page. */
 export async function signOut(page: Page) {
+  await openAccountMenu(page);
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL(new RegExp(`${ROUTES.login}$`));
 }
