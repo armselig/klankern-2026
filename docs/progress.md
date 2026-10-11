@@ -2,7 +2,7 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of milestone 9, the shared whiteboard, the first automated release, v1.0.0 (2026-10-10), the member avatars with the hover-contrast fix, the header with the wordmark and the account menu, and the Catppuccin theme with light and dark mode (2026-10-11) (`develop`). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of milestone 9, the shared whiteboard, the first automated release, v1.0.0 (2026-10-10), the member avatars with the hover-contrast fix, the header with the wordmark and the account menu, the Catppuccin theme with light and dark mode, the two font replacements that were tried and dropped, release v1.3.1, the fix for the `pwa` e2e project with a leftover `.output`, and milestone 8 finished with the update notice checked on the deployed site (all 2026-10-11) (`develop`; the `.output` fix is not on `main` yet). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
@@ -15,8 +15,8 @@ Tracks what's been built against the milestones in [`plan.md`](./plan.md), sessi
 | 5. Realtime sync for to-dos | ✅ Done — proven by the Playwright e2e test (two browsers, incl. reconnect) |
 | 6. Shared shopping list | ✅ Done — CRUD + live sync, covered by unit tests and the Playwright e2e test |
 | 7. PWA installability pass | ✅ Done — installability, offline page, update notice and install button covered by the Playwright `pwa` project; the install button also checked by hand in Chrome. Installing on Android moves to milestone 8 (needs HTTPS) |
-| 8. Deploy (Netlify; containers deferred) | 🟡 Deployed to Netlify from `main`; routing and response headers checked on the deployed URL, and login, join link, install, offline page and the Android install checked there in a browser. Only the update notice on the deployed site is still open |
-| 9. Shared whiteboard | ✅ Built — drawing, eraser, undo, clear and live sync, covered by unit, RLS and Playwright e2e tests. Not yet tried on a real touch screen |
+| 8. Deploy (Netlify; containers deferred) | ✅ Done — deployed to Netlify from `main`; routing and response headers checked on the deployed URL, and login, join link, install, offline page, the Android install and the update notice checked there in a browser |
+| 9. Shared whiteboard | ✅ Built — drawing, eraser, undo, clear and live sync, covered by unit, RLS and Playwright e2e tests, and tried by hand on a phone and with a second member |
 | 10. Shared recipes (deferred phase) | ⬜ Not started |
 
 ## What's built
@@ -48,20 +48,22 @@ app/app/
                     user/{UserAvatar,AccountMenu}.vue
   layouts/          default.vue
   assets/css/       theme.css (the colors of light and dark mode), hover-contrast.css
-app/public/                 offline.html, icons, _redirects (Netlify fallback for client-side routes)
+app/public/                 offline.html, icons, favicon.ico, robots.txt, _redirects (Netlify fallback for client-side routes)
+app/scripts/                generate-pwa-icons.mjs (writes the app icons and the favicon in `public/`)
 app/supabase/migrations/   0001_households.sql … 0013_list_household_members.sql
 app/tests/support/          supabase-fixtures.ts (disposable users/households/invites via the Admin API, shared by RLS + e2e),
                             e2e-ui.ts (sign-in and list steps through the real UI), realtime-socket.ts (cut/watch the Realtime socket, hold back frames),
                             fake-supabase-client.ts (fake query builder + client for the `*-actions.spec.ts` unit tests)
 app/tests/rls/              household-isolation.spec.ts (two-JWT RLS proof against Supabase Cloud)
+app/tests/unit/             environment.spec.ts (the Vitest environment mounts a Vue component)
 app/tests/e2e/              Playwright `dev` project (against `nuxt dev`): auth, household, lists, realtime-sync,
-                            session-switch, whiteboard, avatars, a11y (*.e2e.ts); `pwa` project: pwa.e2e.ts (production build)
+                            session-switch, whiteboard, avatars, a11y, app-version (*.e2e.ts); `pwa` project: pwa.e2e.ts (production build)
 netlify.toml                at the git root: build settings for Netlify
 ```
 
-**Design pattern used throughout**: business logic lives in plain `composables/*-actions.ts` functions that take a `SupabaseClient` as a parameter, unit-tested with a mocked client (no Nuxt runtime needed). Pinia stores are thin — they call `useSupabaseClient()`/`useSupabaseUser()` and delegate to those functions. State-transition logic that needs testing on its own (optimistic add/dedup, soft-delete, sort order) is further extracted into pure reducer functions in `utils/`. List logic that doesn't depend on the item type (dedup, soft delete, Realtime events, reconnect merge) is **generic** over `ListItem` (`types/list.ts`) in `utils/list-state.ts` and shared by every list; only the actions, store, components and list-specific ordering are per list. This is the pattern to continue for whiteboard/recipes (later phases).
+**Design pattern used throughout**: business logic lives in plain `composables/*-actions.ts` functions that take a `SupabaseClient` as a parameter, unit-tested with a mocked client (no Nuxt runtime needed). Pinia stores are thin — they call `useSupabaseClient()`/`useSupabaseUser()` and delegate to those functions. State-transition logic that needs testing on its own (optimistic add/dedup, soft-delete, sort order) is further extracted into pure reducer functions in `utils/`. List logic that doesn't depend on the item type (dedup, soft delete, Realtime events, reconnect merge) is **generic** over `ListItem` (`types/list.ts`) in `utils/list-state.ts` and shared by every list; only the actions, store, components and list-specific ordering are per list. The whiteboard follows it too (see "Milestone 9"), and it is the pattern to continue for recipes (a later phase).
 
-**Testing**: Vitest, 173 tests passing (including the RLS suite) (`npm test`). Playwright e2e (`npm run test:e2e`, 28 tests in two projects; see the milestone 5 and 7 sections and "E2E gap review") is separate and not in the pre-push hook; CI runs it on every push to `main` and `develop` (see "CI"). Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
+**Testing**: Vitest, 178 tests in 22 files passing (including the RLS suite) (`npm test`, run 2026-10-11). Playwright e2e (`npm run test:e2e`, 28 tests in 10 files and two projects; see the milestone 5 and 7 sections and "E2E gap review") is separate and not in the pre-push hook; CI runs it on every push to `main` and `develop` (see "CI"). Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
 
 **Database types**: generated from the live schema via `supabase gen types typescript`, saved to `app/app/types/database.types.ts`, picked up automatically by `@nuxtjs/supabase`'s default `types` path. Re-run after any migration changes:
 ```
@@ -170,8 +172,8 @@ Chrome never reports installability in an incognito-like context, which Playwrig
 
 **Manual check (2026-10-09)**, on a production build (`npx nuxi build && PORT=3100 node .output/server/index.mjs`, so it doesn't clash with `nuxt dev` on :3000):
 - The "Install app" button appears in Chrome and installs the app. It only appears after Chrome's engagement heuristic (roughly one click plus ~30 s on the page). It never appears in `nuxt dev` (no service worker) or in Firefox (desktop Firefox doesn't support `beforeinstallprompt`).
-- The update notice could not be verified by hand. It is now covered by the `pwa` project instead (see "E2E gap review"), so this is resolved.
-- Installing on Android needs HTTPS on a real host, so it waits for milestone 8.
+- The update notice could not be verified by hand. It is now covered by the `pwa` project instead (see "E2E gap review"), so this is resolved. Since 2026-10-11 it has also been checked by the user on the deployed site (see "Milestone 8").
+- Installing on Android needs HTTPS on a real host, so it waits for milestone 8 (checked there on 2026-10-10, see "Milestone 8").
 
 ## E2E gap review (2026-10-09)
 
@@ -219,7 +221,7 @@ The first run passed everything except one e2e test: "a new version shows the up
 - The same CI run on `develop` once also failed "a signed-out family member joins through the invite link" (`household.e2e.ts`) with the 120 s test timeout, in the step where the member opens the join link. It overlapped with a local e2e run; not explained, and it has not recurred.
 - Not changed: a signed-in user who opens `/login` directly sees the login form.
 
-## Milestone 8: Netlify deploy (repo side built 2026-10-10)
+## Milestone 8: Netlify deploy (repo side built 2026-10-10, done 2026-10-11)
 
 Production hosting is **Netlify, as static files** (user decision, deviating from the plan's Podman + Caddy setup, which is deferred). The app is a client-only SPA with no `server/` directory, so `nuxt generate` output is all it needs: no Netlify Function, no container.
 
@@ -253,9 +255,7 @@ Production hosting is **Netlify, as static files** (user decision, deviating fro
 - In a browser: OTP login; a `/join/<code>` link opened directly; "Install app"; the offline page; installing on Android (carried over from milestone 7).
 - Settings: deploy previews and branch deploys are off in Netlify; the Supabase Auth "Site URL" is the deployed URL; the install step of the Netlify deploy log was looked at.
 
-Still open:
-
-1. The update notice on the deployed site: needs a deploy while the app is open, so check it with the next push to `main`.
+**Checked by the user on the deployed site (2026-10-11):** the update notice. It was the last open item, so milestone 8 is done.
 
 ## Milestone 9: Shared whiteboard (built 2026-10-10)
 
@@ -299,11 +299,12 @@ One whiteboard per household at `ROUTES.whiteboard` ("Whiteboard" button on the 
 - RLS (`household-isolation.spec.ts`): another household's board and strokes are invisible and can't be drawn on or erased; the composite key rejects a stroke on another household's board; no hard delete; one board per household; each check constraint.
 - E2E (`whiteboard.e2e.ts`): two members; a stroke with its color, width and points arrives on the other; a tap makes a dot; undo; reload; the eraser on another member's stroke of several hundred points (the missing-`points` rule itself is guarded by the unit test, since an erased stroke is hidden either way); clear with its confirmation. It asserts on the surface's accessible name and the strokes' attributes, not on pixels. Verified to fail with the stroke listener disconnected. `a11y.e2e.ts` scans the page and `auth.e2e.ts` checks its auth guard.
 - Not tested separately: a reconnect (same resync as the lists), and touch or pen input (the e2e test draws with the mouse).
+- **Tried by hand by the user (2026-10-11)**: the whiteboard on a phone and with a second member. No automated test draws by touch.
 
 **Found on the way**
 
 - A long-running `nuxt dev` did not pick up the new page file (`/whiteboard` answered 404) until the file was moved away and back.
-- **The `pwa` project failed once in the working tree** (all 4 tests, blank page): the HTML in `dist` referenced `/_nuxt/*.js` files that the same build had not written. A fresh copy of the same tree built correctly and passed all 4. Not explained: Playwright always runs `nuxt dev` and the production build side by side, in CI too, so that alone is not the cause.
+- **The `pwa` project failed once in the working tree** (all 4 tests, blank page): the HTML in `dist` referenced `/_nuxt/*.js` files that the same build had not written. A fresh copy of the same tree built correctly and passed all 4. Not explained then: Playwright always runs `nuxt dev` and the production build side by side, in CI too, so that alone is not the cause. Explained and fixed on 2026-10-11, see "The `pwa` e2e project and a leftover `.output`".
 - `dragOnWhiteboard` (`tests/support/e2e-ui.ts`) scrolls the board into view first: Playwright's mouse doesn't scroll, and a position under the fixed footer hits the footer.
 
 **Noticed, not changed** (the lists):
@@ -341,7 +342,7 @@ Found while building it:
 
 - `conventional-changelog-conventionalcommits` 10.x does not work with the notes plugin semantic-release ships ("Missing helper"); 9.3.1 is the version that plugin is tested with.
 - `--dry-run` skips exactly the steps that needed checking (changelog, version bump, commit). The setup was instead run for real in a scratch clone against a scratch bare repository, with the files as committed apart from the GitHub plugin: a first release (1.0.0, three files in the commit, tag on it, `develop` fast-forwarded), a run with nothing to release, and a `fix` commit giving 1.0.1.
-- **A leftover `app/.output` breaks the local `pwa` e2e project.** If `app/.output/public` exists from an earlier `nuxt generate` without the Netlify preset, a later `netlify serve` build takes the old HTML from there for every route that folder has, instead of rendering it; the pages then point at script files that no longer exist, and the four `pwa.e2e.ts` tests fail on "Sign in to Klankern". Deleting `app/.output` fixes it: the leftover found here was deleted on 2026-10-10, and the four tests pass again. Not caused by the release work, and CI and Netlify build from a fresh checkout. Why the prerender step reads that folder was not traced in Nitro's source, so the folder can come back with the next local `nuxt generate`.
+- **A leftover `app/.output` breaks the local `pwa` e2e project.** If `app/.output/public` exists from an earlier `nuxt generate` without the Netlify preset, a later `netlify serve` build takes the old HTML from there for every route that folder has, instead of rendering it; the pages then point at script files that no longer exist, and the four `pwa.e2e.ts` tests fail on "Sign in to Klankern". Deleting `app/.output` fixes it: the leftover found here was deleted on 2026-10-10, and the four tests pass again. Not caused by the release work, and CI and Netlify build from a fresh checkout. Why the prerender step reads that folder was not traced in Nitro's source then, so the folder could come back with the next local `nuxt generate`. Traced and fixed on 2026-10-11, see "The `pwa` e2e project and a leftover `.output`".
 
 Tests: `app-version.e2e.ts` (the footer shows the version from `package.json`; written first and seen to fail), and the `a11y` and `pwa` specs pass with the change.
 
@@ -352,7 +353,16 @@ Tests: `app-version.e2e.ts` (the footer shows the version from `package.json`; w
 - `develop` was fast-forwarded to the release commit, and no workflow run started for it.
 - The CI runs for the pushed commit passed on both branches, the new `app-version.e2e.ts` included.
 
-Still open: whether Netlify built the release commit. Netlify reports nothing back to GitHub, so this can only be seen on the deployed site, where the footer should read `Version 1.0.0`. The fast-forward step's failure paths (`develop` moved on, or workflow changes on `main` that `develop` lacks) have not happened yet either.
+**Four more releases on 2026-10-11: v1.1.0, v1.2.0, v1.3.0 and v1.3.1.** Each was a push of `develop` and `main` together, and the "Release" workflow passed every time, as did CI on both branches.
+
+- 1.1.0: the member avatars, the header with the account menu and the hover-contrast fix. 1.2.0: the theme. 1.3.0: the shipped fonts. 1.3.1: their revert.
+- **A revert releases a patch**, by the commit analyzer's default rules (`.releaserc.yaml` sets none of its own). The rule goes by what the parser recognises as a revert, not by the commit type: the message has to start with `revert:` or `Revert` and keep git's line "This reverts commit <hash>.", as the 1.3.1 commit did. A hand-written `revert: …` without that line releases nothing.
+- Each release commit holds exactly `app/CHANGELOG.md`, `app/package.json` and `app/package-lock.json`, so the changelog's new place works (see "Changelog moved into `app/`").
+- `develop` was fast-forwarded to the release commit every time.
+
+**Netlify builds the release commit** (checked by the user on the deployed site, 2026-10-11): the footer reads `Version 1.3.1`, the version that only the release commit carries. Netlify reports nothing back to GitHub, so the footer is the place to see it.
+
+Still open: the fast-forward step's failure paths (`develop` moved on, or workflow changes on `main` that `develop` lacks) have not happened yet.
 
 ## Member avatars from Gravatar (built 2026-10-10)
 
@@ -410,7 +420,7 @@ Decided with the user:
 - A member who joins while someone else has the dashboard open appears there on that person's next visit to the dashboard: `household_members` is not in the Realtime publication.
 - Display names, uploading a picture, a way to opt out of Gravatar.
 
-**Looked at, and not yet**: the rosettes were judged on a contact sheet of all shapes at 32, 48 and 96 px, and the header and the dashboard in screenshots from the e2e run (a stand-in picture for the Gravatar). A real Gravatar photo has not been seen in the app yet.
+**Looked at, and not yet**: the rosettes were judged on a contact sheet of all shapes at 32, 48 and 96 px, and the header and the dashboard in screenshots from the e2e run (a stand-in picture for the Gravatar). A real Gravatar photo had not been seen in the app then; the user checked one on 2026-10-11, signed in with an address that has a Gravatar.
 
 **Found on the way**
 
@@ -429,9 +439,18 @@ The `a11y` scan of the dashboard failed with `color-contrast` on the "To-dos" bu
 - All three checks were seen to fail before the fix, and pass with it.
 - **Noticed, not changed**: "Cancel" in the whiteboard's "Clear" dialog is primary-colored text on white. Its veil is primary-colored and darkens the white behind it. By calculation, not measured, the hovered text is at about 3.8:1. The black veil doesn't apply there. Fixed with the theme (see "Theme: Catppuccin Latte and Mocha"): "Cancel" is no longer primary-colored.
 
+## Formatting and markup rules, and the mobile viewport (2026-10-11)
+
+The tooling now holds the formatting, the spelling of component tags and the screen the e2e tests run at. `CLAUDE.md` ("Conventions and gotchas") records them, together with two rules that no tool checks: build mobile-first, and favor progressive enhancement.
+
+- **Prettier runs with its defaults** (80 columns, semicolons, double quotes); `.prettierrc.json` is empty.
+- **Components are kebab-case in markup** (`<nuxt-link>`, `<q-btn>`, `<invite-dialog>`): ESLint's `vue/component-name-in-template-casing`, also for components it can't see registered. File names stay PascalCase.
+- **The Playwright `dev` project runs at 375x667**, an iPhone SE, the reference screen for the mobile-first rule. The `pwa` project keeps Playwright's default viewport.
+- The whole code base was reformatted once under the new rules (`prettier --write .` and `eslint --fix`, 97 files, no change in behaviour), in a commit of its own.
+
 ## Changelog moved into `app/` (2026-10-11)
 
-On the user's request `CHANGELOG.md` moved from the git root to `app/CHANGELOG.md`: `changelogFile` and the git plugin's `assets` in `.releaserc.yaml` point there, and `app/.prettierignore` lists the file, because Prettier rejects the generated format and `format:check` would fail on every release commit. **Not yet tried with a release**: `--dry-run` doesn't write the changelog, so the next push to `main` with a `feat` or `fix` is the first real run of this path.
+On the user's request `CHANGELOG.md` moved from the git root to `app/CHANGELOG.md`: `changelogFile` and the git plugin's `assets` in `.releaserc.yaml` point there, and `app/.prettierignore` lists the file, because Prettier rejects the generated format and `format:check` would fail on every release commit. `--dry-run` doesn't write the changelog, so the first real run of this path was the next release, 1.1.0, the same day: it and the three releases after it wrote `app/CHANGELOG.md` and committed it with the version bump.
 
 ## Header: wordmark and account menu (built 2026-10-11)
 
@@ -538,8 +557,7 @@ Worth knowing: the hook relies on how Nitro builds its prerenderer, which no doc
 
 ## Next steps
 
-1. Sign in with an address that has a Gravatar and check the photo in the header and in the member row (see "Member avatars from Gravatar").
-2. Check on the deployed site that the footer shows `Version 1.0.0`, which confirms that Netlify built the release commit (see "Releases").
-3. Finish milestone 8: check the update notice on the deployed site with the next push to `main` (keep the app open during the deploy).
-4. Try the whiteboard by hand on a phone and with a second member (see "Milestone 9").
-5. Optional, later: the Podman production setup (`Containerfile.prod`, Quadlet units, Caddy).
+The four checks that were listed here are done (the Gravatar photo, the whiteboard by hand, the update notice and the footer version on the deployed site, all 2026-10-11). The sections on the header and the theme still name a few things nobody has looked at, mostly in dark mode.
+
+1. Milestone 10, shared recipes, is the only milestone not started.
+2. Optional, later: the Podman production setup (`Containerfile.prod`, Quadlet units, Caddy).
