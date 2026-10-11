@@ -5,6 +5,7 @@ import {
   EMPTY_LIST_TEXT,
   enterLoginCode,
   listItem,
+  memberAvatar,
   openList,
   signIn,
   signOut,
@@ -78,6 +79,9 @@ test.describe('switching users in the same tab', () => {
       await waitForSessionCookie(page)
       await expect(page.getByText(`E2E switch B ${runId}`)).toBeVisible()
       await expect(page.getByText(`E2E switch A ${runId}`)).toHaveCount(0)
+      // A's dashboard had loaded A's members; none of them may be left.
+      await expect(memberAvatar(page, userB.email)).toBeVisible()
+      await expect(memberAvatar(page, userA.email)).toHaveCount(0)
     })
 
     for (const list of ['To-dos', 'Shopping'] as const) {

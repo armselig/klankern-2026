@@ -7,6 +7,7 @@ import {
   dragOnWhiteboard,
   expectStrokeCount,
   listItem,
+  memberAvatar,
   openList,
   openWhiteboard,
   signIn,
@@ -87,6 +88,8 @@ test.describe('accessibility', () => {
     await signIn(page, user)
     await expect(page.getByText(`E2E a11y ${runId}`)).toBeVisible()
     await expect(page).toHaveTitle('Klankern')
+    // The members arrive after the household; the scan should see them.
+    await expect(memberAvatar(page, user.email)).toBeVisible()
     await expectNoBlockingViolations(page, 'the dashboard')
 
     // White text on the primary color is close to the contrast limit, and a

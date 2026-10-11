@@ -30,7 +30,11 @@ async function signOut() {
   <q-layout view="hHh lpR fFf">
     <q-header elevated class="bg-primary text-white">
       <q-toolbar>
-        <q-toolbar-title><nuxt-link :to="ROUTES.home">Klankern</nuxt-link></q-toolbar-title>
+        <!-- Never narrower than its own text: on a phone the email gives way
+             instead (see below), or the title would be squeezed to one letter. -->
+        <q-toolbar-title style="min-width: max-content">
+          <nuxt-link :to="ROUTES.home">Klankern</nuxt-link>
+        </q-toolbar-title>
         <!-- Only shown once the browser offers installation (beforeinstallprompt). -->
         <q-btn
           v-if="$pwa?.showInstallPrompt && !$pwa.isPWAInstalled"
@@ -40,8 +44,12 @@ async function signOut() {
           @click="$pwa.install()"
         />
         <template v-if="user">
-          <span>{{ user.email }}</span>
-          <q-btn flat :icon="mdiLogout" label="Sign out" @click="signOut" />
+          <!-- No label: the address is written right beside it. -->
+          <UserAvatar v-if="user.email" :email="user.email" :size="32" class="q-mr-sm" />
+          <!-- The one part of the header that may shrink: cut with an ellipsis
+               when a phone is too narrow for the whole address. -->
+          <span class="ellipsis" style="min-width: 0">{{ user.email }}</span>
+          <q-btn flat no-wrap :icon="mdiLogout" label="Sign out" @click="signOut" />
         </template>
         <q-btn
           v-else-if="showLoginButton"

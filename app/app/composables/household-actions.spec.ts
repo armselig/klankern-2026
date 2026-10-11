@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createHousehold, createInvite, fetchMyHousehold, redeemInvite } from './household-actions'
+import {
+  createHousehold,
+  createInvite,
+  fetchHouseholdMembers,
+  fetchMyHousehold,
+  redeemInvite,
+} from './household-actions'
 import { fakeClient, fakeQueryBuilder } from '../../tests/support/fake-supabase-client'
 
 describe('createHousehold', () => {
@@ -37,6 +43,34 @@ describe('fetchMyHousehold', () => {
     const client = fakeClient({ from: () => query.builder })
 
     expect(await fetchMyHousehold(client as never)).toEqual(household)
+  })
+})
+
+describe('fetchHouseholdMembers', () => {
+  it('calls the list_household_members RPC for the household and returns its members', async () => {
+    const members = [
+      { user_id: 'u1', email: 'anna@example.com', joined_at: '2026-10-01T10:00:00Z' },
+      { user_id: 'u2', email: 'ben@example.com', joined_at: '2026-10-02T10:00:00Z' },
+    ]
+    const rpc = vi.fn().mockResolvedValue({ data: members, error: null })
+    const client = fakeClient({ rpc })
+
+    expect(await fetchHouseholdMembers(client as never, 'h1')).toEqual(members)
+    expect(rpc).toHaveBeenCalledWith('list_household_members', { p_household_id: 'h1' })
+  })
+
+  it('returns an empty list when the RPC returns nothing', async () => {
+    const client = fakeClient({})
+
+    expect(await fetchHouseholdMembers(client as never, 'h1')).toEqual([])
+  })
+
+  it('throws when the RPC fails', async () => {
+    const error = new Error('permission denied for function list_household_members')
+    const rpc = vi.fn().mockResolvedValue({ data: null, error })
+    const client = fakeClient({ rpc })
+
+    await expect(fetchHouseholdMembers(client as never, 'h1')).rejects.toBe(error)
   })
 })
 

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '~/types/database.types'
-import type { Household } from '~/types/household'
+import type { Household, HouseholdMemberProfile } from '~/types/household'
 import { getCurrentUserId } from './current-user'
 
 type Client = SupabaseClient<Database>
@@ -32,6 +32,21 @@ export async function fetchMyHousehold(client: Client): Promise<Household | null
     .maybeSingle()
   if (error) throw error
   return data?.households ?? null
+}
+
+/** The members of a household the caller belongs to, with their email addresses, longest-standing
+ * member first. Goes through the list_household_members RPC (migration 0013) because the
+ * addresses are in auth.users, which the API doesn't expose. For a household the caller is not
+ * a member of, the list is empty. */
+export async function fetchHouseholdMembers(
+  client: Client,
+  householdId: string,
+): Promise<HouseholdMemberProfile[]> {
+  const { data, error } = await client.rpc('list_household_members', {
+    p_household_id: householdId,
+  })
+  if (error) throw error
+  return data ?? []
 }
 
 /** Creates an invite for a household the caller already belongs to. Returns the redeemable code.

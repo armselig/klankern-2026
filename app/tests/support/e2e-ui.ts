@@ -64,6 +64,17 @@ export async function signOut(page: Page) {
   await expect(page).toHaveURL(new RegExp(`${ROUTES.login}$`))
 }
 
+/** The dashboard's list of the household's members. */
+export function memberRoster(page: Page) {
+  return page.getByRole('list', { name: 'Household members' })
+}
+
+/** A member's avatar in that list. It is named by the member's email
+ * address, whether it shows a photo or the app's own drawing. */
+export function memberAvatar(page: Page, email: string) {
+  return memberRoster(page).getByRole('img', { name: email })
+}
+
 /** Both lists render an item as a checkbox labelled with its text. */
 export function listItem(page: Page, label: string) {
   return page.getByRole('checkbox', { name: label, exact: true })

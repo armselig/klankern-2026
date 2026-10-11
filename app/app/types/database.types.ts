@@ -363,6 +363,14 @@ export type Database = {
       }
       create_invite: { Args: { p_household_id: string }; Returns: string }
       is_household_member: { Args: { hid: string }; Returns: boolean }
+      list_household_members: {
+        Args: { p_household_id: string }
+        Returns: {
+          email: string
+          joined_at: string
+          user_id: string
+        }[]
+      }
       redeem_invite: { Args: { p_code: string }; Returns: string }
     }
     Enums: {

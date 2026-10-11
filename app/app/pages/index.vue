@@ -4,6 +4,16 @@ import { mdiCartOutline, mdiDraw, mdiFormatListChecks } from '@quasar/extras/mdi
 const householdStore = useHouseholdStore()
 
 onMounted(() => householdStore.fetchMine())
+
+// The members are fetched here, not by the roster: fetchMine() swaps the
+// whole card for the spinner and back, so the roster is mounted twice on a
+// visit and would fetch twice. Watching the id fetches once per visit, and
+// also when a household is created on this page, which mounts nothing anew.
+watch(
+  () => householdStore.household?.id,
+  () => void householdStore.fetchMembers(),
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -15,6 +25,7 @@ onMounted(() => householdStore.fetchMine())
     <q-card v-else style="width: 100%; max-width: 480px">
       <q-card-section>
         <div class="text-h6">{{ householdStore.household.name }}</div>
+        <MemberRoster />
       </q-card-section>
       <q-card-section>
         <InviteDialog />

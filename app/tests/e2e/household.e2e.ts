@@ -1,6 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
 import { ROUTES } from '../../app/utils/routes'
-import { enterLoginCode, signIn, stubOtpRequest, waitForSessionCookie } from '../support/e2e-ui'
+import {
+  enterLoginCode,
+  memberAvatar,
+  signIn,
+  stubOtpRequest,
+  waitForSessionCookie,
+} from '../support/e2e-ui'
 import {
   createHousehold,
   createInviteCode,
@@ -67,6 +73,8 @@ test.describe('household setup and invites', () => {
       await expect(page.getByText(name)).toBeVisible()
       await expect(page.getByRole('link', { name: 'To-dos' })).toBeVisible()
       await expect(page.getByRole('link', { name: 'Shopping' })).toBeVisible()
+      // The new household's only member so far, without a page load.
+      await expect(memberAvatar(page, user.email)).toBeVisible()
     })
 
     await test.step('the household is still there after a reload', async () => {

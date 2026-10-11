@@ -13,6 +13,7 @@ import {
   deleteTestData,
   insertInvite,
   runId,
+  signedOut,
   type TestUser,
 } from '../support/supabase-fixtures'
 
@@ -207,6 +208,36 @@ describe('household RLS isolation', () => {
     const code = await insertInvite(householdAId, userA.userId, { max_uses: 1, use_count: 1 })
 
     const { data, error } = await userB.client.rpc('redeem_invite', { p_code: code })
+    expect(data).toBeNull()
+    expect(error).not.toBeNull()
+  })
+
+  it('list_household_members gives a member the email addresses of their own household', async () => {
+    const { data, error } = await userA.client.rpc('list_household_members', {
+      p_household_id: householdAId,
+    })
+    expect(error).toBeNull()
+    // Not the exact list: an earlier test may have added user C to household A.
+    expect(data).toContainEqual({
+      user_id: userA.userId,
+      email: userA.email,
+      joined_at: expect.any(String),
+    })
+    expect(data.map((member: { email: string }) => member.email)).not.toContain(userB.email)
+  })
+
+  it('list_household_members returns nothing of household A to a member of household B (no rows, not an error)', async () => {
+    const { data, error } = await userB.client.rpc('list_household_members', {
+      p_household_id: householdAId,
+    })
+    expect(error).toBeNull()
+    expect(data).toEqual([])
+  })
+
+  it('list_household_members cannot be called without signing in', async () => {
+    const { data, error } = await signedOut.rpc('list_household_members', {
+      p_household_id: householdAId,
+    })
     expect(data).toBeNull()
     expect(error).not.toBeNull()
   })

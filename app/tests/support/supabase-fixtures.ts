@@ -29,6 +29,14 @@ export const admin = createClient(url, secretKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
 
+/**
+ * A client without a session: what anyone can do who holds the publishable
+ * key, which ships in the app's bundle, without signing in.
+ */
+export const signedOut = createClient(url, publishableKey, {
+  auth: { autoRefreshToken: false, persistSession: false },
+})
+
 export interface TestUser {
   userId: string
   email: string

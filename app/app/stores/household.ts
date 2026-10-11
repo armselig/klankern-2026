@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
-import type { Household } from '~/types/household'
+import type { Household, HouseholdMemberProfile } from '~/types/household'
 import {
   createHousehold,
   createInvite,
+  fetchHouseholdMembers,
   fetchMyHousehold,
   redeemInvite,
 } from '~/composables/household-actions'
@@ -13,6 +14,11 @@ export const useHouseholdStore = defineStore('household', {
     household: null as Household | null,
     loading: false,
     error: null as string | null,
+    /** The household's members with their email addresses, for the avatars
+     * on the dashboard. Loaded apart from the household itself, so the
+     * dashboard doesn't wait for them. */
+    members: [] as HouseholdMemberProfile[],
+    membersError: null as string | null,
   }),
   actions: {
     async fetchMine() {
@@ -24,6 +30,24 @@ export const useHouseholdStore = defineStore('household', {
         this.error = errorMessage(e)
       } finally {
         this.loading = false
+      }
+    },
+
+    /**
+     * Loads the members of the current household. The result is only kept
+     * if the household is still the one that was asked for: a fetch that
+     * ends after a sign-out or a change of user would otherwise put the
+     * previous household's email addresses in front of the next user.
+     */
+    async fetchMembers() {
+      const householdId = this.household?.id
+      if (!householdId) return
+      this.membersError = null
+      try {
+        const members = await fetchHouseholdMembers(useSupabaseClient(), householdId)
+        if (this.household?.id === householdId) this.members = members
+      } catch (e) {
+        if (this.household?.id === householdId) this.membersError = errorMessage(e)
       }
     },
 

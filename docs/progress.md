@@ -2,7 +2,7 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of milestone 9, the shared whiteboard, and the first automated release, v1.0.0 (2026-10-10) (`develop`). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of milestone 9, the shared whiteboard, the first automated release, v1.0.0 (2026-10-10), and the member avatars with the hover-contrast fix (2026-10-11) (`develop`). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
@@ -30,35 +30,38 @@ app/app/
                     shopping.ts, whiteboard.ts
   composables/      current-user.ts, household-actions.ts, todo-actions.ts, shopping-actions.ts,
                     whiteboard-actions.ts,
-                    household-realtime.ts, reset-stores-on-user-change.ts (+ .spec.ts siblings),
+                    household-realtime.ts, reset-stores-on-user-change.ts,
+                    use-gravatar-hash.ts (+ .spec.ts siblings),
                     use-household-realtime.ts, use-reset-stores-on-user-change.ts,
                     use-pwa-update-notice.ts
   utils/            position.ts, list-state.ts, shopping-state.ts, error-message.ts,
                     inserts-in-flight.ts, changes-during-fetch.ts, realtime-event-order.ts,
-                    whiteboard-state.ts, whiteboard-geometry.ts (+ .spec.ts siblings),
+                    whiteboard-state.ts, whiteboard-geometry.ts,
+                    gravatar.ts, avatar-rosette.ts, email.ts (+ .spec.ts siblings),
                     whiteboard-pen.ts, routes.ts
   stores/           household.ts, todos.ts, shopping.ts, whiteboard.ts
   pages/            login.vue, confirm.vue, index.vue, todos.vue, shopping.vue, whiteboard.vue,
                     join/[code].vue
-  components/       household/{CreateHouseholdForm,InviteDialog}.vue, todo/{TodoList,TodoItem}.vue,
-                    shopping/{ShoppingList,ShoppingItem}.vue,
-                    whiteboard/{SharedWhiteboard,WhiteboardToolbar,WhiteboardSurface,WhiteboardStroke}.vue
+  components/       household/{CreateHouseholdForm,InviteDialog,MemberRoster}.vue,
+                    todo/{TodoList,TodoItem}.vue, shopping/{ShoppingList,ShoppingItem}.vue,
+                    whiteboard/{SharedWhiteboard,WhiteboardToolbar,WhiteboardSurface,WhiteboardStroke}.vue,
+                    user/UserAvatar.vue
   layouts/          default.vue
   assets/css/       hover-contrast.css (the only global stylesheet)
 app/public/                 offline.html, icons, _redirects (Netlify fallback for client-side routes)
-app/supabase/migrations/   0001_households.sql … 0012_whiteboard.sql
+app/supabase/migrations/   0001_households.sql … 0013_list_household_members.sql
 app/tests/support/          supabase-fixtures.ts (disposable users/households/invites via the Admin API, shared by RLS + e2e),
                             e2e-ui.ts (sign-in and list steps through the real UI), realtime-socket.ts (cut/watch the Realtime socket, hold back frames),
                             fake-supabase-client.ts (fake query builder + client for the `*-actions.spec.ts` unit tests)
 app/tests/rls/              household-isolation.spec.ts (two-JWT RLS proof against Supabase Cloud)
 app/tests/e2e/              Playwright `dev` project (against `nuxt dev`): auth, household, lists, realtime-sync,
-                            session-switch, whiteboard, a11y (*.e2e.ts); `pwa` project: pwa.e2e.ts (production build)
+                            session-switch, whiteboard, avatars, a11y (*.e2e.ts); `pwa` project: pwa.e2e.ts (production build)
 netlify.toml                at the git root: build settings for Netlify
 ```
 
 **Design pattern used throughout**: business logic lives in plain `composables/*-actions.ts` functions that take a `SupabaseClient` as a parameter, unit-tested with a mocked client (no Nuxt runtime needed). Pinia stores are thin — they call `useSupabaseClient()`/`useSupabaseUser()` and delegate to those functions. State-transition logic that needs testing on its own (optimistic add/dedup, soft-delete, sort order) is further extracted into pure reducer functions in `utils/`. List logic that doesn't depend on the item type (dedup, soft delete, Realtime events, reconnect merge) is **generic** over `ListItem` (`types/list.ts`) in `utils/list-state.ts` and shared by every list; only the actions, store, components and list-specific ordering are per list. This is the pattern to continue for whiteboard/recipes (later phases).
 
-**Testing**: Vitest, 149 tests passing (including the RLS suite) (`npm test`). Playwright e2e (`npm run test:e2e`, 23 tests in two projects; see the milestone 5 and 7 sections and "E2E gap review") is separate and not in the pre-push hook; CI runs it on every push to `main` and `develop` (see "CI"). Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
+**Testing**: Vitest, 173 tests passing (including the RLS suite) (`npm test`). Playwright e2e (`npm run test:e2e`, 25 tests in two projects; see the milestone 5 and 7 sections and "E2E gap review") is separate and not in the pre-push hook; CI runs it on every push to `main` and `develop` (see "CI"). Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
 
 **Database types**: generated from the live schema via `supabase gen types typescript`, saved to `app/app/types/database.types.ts`, picked up automatically by `@nuxtjs/supabase`'s default `types` path. Re-run after any migration changes:
 ```
@@ -74,7 +77,7 @@ Fixed by `0007_create_household_rpc.sql` (`create_household` / `create_invite` S
 
 **Rule going forward**: any `.insert/.update/.upsert(...).select()` needs the resulting row to be visible under the table's SELECT policy at that moment; otherwise drop the `.select()` or use a SECURITY DEFINER RPC.
 
-**Function privileges**: Postgres grants `EXECUTE` on every new function to `PUBLIC`, i.e. callable by signed-out clients via `/rest/v1/rpc/...`. Every new function in `public` needs `revoke execute ... from public, anon` plus an explicit `grant ... to authenticated` (see 0007, 0009). The security advisor's remaining "signed-in users can execute SECURITY DEFINER function" warnings for `create_household`, `create_invite`, `redeem_invite` and `is_household_member` are intentional: the first three are the app's RPCs, and RLS policies need `authenticated` to be able to execute `is_household_member`.
+**Function privileges**: Postgres grants `EXECUTE` on every new function to `PUBLIC`, i.e. callable by signed-out clients via `/rest/v1/rpc/...`. Every new function in `public` needs `revoke execute ... from public, anon` plus an explicit `grant ... to authenticated` (see 0007, 0009). The security advisor's remaining "signed-in users can execute SECURITY DEFINER function" warnings for `create_household`, `create_invite`, `redeem_invite`, `list_household_members` and `is_household_member` are intentional: the first four are the app's RPCs, and RLS policies need `authenticated` to be able to execute `is_household_member`.
 
 **Migrations workflow**: the Supabase MCP server (`.mcp.json`) works in fresh sessions and was used to apply 0007–0009 (`apply_migration`). It records a timestamp version, so the `supabase_migrations.schema_migrations` row was renamed to `0007`–`0009` afterwards (in its own `execute_sql` call — don't batch it with a `begin … rollback` probe, the rollback undoes it) to keep remote history matching the local `NNNN_` filenames — do the same for future migrations applied that way. In auto mode, Claude Code's permission classifier blocks that rename (`update supabase_migrations.schema_migrations ...`) when the agent does it on its own initiative, but lets it through once the user explicitly asks for it. So: ask the user, then run it, with a read-only `select version, name from supabase_migrations.schema_migrations` before and after. 0011 was renamed this way on 2026-10-08. Without the MCP server, `npx supabase db push --db-url "$DB_URL"` (from `app/`; `--dry-run` first) applies the pending files and records the `NNNN` version by itself, so nothing needs renaming; 0012 was applied that way on 2026-10-10 with the user's go-ahead.
 
@@ -351,6 +354,69 @@ Tests: `app-version.e2e.ts` (the footer shows the version from `package.json`; w
 
 Still open: whether Netlify built the release commit. Netlify reports nothing back to GitHub, so this can only be seen on the deployed site, where the footer should read `Version 1.0.0`. The fast-forward step's failure paths (`develop` moved on, or workflow changes on `main` that `develop` lacks) have not happened yet either.
 
+## Member avatars from Gravatar (built 2026-10-10)
+
+Every user has an avatar: the signed-in user's in the header, in front of the email, and one for each member of the household in a row on the dashboard (`MemberRoster`), under the household's name. The picture is the person's Gravatar; whoever has none gets a drawing the app makes itself.
+
+Decided with the user:
+
+- **Header and member row only.** No avatars on list items or strokes ("added by").
+- **Members of a household can read each other's email address.** It is the avatar's accessible name and tooltip. The caption under an avatar is the part before the `@` (`utils/email.ts`), because the app has no display names.
+- **The app draws the fallback itself**, rather than using one of Gravatar's generated defaults: it works offline and in tests and adds no further third-party content.
+- **The header keeps the email text and the "Sign out" button**, so the e2e sign-in helper is unchanged.
+
+**How an avatar is made** (`components/user/UserAvatar.vue`)
+
+- `utils/gravatar.ts`: the hash is SHA-256 of the trimmed, lower-cased address (Web Crypto, no dependency), and the picture is `https://gravatar.com/avatar/<hash>?s=<px>&d=404`. `d=404` makes Gravatar answer 404 for a person without a picture, which the `<img>` reports as an error.
+- `composables/use-gravatar-hash.ts` turns the asynchronous hash into a ref and drops a hash that arrives after the address has changed.
+- **The drawing is a "pen rosette"** (`utils/avatar-rosette.ts`): a looped, spirograph-like figure as one closed whiteboard stroke (a `StrokeShape`, rendered by `WhiteboardStroke`) on a disc tinted with the ink. Five bytes of the hash pick the ink (8), the lobes (3 to 6), whether the loops point outward or inward, their depth (3 levels) and the rotation (2), which makes 384 pictures.
+- The inks are a list of their own, not `PEN_COLORS`: the ink is picked by its place in the list, so a new whiteboard pen would otherwise change everyone's picture.
+- The rosette shows as soon as the hash is known. The Gravatar `<img>` lies over it and is empty while it loads. On `load` the rosette is removed (a Gravatar may be transparent); on `error` (404 or offline) the image is. Until the hash is there, the avatar is a grey disc.
+- The image is `loading="lazy"`, so a slow gravatar.com can't hold up the page's `load` event, and `referrerpolicy="no-referrer"`.
+- With a `label` the avatar is `role="img"` with that name and `title`. Without one it is `aria-hidden`: the header, where the address is written beside it.
+
+**The header on a narrow phone** (user decision): the email gives way. The title keeps at least its own width, the email is cut with an ellipsis, "Sign out" doesn't wrap, and an avatar never shrinks (`flex-shrink: 0` in `UserAvatar`).
+
+- Before, the title was the only part of the header that could shrink. With the avatar added it was squeezed to one letter at 360 px, and a long address wrapped onto three lines.
+- Looked at in screenshots at 360, 412 and 1280 px: about 70 px (at 360) and 122 px (at 412) remain for the address, and nothing changes on a wide screen. No automated check.
+- Not looked at: a 360 px header that also shows the "Install app" button.
+
+**What leaves the app**: every avatar is a request to gravatar.com, which gets the viewer's IP address and the hash of the pictured person's email address. There is no server to proxy it through. Accepted by the user.
+
+**Schema** (`0013_list_household_members.sql`, applied to the cloud project with `db push`, with the user's go-ahead)
+
+- `list_household_members(p_household_id)` returns `user_id`, `email` and `joined_at` of a household's members, oldest membership first. SECURITY DEFINER with `search_path = ''`, because it reads `auth.users`. It checks `is_household_member` itself; a caller who is not a member gets no rows. `EXECUTE` is revoked from `public` and `anon`.
+- No view over `auth.users`, no profile table, no trigger on `auth.users`.
+- Checked before applying: the migration role (`postgres`) can read `auth.users` (`has_table_privilege`). Postgres checks a SQL function's privileges only when it is called, so a role without that privilege would have created a function that fails on first use.
+
+**Code**
+
+- `fetchHouseholdMembers` (`household-actions.ts`); `members`, `membersError` and `fetchMembers()` in `stores/household.ts`.
+- `fetchMembers` keeps its result only if the household is still the one it asked for. A fetch that ends after a user switch would otherwise show the previous household's addresses to the next user.
+- `pages/index.vue` fetches the members when the household's id appears or changes; `MemberRoster` only renders. A fetch in the roster's own `onMounted` would run twice on every revisit, because `fetchMine()` swaps the whole card for the spinner and back.
+- The full address is deliberately not in the roster's text: `getByText(user.email)` in the `auth`, `household` and `session-switch` specs would match twice.
+
+**Tests**
+
+- Unit: `gravatar.spec.ts` (Gravatar's documented example hash), `avatar-rosette.spec.ts` (each of the 384 variants stays inside the disc, is closed and differs from the others), `email.spec.ts`, `use-gravatar-hash.spec.ts`, and `fetchHouseholdMembers` in `household-actions.spec.ts`.
+- RLS: a member gets their household's addresses and none of another household's; a member of another household gets no rows; a signed-out client (`signedOut` in `supabase-fixtures.ts`) can't call the function.
+- E2E: `avatars.e2e.ts` answers `**/gravatar.com/avatar/**` itself, so it doesn't depend on Gravatar. With a 404, everyone has the drawing and the requests carry the SHA-256 of the address; with a picture for one member, that member shows the photo.
+- `session-switch` checks that none of the previous user's members are left, `household` that a newly created household shows its member, and `a11y` scans the dashboard with the roster.
+- Seen to fail with the feature broken: the avatar spec with a wrong hash, without the `error` handler and without the `load` handler, and the `household` check with the members not fetched when the household appears. The roster checks added to `session-switch` and `a11y` were not broken on purpose.
+- The other specs make real requests to gravatar.com for their disposable addresses, which answer 404. Nothing waits for them.
+
+**Not included**
+
+- A member who joins while someone else has the dashboard open appears there on that person's next visit to the dashboard: `household_members` is not in the Realtime publication.
+- Display names, uploading a picture, a way to opt out of Gravatar.
+
+**Looked at, and not yet**: the rosettes were judged on a contact sheet of all shapes at 32, 48 and 96 px, and the header and the dashboard in screenshots from the e2e run (a stand-in picture for the Gravatar). A real Gravatar photo has not been seen in the app yet.
+
+**Found on the way**
+
+- **A long-running `nuxt dev` keeps showing the old version in the footer**, and `app-version.e2e.ts` then fails locally. The version is read from `package.json` when the process starts. A dev server started before a release was pulled still served `0.0.0` after `package.json` said `1.0.0`, and the reload Nuxt does by itself after a change to `nuxt.config.ts` did not re-read it. Stop and start `npm run dev`. CI starts a fresh server, and the production build from the same run had `1.0.0`.
+- The member row made the dashboard card taller, which uncovered the contrast problem in the next section.
+
 ## Hover and focus contrast on the primary color (fixed 2026-10-11)
 
 The `a11y` scan of the dashboard failed with `color-contrast` on the "To-dos" button once the member row was there. The taller card had moved that button under the spot where the pointer rests after the click on "Verify", so the scan saw it hovered.
@@ -365,7 +431,8 @@ The `a11y` scan of the dashboard failed with `color-contrast` on the "To-dos" bu
 
 ## Next steps
 
-1. Check on the deployed site that the footer shows `Version 1.0.0`, which confirms that Netlify built the release commit (see "Releases").
-2. Finish milestone 8: check the update notice on the deployed site with the next push to `main` (keep the app open during the deploy).
-3. Try the whiteboard by hand on a phone and with a second member (see "Milestone 9").
-4. Optional, later: the Podman production setup (`Containerfile.prod`, Quadlet units, Caddy).
+1. Sign in with an address that has a Gravatar and check the photo in the header and in the member row (see "Member avatars from Gravatar").
+2. Check on the deployed site that the footer shows `Version 1.0.0`, which confirms that Netlify built the release commit (see "Releases").
+3. Finish milestone 8: check the update notice on the deployed site with the next push to `main` (keep the app open during the deploy).
+4. Try the whiteboard by hand on a phone and with a second member (see "Milestone 9").
+5. Optional, later: the Podman production setup (`Containerfile.prod`, Quadlet units, Caddy).
