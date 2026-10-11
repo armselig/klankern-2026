@@ -55,7 +55,11 @@ async function addToShoppingList(ingredients: RecipeIngredient[]) {
           saved === 1
             ? "1 item added to the shopping list"
             : `${saved} items added to the shopping list`,
-        color: "positive",
+        // Not "positive": no text color of the theme is readable on its
+        // green in light mode. The primary color with the theme's text for
+        // an accent is, in both modes (assets/css/theme.css).
+        color: "primary",
+        textColor: "on-accent",
       });
     }
   } finally {

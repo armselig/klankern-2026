@@ -35,7 +35,14 @@ watch(open, (isOpen) => {
 
 async function copy() {
   await copyToClipboard(inviteUrl.value);
-  Notify.create({ message: "Invite link copied", color: "positive" });
+  Notify.create({
+    message: "Invite link copied",
+    // Not "positive": no text color of the theme is readable on its green
+    // in light mode. The primary color with the theme's text for an accent
+    // is, in both modes (assets/css/theme.css).
+    color: "primary",
+    textColor: "on-accent",
+  });
 }
 </script>
 

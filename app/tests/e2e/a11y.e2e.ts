@@ -296,6 +296,18 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       ).toBeChecked();
       await expectNoBlockingViolations(page, "a recipe");
 
+      // A notice is gone after a few seconds, so it is scanned while it
+      // shows, once it has faded in.
+      await page.getByRole("button", { name: "Add to shopping list" }).click();
+      await expect(
+        page.getByText("2 items added to the shopping list"),
+      ).toBeVisible();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(
+        page,
+        "a recipe with the notice of added items",
+      );
+
       await page.getByRole("link", { name: "All recipes" }).click();
       await expect(recipeLink(page, "Pancakes")).toBeVisible();
       await expectNoBlockingViolations(page, "the recipe list");
