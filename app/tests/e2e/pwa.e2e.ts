@@ -61,6 +61,32 @@ async function startDeployProxy(upstream: string) {
 }
 
 test.describe("PWA", () => {
+  // Every prerendered page carries the id of the build that rendered it, and
+  // the build's own id is in /_nuxt/builds/latest.json. They differ when the
+  // build took its pages from somewhere else, as it did from a leftover
+  // `.output/public` (see the web server command in playwright.config.ts).
+  // The other tests only notice that once a script's hashed name has changed.
+  test("the served page was rendered by the build that is served", async ({
+    page,
+    request,
+  }) => {
+    // The first load in a fresh context has no service worker yet, so this is
+    // the server's HTML. An inline script sets the id, so it is there even
+    // when the page's script files are missing and the app never mounts.
+    await page.goto(ROUTES.login);
+    const pageBuildId = await page.evaluate(
+      () =>
+        (window as { __NUXT__?: { config?: { app?: { buildId?: string } } } })
+          .__NUXT__?.config?.app?.buildId,
+    );
+
+    const latestBuild = await request.get("/_nuxt/builds/latest.json");
+    const { id: servedBuildId } = (await latestBuild.json()) as { id: string };
+
+    expect(servedBuildId).toBeTruthy();
+    expect(pageBuildId).toBe(servedBuildId);
+  });
+
   test("Chrome reports the app as installable, with the expected manifest", async ({
     baseURL,
   }) => {

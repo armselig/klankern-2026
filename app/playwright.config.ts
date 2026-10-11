@@ -50,7 +50,13 @@ export default defineConfig({
       // `netlify serve` runs the build from netlify.toml and serves the result
       // with the rules in public/_redirects, as the deployed site does.
       // `--offline` keeps it from contacting Netlify: no login, no linked site.
-      command: `netlify serve --offline --port ${productionPort}`,
+      //
+      // `.output` goes first: it is what a local `nuxt generate` or `nuxt
+      // build` leaves behind. The Netlify preset builds into `dist` and never
+      // empties it, but Nitro's prerenderer still serves the files in
+      // `.output/public`, so the build would take the old pages from there
+      // instead of rendering them.
+      command: `rm -rf .output && netlify serve --offline --port ${productionPort}`,
       url: productionURL,
       env: { BROWSER: "none" },
       reuseExistingServer: false,

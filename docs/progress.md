@@ -61,7 +61,7 @@ netlify.toml                at the git root: build settings for Netlify
 
 **Design pattern used throughout**: business logic lives in plain `composables/*-actions.ts` functions that take a `SupabaseClient` as a parameter, unit-tested with a mocked client (no Nuxt runtime needed). Pinia stores are thin — they call `useSupabaseClient()`/`useSupabaseUser()` and delegate to those functions. State-transition logic that needs testing on its own (optimistic add/dedup, soft-delete, sort order) is further extracted into pure reducer functions in `utils/`. List logic that doesn't depend on the item type (dedup, soft delete, Realtime events, reconnect merge) is **generic** over `ListItem` (`types/list.ts`) in `utils/list-state.ts` and shared by every list; only the actions, store, components and list-specific ordering are per list. This is the pattern to continue for whiteboard/recipes (later phases).
 
-**Testing**: Vitest, 173 tests passing (including the RLS suite) (`npm test`). Playwright e2e (`npm run test:e2e`, 25 tests in two projects; see the milestone 5 and 7 sections and "E2E gap review") is separate and not in the pre-push hook; CI runs it on every push to `main` and `develop` (see "CI"). Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
+**Testing**: Vitest, 173 tests passing (including the RLS suite) (`npm test`). Playwright e2e (`npm run test:e2e`, 28 tests in two projects; see the milestone 5 and 7 sections and "E2E gap review") is separate and not in the pre-push hook; CI runs it on every push to `main` and `develop` (see "CI"). Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
 
 **Database types**: generated from the live schema via `supabase gen types typescript`, saved to `app/app/types/database.types.ts`, picked up automatically by `@nuxtjs/supabase`'s default `types` path. Re-run after any migration changes:
 ```
@@ -517,6 +517,21 @@ The font is Roboto again, shipped by Quasar (`quasar.extras.font: 'roboto-font'`
 Kept from it: `vite.build.assetsInlineLimit` in `nuxt.config.ts`, which stops Vite from writing a font file under 4 KB into the stylesheet. With Roboto it changes nothing yet (its smallest file is just above that), so it only guards a later change of fonts.
 
 Worth knowing for a next attempt: a `@fontsource` weight is one file per script with its own `unicode-range`, so only the Latin file is fetched; `public/offline.html` is not built and can't name the build's hashed font files, so it needs copies at fixed addresses, precached by the service worker; and none of these fonts has emoji, which stay the device's own.
+
+## The `pwa` e2e project and a leftover `.output` (fixed 2026-10-11)
+
+The `pwa` project had failed twice on a blank page (see "Found on the way" under "Milestone 9" and "Found while building it" under "Releases"). The cause is now traced in Nitro (2.13.4), and the project no longer depends on `app/.output` being absent.
+
+**Cause.** The Netlify preset (`netlify-static`) sets both of Nitro's output directories to `dist`, and Nitro empties only those before a build, so `.output` is left alone. The prerenderer is a second Nitro instance with the preset `nitro-prerender`, created from the config without the Netlify preset: its `output.publicDir` is the default, `.output/public`, and Nitro afterwards points only its `output.dir` at the main build's. That preset has `serveStatic: true`, so its static handler comes first and answers `/login` with an existing `.output/public/login/index.html`. The route is never rendered, and the old page is written into `dist`. With the plain `static` preset both instances use `.output/public`, which is emptied first, so `nuxt generate` on its own is fine; so are CI and Netlify, which build from a fresh checkout.
+
+**It does not always fail.** This time the leftover came from a `nuxt generate` of the same source. The old pages named script files that the new build wrote as well, so all four tests passed, on pages that carried the old build id and the version before the last release. The tests fail only once the hashed name of a script has changed, which is why it looked random.
+
+**Changes.**
+
+- The `pwa` web server command removes `.output` before `netlify serve` (`playwright.config.ts`).
+- `pwa.e2e.ts` has a fifth test: the build id in the served page is the one in `/_nuxt/builds/latest.json`. Seen to fail with the leftover in place and the old command, while the other four passed; all five pass with the new command.
+
+Not changed: the build itself. A `netlify build` or `netlify serve` run by hand after a local `nuxt generate` still takes the old pages; delete `app/.output` first. Pointing the prerenderer at `dist` in a `prerender:config` hook would remove the cause, and was not tried.
 
 ## Next steps
 
