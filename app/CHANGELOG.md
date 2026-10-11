@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.0](https://github.com/armselig/klankern-2026/compare/v1.1.0...v1.2.0) (2026-10-11)
+
+### Features
+
+* **theme:** add Catppuccin light and dark mode ([1b341fe](https://github.com/armselig/klankern-2026/commit/1b341fe27721e08c81fe6f0ba56433d56f5246b6))
+
 ## [1.1.0](https://github.com/armselig/klankern-2026/compare/v1.0.0...v1.1.0) (2026-10-11)
 
 ### Features
