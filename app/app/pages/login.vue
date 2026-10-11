@@ -82,7 +82,6 @@ async function verifyCode() {
           <q-input
             v-model="code"
             label="Code from the email"
-            input-class="text-mono"
             inputmode="numeric"
             autocomplete="one-time-code"
             autofocus

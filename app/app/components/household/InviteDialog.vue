@@ -67,7 +67,7 @@ async function copy() {
             />
           </template>
         </q-input>
-        <p class="text-h5 text-mono text-center q-mt-md">{{ code }}</p>
+        <p class="text-h5 text-center q-mt-md">{{ code }}</p>
       </q-card-section>
 
       <q-card-actions align="right">

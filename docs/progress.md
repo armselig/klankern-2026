@@ -446,7 +446,7 @@ Decided with the user:
 
 How it is built:
 
-- **The wordmark** is the headline font in weight 700 (Roboto 700 until the fonts changed, see "Fonts") with a hand-drawn pen stroke under it, an inline SVG that is hidden from assistive technology, so the link's name stays "Klankern". No new font or dependency. Hover and keyboard focus thicken the stroke; focus also draws a white outline. Quasar styles a bare `h1` at 6rem, so the layout's scoped style resets it.
+- **The wordmark** is Roboto 700 with a hand-drawn pen stroke under it, an inline SVG that is hidden from assistive technology, so the link's name stays "Klankern". No new font or dependency. Hover and keyboard focus thicken the stroke; focus also draws a white outline. Quasar styles a bare `h1` at 6rem, so the layout's scoped style resets it.
 - **The account button's name is "Account, <email>"**, and the avatar inside has no label. The e2e helpers find the signed-in user by that name (`accountButton` in `tests/support/e2e-ui.ts`), since the address is no longer text in the header.
 - **The menu is `role="group"`, and its entries are real buttons.** `role="menu"` allows only menu items, and the address is none; a clickable `q-item` is a list item with no role that says it can be pressed.
 - **`InviteDialog` no longer has its own button.** It is a dialog with a `v-model`, rendered beside the menu, and asks for a code each time it opens. Inside the menu it would be removed together with the menu's content.
@@ -507,33 +507,16 @@ Noticed, not changed:
 - Only primary and negative carry text. `--q-secondary`, `--q-accent`, `--q-positive`, `--q-info` and `--q-warning` are mapped to Catppuccin colors but unused; a filled control in one of them needs its contrast calculated first.
 - Not looked at: the update notice, tooltips, the join page and the keyboard focus outlines in dark mode, and either mode on a real phone.
 
-## Fonts: Bitter, Nunito Sans and JetBrains Mono (built 2026-10-11)
+## Fonts: two replacements tried, Roboto stays (2026-10-11)
 
-Roboto alone (`quasar.extras.font: 'roboto-font'`) is replaced by three fonts that ship with the app, from the `@fontsource` packages, through `app/app/assets/css/typography.css`:
+The font is Roboto again, shipped by Quasar (`quasar.extras.font: 'roboto-font'`), as before. Two replacements were built and dropped the same day, both on the user's decision after seeing them:
 
-| Token                  | Font           | Weights       | Used for                                                                  |
-| ---------------------- | -------------- | ------------- | ------------------------------------------------------------------------- |
-| `--theme-font-heading` | Bitter         | 700           | `h1`–`h6`, `text-h1`–`text-h6`, the dialog plugin's title, the wordmark   |
-| `--theme-font-text`    | Nunito Sans    | 400, 500, 700 | everything else                                                           |
-| `--theme-font-mono`    | JetBrains Mono | 500           | the invite code and the two login-code fields (`text-mono`), and `<code>` |
+- **Stacks of the device's own fonts** (modernfontstacks.com: Slab Serif, Geometric Humanist, Monospace Slab Serif), with no font shipped. They come out as a different font on each system, which can't be checked without owning each, and the result looked cheap and unmatched. Never committed.
+- **Bitter, Nunito Sans and JetBrains Mono from the `@fontsource` packages**, shipped with the app so that every device shows the same page. Released as 1.3.0 and reverted in the next release.
 
-Decided with the user:
+Kept from it: `vite.build.assetsInlineLimit` in `nuxt.config.ts`, which stops Vite from writing a font file under 4 KB into the stylesheet. With Roboto it changes nothing yet (its smallest file is just above that), so it only guards a later change of fonts.
 
-- **Every device has to show the same page.** A first version used stacks of the device's own fonts (modernfontstacks.com: Slab Serif, Geometric Humanist, Monospace Slab Serif), with no font shipped at all. It was undone the same day: the stacks come out as a different font on each system, which can't be checked without owning each, and the result looked cheap and unmatched. So the fonts ship with the app after all.
-- **The pairing**, picked from five on a mock of the app's screens (the others: Zilla Slab with Fira Sans, Aleo with Lato, IBM Plex, Roboto Slab with Roboto).
-
-How it is built:
-
-- **One import per weight**, and a weight is one file per script, each with its `unicode-range`: a browser fetches the Latin file, and another one only when a page has text for it (a name with an ł fetches the Latin Extended file of the same font, rather than borrowing the letter from a device font). About 80 KB for a page with all three fonts, in five files. The build holds every script's file, as `woff2` and as `woff`, which no current browser asks for.
-- **Fonts are never inlined into the stylesheet** (`vite.build.assetsInlineLimit` in `nuxt.config.ts`). Vite would write the files under 4 KB into it, and those are the ones of the scripts that hardly any page needs.
-- **Emoji are the device's own**, and so the one thing that differs between systems. None of the three fonts has them, so each stack ends with the names of the systems' emoji fonts, after the generic family: those fonts hold digits too. Whether the app should ship an emoji font instead is open.
-- **Headlines are weight 700**, the one weight Bitter is there in; Quasar asks for 300 to 500. `text-mono` is 500 for the same reason, and its rule comes after the one for headlines, because the invite code is `text-h5 text-mono`.
-- **The wordmark has the font's own letter spacing**; the `-0.02em` it had was set for Roboto.
-- **The offline page has copies of its two fonts** (Bitter 700 and Nunito Sans 400, Latin) in `public/fonts/`, put there by `scripts/copy-offline-fonts.mjs`: the page is not built, so it can't name the build's hashed files. The service worker precaches the two (`fonts/*.woff2` in `globPatterns`) and nothing from `_nuxt/`.
-- Quasar's own stylesheet still names Roboto in its `body` rule; the app's rule comes after it, and no file of that font is in the build.
-- No italic is shipped; nothing in the app is set in italics.
-
-Checked in Chrome at 375px against a static build, in both modes: every text is drawn by one of the three fonts, the offline page too, and emoji come out in color. Not looked at: Safari on an iPhone, and the caching headers of `/fonts/` on the deployed site.
+Worth knowing for a next attempt: a `@fontsource` weight is one file per script with its own `unicode-range`, so only the Latin file is fetched; `public/offline.html` is not built and can't name the build's hashed font files, so it needs copies at fixed addresses, precached by the service worker; and none of these fonts has emoji, which stay the device's own.
 
 ## Next steps
 

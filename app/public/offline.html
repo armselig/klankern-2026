@@ -8,21 +8,6 @@
       /* The app's colors (app/assets/css/theme.css): Catppuccin Latte, and
          Catppuccin Mocha on a device in dark mode. Written out here, because
          this page has to work without anything else from the app. */
-      /* The app's fonts (app/assets/css/typography.css), in the two cuts
-         this page uses. The service worker keeps both files next to this
-         page; scripts/copy-offline-fonts.mjs puts them into fonts/. */
-      @font-face {
-        font-family: "Bitter";
-        font-weight: 700;
-        font-display: swap;
-        src: url("/fonts/bitter-latin-700-normal.woff2") format("woff2");
-      }
-      @font-face {
-        font-family: "Nunito Sans";
-        font-weight: 400;
-        font-display: swap;
-        src: url("/fonts/nunito-sans-latin-400-normal.woff2") format("woff2");
-      }
       :root {
         color-scheme: light dark;
         --page: light-dark(#eff1f5, #1e1e2e);
@@ -35,7 +20,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-family: "Nunito Sans", sans-serif;
+        font-family: system-ui, sans-serif;
         background: var(--page);
         color: var(--text);
         text-align: center;
@@ -46,7 +31,6 @@
         max-width: 28rem;
       }
       h1 {
-        font-family: "Bitter", serif;
         font-size: 1.5rem;
         margin-bottom: 0.5rem;
         color: var(--primary);
