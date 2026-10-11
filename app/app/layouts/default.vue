@@ -31,7 +31,7 @@ async function signOut() {
 
 <template>
   <q-layout view="hHh lpR fFf">
-    <q-header elevated class="app-header bg-primary text-white">
+    <q-header elevated class="app-header bg-primary text-on-accent">
       <q-toolbar>
         <!-- The app's name is every page's first heading and the way back
              to the dashboard. -->
@@ -134,10 +134,11 @@ async function signOut() {
   stroke-width: 2px;
 }
 
-/* Keyboard focus presses the pen down harder and darkens the blue behind
-   the word, as far as the header's buttons darken. */
+/* Keyboard focus presses the pen down harder and veils the header's color
+   behind the word, as the header's buttons are veiled (see
+   assets/css/hover-contrast.css). */
 .wordmark__link:focus-visible {
-  background: rgb(0 0 0 / 0.3);
+  background: var(--theme-veil);
 }
 
 .wordmark__link:focus-visible .wordmark__stroke {
@@ -148,7 +149,7 @@ async function signOut() {
    stick after the tap. */
 @media (any-hover: hover) {
   .wordmark__link:hover {
-    background: rgb(0 0 0 / 0.3);
+    background: var(--theme-veil);
   }
 
   .wordmark__link:hover .wordmark__stroke {
@@ -163,23 +164,6 @@ async function signOut() {
 
   .wordmark__stroke {
     transition: stroke-width 0.15s ease-out;
-  }
-}
-
-/* Quasar's highlight is a veil of 15 to 22 percent, which on the header's
-   blue is hard to see. Twice that here; black, so the contrast of the white
-   text rises with it (see assets/css/hover-contrast.css). */
-.app-header
-  :deep(
-    :is(.q-focusable:focus-visible, .q-manual-focusable--focused)
-      > .q-focus-helper
-  ) {
-  opacity: 0.3;
-}
-
-@media (any-hover: hover) {
-  .app-header :deep(.q-hoverable:hover > .q-focus-helper) {
-    opacity: 0.3;
   }
 }
 

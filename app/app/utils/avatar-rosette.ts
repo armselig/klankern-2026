@@ -1,4 +1,5 @@
 import type { StrokeShape } from "~/types/whiteboard";
+import { INK_VALUES } from "./ink";
 
 /**
  * The picture a member has until a Gravatar picture is found for them: a
@@ -23,14 +24,14 @@ export const ROSETTE_BOX = 1000;
  * otherwise give every member another picture.
  */
 export const AVATAR_INKS = [
-  "#212121",
-  "#c62828",
-  "#1565c0",
-  "#2e7d32",
-  "#6a1b9a",
-  "#00838f",
-  "#ef6c00",
-  "#ad1457",
+  INK_VALUES.black,
+  INK_VALUES.red,
+  INK_VALUES.blue,
+  INK_VALUES.green,
+  INK_VALUES.purple,
+  INK_VALUES.teal,
+  INK_VALUES.orange,
+  INK_VALUES.pink,
 ] as const;
 
 const PEN_WIDTH = 64;

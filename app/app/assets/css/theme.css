@@ -1,0 +1,159 @@
+/*
+ * The app's colors: Catppuccin Latte in light mode and Catppuccin Mocha in
+ * dark mode. Every token is a light-dark() of the two, and `color-scheme:
+ * light dark` lets the device's setting pick. Quasar follows the same
+ * setting (`dark: 'auto'` in nuxt.config.ts), so its `body--dark` class and
+ * these tokens always agree.
+ *
+ * Not keyed on `body.body--dark`: the tokens then hold before the app has
+ * started, so a dark device never shows a white page first.
+ *
+ * light-dark() itself needs Chrome 123, Firefox 120 or Safari 17.5. The
+ * production build rewrites it for older browsers (Vite's CSS minifier
+ * turns each token into a pair of values that a prefers-color-scheme rule
+ * switches between), so only `nuxt dev` asks for one of those.
+ *
+ * Every pair of text and background here was checked against the 4.5:1 that
+ * WCAG 1.4.3 asks for; several of Catppuccin's own colors fail it (Latte
+ * subtext0 on base, and Latte's base on every Latte accent but mauve and
+ * red). Check a new pair before using it.
+ */
+@import "@catppuccin/palette/css/catppuccin.css";
+
+:root {
+  color-scheme: light dark;
+
+  --theme-page: light-dark(var(--ctp-latte-base), var(--ctp-mocha-base));
+  /* Cards, menus, dialogs, the whiteboard. Latte has nothing lighter than
+     its base, and mauve text on anything darker falls below 4.5:1, so a
+     light surface is the page's color and stands out by its shadow. A
+     shadow can't be seen on a dark page; a lighter surface can. */
+  --theme-surface: light-dark(var(--ctp-latte-base), var(--ctp-mocha-surface0));
+  --theme-text: light-dark(var(--ctp-latte-text), var(--ctp-mocha-text));
+  --theme-text-muted: light-dark(
+    var(--ctp-latte-subtext1),
+    var(--ctp-mocha-subtext0)
+  );
+  /* The edge of something that is not text; 3:1 against page and surface. */
+  --theme-outline: light-dark(
+    var(--ctp-latte-overlay2),
+    var(--ctp-mocha-overlay2)
+  );
+  /* Stands in for a picture that is still on its way. */
+  --theme-placeholder: light-dark(
+    var(--ctp-latte-surface1),
+    var(--ctp-mocha-surface1)
+  );
+  /* Text and icons on the primary and the negative color. Dark in dark
+     mode: Mocha's accents are pastel. */
+  --theme-on-accent: light-dark(var(--ctp-latte-base), var(--ctp-mocha-base));
+  /* Laid over an accent color to mark hover and focus. It has to move the
+     background away from the text on it: see hover-contrast.css. Its
+     strength is part of the color, because each mode needs its own: white
+     over a pale Mocha accent shows far less than black over a Latte one. */
+  --theme-veil: light-dark(rgb(0 0 0 / 0.3), rgb(255 255 255 / 0.65));
+  /* The same for a flat button on the page or a surface: there the veil is
+     in the text's color and moves the background towards the text, so it
+     is only as strong as leaves the text above 4.5:1. */
+  --theme-veil-on-surface: light-dark(
+    rgb(var(--ctp-latte-text-rgb) / 0.25),
+    rgb(var(--ctp-mocha-text-rgb) / 0.18)
+  );
+
+  --q-primary: light-dark(var(--ctp-latte-mauve), var(--ctp-mocha-mauve));
+  --q-secondary: light-dark(var(--ctp-latte-blue), var(--ctp-mocha-blue));
+  --q-accent: light-dark(var(--ctp-latte-pink), var(--ctp-mocha-pink));
+  --q-positive: light-dark(var(--ctp-latte-green), var(--ctp-mocha-green));
+  --q-negative: light-dark(var(--ctp-latte-red), var(--ctp-mocha-red));
+  --q-info: light-dark(var(--ctp-latte-sky), var(--ctp-mocha-sky));
+  --q-warning: light-dark(var(--ctp-latte-yellow), var(--ctp-mocha-yellow));
+  /* What Quasar paints its dark components and its dark page with. */
+  --q-dark: var(--theme-surface);
+  --q-dark-page: var(--theme-page);
+
+  /* The pens of the whiteboard and the avatars; the names are those of
+     utils/ink.ts. */
+  --ink-black: light-dark(var(--ctp-latte-text), var(--ctp-mocha-text));
+  --ink-red: light-dark(var(--ctp-latte-red), var(--ctp-mocha-red));
+  --ink-blue: light-dark(var(--ctp-latte-blue), var(--ctp-mocha-blue));
+  --ink-green: light-dark(var(--ctp-latte-green), var(--ctp-mocha-green));
+  --ink-purple: light-dark(var(--ctp-latte-mauve), var(--ctp-mocha-mauve));
+  --ink-teal: light-dark(var(--ctp-latte-teal), var(--ctp-mocha-teal));
+  --ink-orange: light-dark(var(--ctp-latte-peach), var(--ctp-mocha-peach));
+  --ink-pink: light-dark(var(--ctp-latte-pink), var(--ctp-mocha-pink));
+}
+
+/*
+ * Quasar's own colors, replaced where it writes black or white for a text
+ * or a surface. Its translucent greys (field labels, borders, separators,
+ * the outline of a checkbox) stay: they are a share of black in light mode
+ * and of white in dark mode, so they take on the surface beneath them.
+ */
+body {
+  background: var(--theme-page);
+}
+
+body,
+body.body--dark,
+.q-dark,
+.q-list--dark,
+.q-item--dark,
+.q-field__native,
+.q-field__input,
+.q-field__prefix,
+.q-field__suffix,
+.q-field--dark .q-field__native,
+.q-field--dark .q-field__input,
+.q-field--dark .q-field__prefix,
+.q-field--dark .q-field__suffix {
+  color: var(--theme-text);
+}
+
+.q-card,
+.q-menu {
+  background: var(--theme-surface);
+}
+
+/* The other way round, so a tooltip stands out on page and surface alike. */
+.q-tooltip {
+  background: var(--theme-text);
+  color: var(--theme-page);
+}
+
+/*
+ * Quasar writes white on every filled control and on the layout's header
+ * and footer. On Mocha's pastel accents white is at about 2:1.
+ */
+.q-layout__section--marginal,
+.q-checkbox__svg {
+  color: var(--theme-on-accent);
+}
+
+.bg-primary.text-white,
+.bg-negative.text-white,
+.text-on-accent {
+  color: var(--theme-on-accent) !important;
+}
+
+/* Color names for Quasar's `color` props and for markup, in the form of
+   Quasar's own (`text-primary`): `text-color="on-accent"`,
+   `color="ink-red"`, `class="text-muted"`. */
+.text-muted {
+  color: var(--theme-text-muted) !important;
+}
+
+.text-ink-black {
+  color: var(--ink-black) !important;
+}
+
+.text-ink-red {
+  color: var(--ink-red) !important;
+}
+
+.text-ink-blue {
+  color: var(--ink-blue) !important;
+}
+
+.text-ink-green {
+  color: var(--ink-green) !important;
+}

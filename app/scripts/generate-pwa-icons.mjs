@@ -1,8 +1,13 @@
 import { writeFileSync } from "node:fs";
 import { deflateSync } from "node:zlib";
+import { flavors } from "@catppuccin/palette";
 
-const BRAND = [0x19, 0x76, 0xd2]; // #1976D2, matches pwa.manifest.theme_color
-const WHITE = [0xff, 0xff, 0xff];
+// The header's colors in light mode (app/assets/css/theme.css): the primary
+// color, which is also pwa.manifest.theme_color, and the text on it. An icon
+// file holds one set of colors, whatever the device's mode.
+const { mauve, base } = flavors.latte.colors;
+const BRAND = [mauve.rgb.r, mauve.rgb.g, mauve.rgb.b];
+const GLYPH = [base.rgb.r, base.rgb.g, base.rgb.b];
 
 function crc32(buf) {
   let c;
@@ -69,19 +74,39 @@ function pixelAt(x, y, size, maskablePadding) {
     ny <= 0.85 &&
     (leftBar || armTop || armBottom)
   ) {
-    return WHITE;
+    return GLYPH;
   }
   return BRAND;
 }
 
-function makePng(size, { maskablePadding = false } = {}) {
+// The mean color of samples x samples points within a pixel. More than one
+// sample softens the glyph's edges, which a 32px icon needs and a 512px
+// one does not.
+function sampledPixelAt(x, y, size, maskablePadding, samples) {
+  const sum = [0, 0, 0];
+  for (let row = 0; row < samples; row++) {
+    for (let column = 0; column < samples; column++) {
+      const color = pixelAt(
+        x + (column + 0.5) / samples - 0.5,
+        y + (row + 0.5) / samples - 0.5,
+        size,
+        maskablePadding,
+      );
+      for (let channel = 0; channel < 3; channel++)
+        sum[channel] += color[channel];
+    }
+  }
+  return sum.map((channel) => Math.round(channel / samples ** 2));
+}
+
+function makePng(size, { maskablePadding = false, samples = 1 } = {}) {
   const rowBytes = size * 3;
   const raw = Buffer.alloc((rowBytes + 1) * size);
   for (let y = 0; y < size; y++) {
     const rowStart = y * (rowBytes + 1);
     raw[rowStart] = 0; // no filter
     for (let x = 0; x < size; x++) {
-      const [r, g, b] = pixelAt(x, y, size, maskablePadding);
+      const [r, g, b] = sampledPixelAt(x, y, size, maskablePadding, samples);
       const px = rowStart + 1 + x * 3;
       raw[px] = r;
       raw[px + 1] = g;
@@ -109,10 +134,34 @@ function makePng(size, { maskablePadding = false } = {}) {
   ]);
 }
 
+// An .ico file with one picture: a directory of a single entry, then the
+// picture, which may be a PNG as it is.
+function makeIco(size, png) {
+  const header = Buffer.alloc(6);
+  header.writeUInt16LE(1, 2); // type: icon
+  header.writeUInt16LE(1, 4); // number of pictures
+
+  const entry = Buffer.alloc(16);
+  entry[0] = size; // width
+  entry[1] = size; // height
+  entry.writeUInt16LE(1, 4); // color planes
+  entry.writeUInt16LE(24, 6); // bits per pixel
+  entry.writeUInt32LE(png.length, 8);
+  entry.writeUInt32LE(header.length + entry.length, 12); // where the PNG starts
+
+  return Buffer.concat([header, entry, png]);
+}
+
+const FAVICON_SIZE = 32;
+
+writeFileSync(
+  "public/favicon.ico",
+  makeIco(FAVICON_SIZE, makePng(FAVICON_SIZE, { samples: 4 })),
+);
 writeFileSync("public/pwa-192.png", makePng(192));
 writeFileSync("public/pwa-512.png", makePng(512));
 writeFileSync(
   "public/pwa-512-maskable.png",
   makePng(512, { maskablePadding: true }),
 );
-console.log("Generated PWA icons in public/");
+console.log("Generated the favicon and the PWA icons in public/");

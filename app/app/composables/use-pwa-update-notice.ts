@@ -16,14 +16,17 @@ export function usePwaUpdateNotice() {
       Notify.create({
         message: "A new version of Klankern is available.",
         color: "primary",
+        // The theme's text color on an accent, as on a filled button
+        // (assets/css/theme.css); Quasar's default is white.
+        textColor: "on-accent",
         timeout: 0,
         actions: [
           {
             label: "Reload",
-            color: "white",
+            color: "on-accent",
             handler: () => void $pwa?.updateServiceWorker(true),
           },
-          { label: "Later", color: "white" },
+          { label: "Later", color: "on-accent" },
         ],
       });
     },

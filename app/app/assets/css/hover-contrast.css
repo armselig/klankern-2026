@@ -1,14 +1,69 @@
 /*
  * Quasar shows hover and keyboard focus by laying a veil in the control's
- * text color over it. On the primary color the text is white, so the veil
- * lightens the background, and white text on it falls below the 4.5:1 that
- * WCAG 1.4.3 asks for. Here the veil is black instead: the background gets
- * darker and the contrast rises.
+ * text color over it, at 15 to 22 percent. That is hard to see, and on an
+ * accent color it is wrong as well: it moves the background towards the
+ * text. In light mode the text there is light and the veil lightens the
+ * accent, and the text on it falls below the 4.5:1 that WCAG 1.4.3 asks
+ * for.
  *
- * First selector: a control that is primary itself (a filled button).
- * Second: a control on a primary surface (a flat button in the header).
+ * Here the veils are the theme's (assets/css/theme.css). Their strength is
+ * in their color, so they are shown in full, without the black and the
+ * white that Quasar lays over its own.
  */
-.bg-primary:is(
+
+/*
+ * A flat button on the page or a surface: still in the text's color, but
+ * stronger. Not one with a color of its own (`text-primary`): this veil
+ * would be in the wrong color for it. Before the rules for accent colors,
+ * which have the same weight and have to win in the header.
+ */
+.q-btn--flat:where(:not([class*="text-"])):is(
+    .q-hoverable:hover,
+    .q-focusable:focus-visible,
+    .q-manual-focusable--focused
+  )
+  > .q-focus-helper {
+  background: var(--theme-veil-on-surface);
+}
+
+.q-btn--flat:where(:not([class*="text-"])):is(
+    .q-focusable:focus-visible,
+    .q-manual-focusable--focused
+  )
+  > .q-focus-helper {
+  opacity: 1;
+}
+
+/* As Quasar does: on a touch screen a hover would stick after the tap. */
+@media (any-hover: hover) {
+  .q-btn--flat:where(:not([class*="text-"])).q-hoverable:hover
+    > .q-focus-helper {
+    opacity: 1;
+  }
+}
+
+.q-btn--flat:where(:not([class*="text-"])):is(
+    .q-hoverable:hover,
+    .q-focusable:focus-visible,
+    .q-manual-focusable--focused
+  )
+  > .q-focus-helper::before,
+.q-btn--flat:where(:not([class*="text-"])):is(
+    .q-hoverable:hover,
+    .q-focusable:focus-visible,
+    .q-manual-focusable--focused
+  )
+  > .q-focus-helper::after {
+  opacity: 0;
+}
+
+/*
+ * A control on an accent color: black in light mode and white in dark mode,
+ * so the background moves away from the text. In each rule, the first
+ * selector is a control that is accent-colored itself (a filled button),
+ * the second a control on a primary surface (a flat button in the header).
+ */
+:is(.bg-primary, .bg-negative):is(
     .q-hoverable:hover,
     .q-focusable:focus-visible,
     .q-manual-focusable--focused
@@ -21,17 +76,46 @@
     .q-manual-focusable--focused
   )
   > .q-focus-helper {
-  background: #000;
+  background: var(--theme-veil);
 }
 
-/* Quasar lays some white over its veil. Over a black one that would only
-   grey it and take back part of the darkening. */
-.bg-primary:is(
+:is(.bg-primary, .bg-negative):is(
+    .q-focusable:focus-visible,
+    .q-manual-focusable--focused
+  )
+  > .q-focus-helper,
+.bg-primary
+  :is(.q-focusable:focus-visible, .q-manual-focusable--focused)
+  > .q-focus-helper {
+  opacity: 1;
+}
+
+@media (any-hover: hover) {
+  :is(.bg-primary, .bg-negative).q-hoverable:hover > .q-focus-helper,
+  .bg-primary .q-hoverable:hover > .q-focus-helper {
+    opacity: 1;
+  }
+}
+
+:is(.bg-primary, .bg-negative):is(
+    .q-hoverable:hover,
+    .q-focusable:focus-visible,
+    .q-manual-focusable--focused
+  )
+  > .q-focus-helper::before,
+:is(.bg-primary, .bg-negative):is(
     .q-hoverable:hover,
     .q-focusable:focus-visible,
     .q-manual-focusable--focused
   )
   > .q-focus-helper::after,
+.bg-primary
+  :is(
+    .q-hoverable:hover,
+    .q-focusable:focus-visible,
+    .q-manual-focusable--focused
+  )
+  > .q-focus-helper::before,
 .bg-primary
   :is(
     .q-hoverable:hover,

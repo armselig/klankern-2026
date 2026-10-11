@@ -50,7 +50,7 @@ async function add() {
         @remove="todoStore.remove"
       />
       <q-item v-if="todoStore.visible.length === 0">
-        <q-item-section class="text-grey-8"
+        <q-item-section class="text-muted"
           >Nothing on the list yet.</q-item-section
         >
       </q-item>

@@ -13,7 +13,7 @@ const emit = defineEmits<{ toggle: [id: string]; remove: [id: string] }>();
       <q-checkbox
         :model-value="item.done"
         :label="item.title"
-        :class="{ 'text-strike text-grey-8': item.done }"
+        :class="{ 'text-strike text-muted': item.done }"
         @update:model-value="emit('toggle', item.id)"
       />
     </q-item-section>

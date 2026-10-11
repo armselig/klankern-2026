@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Klankern — Offline</title>
     <style>
+      /* The app's colors (app/assets/css/theme.css): Catppuccin Latte, and
+         Catppuccin Mocha on a device in dark mode. Written out here, because
+         this page has to work without anything else from the app. */
+      :root {
+        color-scheme: light dark;
+        --page: light-dark(#eff1f5, #1e1e2e);
+        --text: light-dark(#4c4f69, #cdd6f4);
+        --primary: light-dark(#8839ef, #cba6f7);
+      }
       body {
         margin: 0;
         min-height: 100vh;
@@ -12,8 +21,8 @@
         align-items: center;
         justify-content: center;
         font-family: system-ui, sans-serif;
-        background: #1976d2;
-        color: #fff;
+        background: var(--page);
+        color: var(--text);
         text-align: center;
         padding: 1.5rem;
         box-sizing: border-box;
@@ -24,9 +33,7 @@
       h1 {
         font-size: 1.5rem;
         margin-bottom: 0.5rem;
-      }
-      p {
-        opacity: 0.85;
+        color: var(--primary);
       }
     </style>
   </head>

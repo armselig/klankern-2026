@@ -23,6 +23,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@catppuccin/palette": "1.8.0",
     "@nuxtjs/supabase": "2.0.10",
     "@pinia/nuxt": "1.0.2",
     "@quasar/extras": "2.1.0",

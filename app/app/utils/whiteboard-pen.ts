@@ -1,3 +1,5 @@
+import { INK_VALUES } from "./ink";
+
 /** A choice in the whiteboard toolbar: what is stored with the stroke, and
  * the name the toolbar shows and announces for it. */
 export interface PenOption<T> {
@@ -5,21 +7,21 @@ export interface PenOption<T> {
   value: T;
 }
 
-/** A pen color, with the Quasar palette name closest to it for the toolbar's
- * own control. */
+/** A pen color, with the name of its theme color for the toolbar's own
+ * control (`text-ink-<name>` in assets/css/theme.css). */
 export interface PenColorOption extends PenOption<string> {
   color: string;
 }
 
-export const DEFAULT_PEN_COLOR = "#212121";
+export const DEFAULT_PEN_COLOR: string = INK_VALUES.black;
 
-/** The values are what gets stored: '#rrggbb' in lower case, the only format
- * the database accepts (migration 0012). */
+/** The values are what gets stored; what a stroke is drawn with follows the
+ * theme (see utils/ink.ts). */
 export const PEN_COLORS: PenColorOption[] = [
-  { label: "Black", value: DEFAULT_PEN_COLOR, color: "grey-10" },
-  { label: "Red", value: "#c62828", color: "red-9" },
-  { label: "Blue", value: "#1565c0", color: "blue-9" },
-  { label: "Green", value: "#2e7d32", color: "green-9" },
+  { label: "Black", value: DEFAULT_PEN_COLOR, color: "ink-black" },
+  { label: "Red", value: INK_VALUES.red, color: "ink-red" },
+  { label: "Blue", value: INK_VALUES.blue, color: "ink-blue" },
+  { label: "Green", value: INK_VALUES.green, color: "ink-green" },
 ];
 
 export const DEFAULT_PEN_WIDTH = 32;

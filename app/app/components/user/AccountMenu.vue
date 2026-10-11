@@ -116,20 +116,22 @@ function requestSignOut() {
 </template>
 
 <style scoped>
-/* 44px is the smallest comfortable target for a thumb. The darker blue
-   gives the button a shape while nothing points at it. */
+/* 44px is the smallest comfortable target for a thumb. Half of the theme's
+   veil over the header's color gives the button a shape while nothing
+   points at it; it darkens the header in light mode and lightens it in dark
+   mode (see assets/css/hover-contrast.css). */
 .account-menu__trigger {
   min-height: 44px;
-  background: rgb(0 0 0 / 0.15);
+  background: color-mix(in srgb, var(--theme-veil) 50%, transparent);
 }
 
-/* Stays dark while the menu is open, so the two read as one thing. */
+/* The whole veil while the menu is open, so the two read as one thing. */
 .account-menu__trigger--open {
-  background: rgb(0 0 0 / 0.4);
+  background: var(--theme-veil);
 }
 
 .account-menu__trigger:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--theme-on-accent);
   outline-offset: 2px;
 }
 
@@ -141,17 +143,17 @@ function requestSignOut() {
   transform: rotate(180deg);
 }
 
-/* A white ring around the picture, which hides the header's dark highlight
-   where it lies. */
+/* A ring around the picture in the color of the header's text, which hides
+   the header's highlight where it lies. */
 .account-menu__trigger:focus-visible .account-menu__avatar,
 .account-menu__trigger--open .account-menu__avatar {
-  box-shadow: 0 0 0 2px #fff;
+  box-shadow: 0 0 0 2px var(--theme-on-accent);
 }
 
 /* As Quasar does: on a touch screen a hover would stick after the tap. */
 @media (any-hover: hover) {
   .account-menu__trigger:hover .account-menu__avatar {
-    box-shadow: 0 0 0 2px #fff;
+    box-shadow: 0 0 0 2px var(--theme-on-accent);
   }
 }
 

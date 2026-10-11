@@ -9,8 +9,9 @@ const props = defineProps<{
   label?: string;
 }>();
 
-/** How much of the ink colors the disc behind the rosette. Laid over white,
- * so the tint is the same on the white card and on the blue header. */
+/** How much of the ink colors the disc behind the rosette. Laid over the
+ * theme's surface color, so the tint is the same on a card and on the
+ * header. */
 const DISC_TINT = 0.14;
 
 const center = ROSETTE_BOX / 2;
@@ -33,10 +34,9 @@ watch(hash, () => {
 </script>
 
 <template>
-  <!-- Grey until the hash is known; the rosette's disc then covers it. -->
+  <!-- A plain disc until the hash is known; the rosette's then covers it. -->
   <q-avatar
     :size="`${size}px`"
-    color="grey-4"
     class="user-avatar"
     :role="label ? 'img' : undefined"
     :aria-label="label"
@@ -51,13 +51,14 @@ watch(hash, () => {
       width="100%"
       height="100%"
     >
-      <circle :cx="center" :cy="center" :r="center" fill="#fff" />
+      <circle class="user-avatar__disc" :cx="center" :cy="center" :r="center" />
       <circle
         :cx="center"
         :cy="center"
         :r="center"
         :fill="rosette.color"
         :fill-opacity="DISC_TINT"
+        :style="{ fill: inkPaint(rosette.color) }"
       />
       <whiteboard-stroke :stroke="rosette" />
     </svg>
@@ -85,6 +86,11 @@ watch(hash, () => {
    neighbours give way, not the avatar. */
 .user-avatar {
   flex-shrink: 0;
+  background: var(--theme-placeholder);
+}
+
+.user-avatar__disc {
+  fill: var(--theme-surface);
 }
 
 /* Over the rosette rather than beside it: while the photo is loading it is

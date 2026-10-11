@@ -27,6 +27,26 @@ import {
 // in a realistic state (lists with items, the invite dialog open). Only
 // serious and critical findings fail the test, so it guards against real
 // barriers rather than style nits.
+//
+// Every scan runs twice, once per color scheme: light and dark mode have a
+// palette each (assets/css/theme.css), and a pair of colors that passes in
+// one says nothing about the other.
+
+/** The device settings the app has a palette for, and the veil that marks
+ * hover and focus on the primary color in each, with its strength (see
+ * assets/css/hover-contrast.css). */
+const COLOR_SCHEMES = [
+  {
+    colorScheme: "light",
+    bodyClass: /body--light/,
+    veil: "rgba(0, 0, 0, 0.3)",
+  },
+  {
+    colorScheme: "dark",
+    bodyClass: /body--dark/,
+    veil: "rgba(255, 255, 255, 0.65)",
+  },
+] as const;
 
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 const BLOCKING_IMPACTS = new Set(["serious", "critical"]);
@@ -82,126 +102,162 @@ async function untilFadesEnd(page: Page) {
   );
 }
 
-test.describe("accessibility", () => {
-  let user: TestUser;
-  let householdId: string;
+for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
+  test.describe(`accessibility in ${colorScheme} mode`, () => {
+    test.use({ colorScheme });
 
-  test.beforeAll(async () => {
-    user = await createTestUser("e2e-a11y");
-    householdId = await createHousehold(user.client, `E2E a11y ${runId}`);
-  });
+    let user: TestUser;
+    let householdId: string;
 
-  test.afterAll(async () => {
-    await deleteTestData([householdId], [user]);
-  });
-
-  test("signed-out pages have no serious accessibility violations", async ({
-    page,
-  }) => {
-    await page.goto(ROUTES.login);
-    await expect(page.getByText("Sign in to Klankern")).toBeVisible();
-    await expectNoBlockingViolations(page, "the login page");
-
-    await page.goto(ROUTES.join("some-code"));
-    await expect(
-      page.getByText("Join your household", { exact: true }),
-    ).toBeVisible();
-    await expectNoBlockingViolations(page, "the join page");
-  });
-
-  test("signed-in pages have no serious accessibility violations", async ({
-    page,
-  }) => {
-    await signIn(page, user);
-    await expect(page.getByText(`E2E a11y ${runId}`)).toBeVisible();
-    await expect(page).toHaveTitle("Klankern");
-    // The members arrive after the household; the scan should see them.
-    await expect(memberAvatar(page, user.email)).toBeVisible();
-    await expectNoBlockingViolations(page, "the dashboard");
-
-    // White text on the primary color is close to the contrast limit, and a
-    // highlight that lightens the background takes it below (see
-    // assets/css/hover-contrast.css). Checked for hover and for keyboard
-    // focus, which is marked more strongly than hover.
-    await test.step("highlighted controls on the primary color keep their contrast", async () => {
-      const todosLink = page.getByRole("link", { name: "To-dos" });
-      await todosLink.hover();
-      await untilHighlightShown(todosLink);
-      await expectNoBlockingViolations(
-        page,
-        "the dashboard with a filled button hovered",
-      );
-
-      // Tab from "To-dos" moves the keyboard focus to "Shopping".
-      await todosLink.focus();
-      await page.keyboard.press("Tab");
-      const shoppingLink = page.getByRole("link", { name: "Shopping" });
-      await expect(shoppingLink).toBeFocused();
-      await untilHighlightShown(shoppingLink);
-      await expectNoBlockingViolations(
-        page,
-        "the dashboard with a filled button focused",
-      );
-
-      // axe can't judge anything in the header: the header's shadow layer
-      // lies over it, so axe reports the background as undetermined. A
-      // button there has the same highlight as a filled one, so the check
-      // is that its highlight is the dark one as well, and the stronger one
-      // the header asks for.
-      const headerButton = accountButton(page, user.email);
-      await headerButton.hover();
-      await untilHighlightShown(headerButton);
-      const headerHighlight = headerButton.locator(".q-focus-helper");
-      await expect
-        .soft(headerHighlight, "the highlight of a header button")
-        .toHaveCSS("background-color", "rgb(0, 0, 0)");
-      await expect
-        .soft(headerHighlight, "the strength of a header button's highlight")
-        .toHaveCSS("opacity", "0.3");
+    test.beforeAll(async () => {
+      user = await createTestUser("e2e-a11y");
+      householdId = await createHousehold(user.client, `E2E a11y ${runId}`);
     });
 
-    await openAccountMenu(page);
-    await untilFadesEnd(page);
-    await expectNoBlockingViolations(page, "the account menu");
-    await page.getByRole("button", { name: "Invite a family member" }).click();
-    await expect(page.getByLabel("Invite link")).toHaveValue(/.+/);
-    // The dialog takes the menu's place; the scan waits until it is gone.
-    await expect(page.getByRole("group", { name: "Account" })).toHaveCount(0);
-    await untilFadesEnd(page);
-    await expectNoBlockingViolations(page, "the invite dialog");
-    await page.getByRole("button", { name: "Close" }).click();
-    // The menu entry that opened the dialog is gone; the focus must not be
-    // lost with it.
-    await expect(accountButton(page, user.email)).toBeFocused();
+    test.afterAll(async () => {
+      await deleteTestData([householdId], [user]);
+    });
 
-    await openList(page, "To-dos");
-    await expect(page).toHaveTitle("To-dos · Klankern");
-    await expectNoBlockingViolations(page, "the empty to-do list");
-    await addTodo(page, "Open item");
-    await addTodo(page, "Done item");
-    await untilSaved(page, () => listItem(page, "Done item").click());
-    await expectNoBlockingViolations(page, "the to-do list");
-
-    await page.getByRole("link", { name: "Klankern" }).click();
-    await openList(page, "Shopping");
-    await addShoppingItem(page, "Apples", "6");
-    await addShoppingItem(page, "Bread");
-    await untilSaved(page, () => listItem(page, "Bread").click());
-    await expectNoBlockingViolations(page, "the shopping list");
-
-    await page.getByRole("link", { name: "Klankern" }).click();
-    await openWhiteboard(page);
-    await expect(page).toHaveTitle("Whiteboard · Klankern");
-    await expectNoBlockingViolations(page, "the empty whiteboard");
-    await dragOnWhiteboard(page, [
-      [0.2, 0.2],
-      [0.6, 0.6],
-    ]);
-    await expectStrokeCount(page, 1);
-    await page.getByRole("radio", { name: "Eraser" }).click();
-    await expectNoBlockingViolations(
+    test("signed-out pages have no serious accessibility violations", async ({
       page,
-      "the whiteboard with the eraser selected",
-    );
+    }) => {
+      await page.goto(ROUTES.login);
+      await expect(page.getByText("Sign in to Klankern")).toBeVisible();
+      // Otherwise a scan in dark mode could pass on the light palette.
+      await expect(page.locator("body")).toHaveClass(bodyClass);
+      await expectNoBlockingViolations(page, "the login page");
+
+      await page.goto(ROUTES.join("some-code"));
+      await expect(
+        page.getByText("Join your household", { exact: true }),
+      ).toBeVisible();
+      await expectNoBlockingViolations(page, "the join page");
+    });
+
+    test("signed-in pages have no serious accessibility violations", async ({
+      page,
+    }) => {
+      await signIn(page, user);
+      await expect(page.getByText(`E2E a11y ${runId}`)).toBeVisible();
+      await expect(page).toHaveTitle("Klankern");
+      // The members arrive after the household; the scan should see them.
+      await expect(memberAvatar(page, user.email)).toBeVisible();
+      await expectNoBlockingViolations(page, "the dashboard");
+
+      // In light mode the text on the primary color is close to the contrast
+      // limit, and a highlight that moves the background towards the text
+      // takes it below (see assets/css/hover-contrast.css). Checked for hover
+      // and for keyboard focus, which is marked more strongly than hover.
+      await test.step("highlighted controls on the primary color keep their contrast", async () => {
+        const todosLink = page.getByRole("link", { name: "To-dos" });
+        await todosLink.hover();
+        await untilHighlightShown(todosLink);
+        await expectNoBlockingViolations(
+          page,
+          "the dashboard with a filled button hovered",
+        );
+
+        // Tab from "To-dos" moves the keyboard focus to "Shopping".
+        await todosLink.focus();
+        await page.keyboard.press("Tab");
+        const shoppingLink = page.getByRole("link", { name: "Shopping" });
+        await expect(shoppingLink).toBeFocused();
+        await untilHighlightShown(shoppingLink);
+        await expectNoBlockingViolations(
+          page,
+          "the dashboard with a filled button focused",
+        );
+
+        // axe can't judge anything in the header: the header's shadow layer
+        // lies over it, so axe reports the background as undetermined. A
+        // button there has the same highlight as a filled one, so the check
+        // is that its highlight is the theme's veil as well, shown in full:
+        // Quasar's own would be a share of the text color at 15 percent.
+        const headerButton = accountButton(page, user.email);
+        await headerButton.hover();
+        await untilHighlightShown(headerButton);
+        const headerHighlight = headerButton.locator(".q-focus-helper");
+        await expect
+          .soft(headerHighlight, "the highlight of a header button")
+          .toHaveCSS("background-color", veil);
+        await expect
+          .soft(headerHighlight, "the strength of a header button's highlight")
+          .toHaveCSS("opacity", "1");
+      });
+
+      await openAccountMenu(page);
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "the account menu");
+      await page
+        .getByRole("button", { name: "Invite a family member" })
+        .click();
+      await expect(page.getByLabel("Invite link")).toHaveValue(/.+/);
+      // The dialog takes the menu's place; the scan waits until it is gone.
+      await expect(page.getByRole("group", { name: "Account" })).toHaveCount(0);
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "the invite dialog");
+      await page.getByRole("button", { name: "Close" }).click();
+      // The menu entry that opened the dialog is gone; the focus must not be
+      // lost with it.
+      await expect(accountButton(page, user.email)).toBeFocused();
+
+      await openList(page, "To-dos");
+      await expect(page).toHaveTitle("To-dos · Klankern");
+      await expectNoBlockingViolations(page, "the empty to-do list");
+      await addTodo(page, "Open item");
+      await addTodo(page, "Done item");
+      await untilSaved(page, () => listItem(page, "Done item").click());
+      await expectNoBlockingViolations(page, "the to-do list");
+
+      await page.getByRole("link", { name: "Klankern" }).click();
+      await openList(page, "Shopping");
+      await addShoppingItem(page, "Apples", "6");
+      await addShoppingItem(page, "Bread");
+      await untilSaved(page, () => listItem(page, "Bread").click());
+      await expectNoBlockingViolations(page, "the shopping list");
+
+      await page.getByRole("link", { name: "Klankern" }).click();
+      await openWhiteboard(page);
+      await expect(page).toHaveTitle("Whiteboard · Klankern");
+      await expectNoBlockingViolations(page, "the empty whiteboard");
+      await dragOnWhiteboard(page, [
+        [0.2, 0.2],
+        [0.6, 0.6],
+      ]);
+      await expectStrokeCount(page, 1);
+      await page.getByRole("radio", { name: "Eraser" }).click();
+      await expectNoBlockingViolations(
+        page,
+        "the whiteboard with the eraser selected",
+      );
+
+      // A flat button's highlight is in its text's color and moves the
+      // background towards the text (see assets/css/hover-contrast.css), so
+      // "Cancel" is scanned with it. The dialog opens with the focus on
+      // "Clear"; Shift+Tab moves it to "Cancel" as a keyboard would.
+      await test.step("the clear dialog's flat button keeps its contrast when highlighted", async () => {
+        await page.getByRole("button", { name: "Clear board" }).click();
+        const cancel = page.getByRole("button", { name: "Cancel" });
+        await expect(cancel).toBeVisible();
+        await untilFadesEnd(page);
+        await expectNoBlockingViolations(page, "the clear dialog");
+
+        await page.keyboard.press("Shift+Tab");
+        await expect(cancel).toBeFocused();
+        await untilHighlightShown(cancel);
+        await expectNoBlockingViolations(
+          page,
+          "the clear dialog with Cancel focused",
+        );
+
+        await page.getByRole("button", { name: "Clear", exact: true }).focus();
+        await cancel.hover();
+        await untilHighlightShown(cancel);
+        await expectNoBlockingViolations(
+          page,
+          "the clear dialog with Cancel hovered",
+        );
+      });
+    });
   });
-});
+}

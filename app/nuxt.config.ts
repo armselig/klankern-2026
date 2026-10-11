@@ -1,6 +1,12 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { flavors } from "@catppuccin/palette";
 import { ROUTES } from "./app/utils/routes";
 import packageJson from "./package.json";
+
+// The browser's own frame around the app takes the header's color. The same
+// flavors and colors as in assets/css/theme.css.
+const lightColors = flavors.latte.colors;
+const darkColors = flavors.mocha.colors;
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
@@ -13,9 +19,10 @@ export default defineNuxtConfig({
     "@nuxtjs/supabase",
   ],
   components: [{ path: "~/components", pathPrefix: false }],
-  // Loaded on every page: corrects a contrast problem of Quasar's hover and
-  // focus highlight that no single component could fix for itself.
-  css: ["~/assets/css/hover-contrast.css"],
+  // Loaded on every page: the color palette for light and dark mode, and the
+  // correction of a contrast problem of Quasar's hover and focus highlight
+  // that no single component could fix for itself.
+  css: ["~/assets/css/theme.css", "~/assets/css/hover-contrast.css"],
   runtimeConfig: {
     public: {
       // Shown in the footer. semantic-release writes the version into
@@ -26,7 +33,21 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
-      meta: [{ name: "theme-color", content: "#1976D2" }],
+      meta: [
+        // Before the stylesheet is there, the browser paints the empty page
+        // in the device's mode already.
+        { name: "color-scheme", content: "light dark" },
+        {
+          name: "theme-color",
+          media: "(prefers-color-scheme: light)",
+          content: lightColors.mauve.hex,
+        },
+        {
+          name: "theme-color",
+          media: "(prefers-color-scheme: dark)",
+          content: darkColors.mauve.hex,
+        },
+      ],
       link: [{ rel: "apple-touch-icon", href: "/pwa-192.png" }],
     },
   },
@@ -39,6 +60,9 @@ export default defineNuxtConfig({
   },
   quasar: {
     plugins: ["Notify", "Dialog"],
+    // Follows the device's setting, and a change of it while the app is
+    // open. The colors of both modes are in assets/css/theme.css.
+    config: { dark: "auto" },
     // An SVG set, so only the icons a screen imports are bundled. With a font
     // set (the module's default is 'material-icons') the module ships the
     // whole icon font, whatever extras.fontIcons says.
@@ -56,8 +80,10 @@ export default defineNuxtConfig({
       short_name: "Klankern",
       description:
         "Shared to-dos, shopping, whiteboard and recipes for the family.",
-      theme_color: "#1976D2",
-      background_color: "#ffffff",
+      // A manifest holds one color each, whatever the device's mode: the
+      // light one.
+      theme_color: lightColors.mauve.hex,
+      background_color: lightColors.base.hex,
       display: "standalone",
       icons: [
         { src: "pwa-192.png", sizes: "192x192", type: "image/png" },

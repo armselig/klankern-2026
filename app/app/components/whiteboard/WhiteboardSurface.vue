@@ -135,10 +135,9 @@ function cancelGesture(event: PointerEvent) {
     <!-- The board itself. Its outline keeps one screen width however far the
          board is scaled down; half of it lies outside the viewBox. -->
     <rect
+      class="whiteboard-surface__board"
       :width="BOARD_WIDTH"
       :height="BOARD_HEIGHT"
-      fill="#fff"
-      stroke="#757575"
       stroke-width="2"
       vector-effect="non-scaling-stroke"
     />
@@ -162,5 +161,12 @@ function cancelGesture(event: PointerEvent) {
   /* Without this a touch scrolls the page instead of drawing. */
   touch-action: none;
   user-select: none;
+}
+
+/* Light in light mode and dark in dark mode, like every other surface; the
+   pens follow (utils/ink.ts). */
+.whiteboard-surface__board {
+  fill: var(--theme-surface);
+  stroke: var(--theme-outline);
 }
 </style>

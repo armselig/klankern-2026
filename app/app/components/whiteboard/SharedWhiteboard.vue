@@ -16,7 +16,12 @@ function confirmClear() {
   Dialog.create({
     title: "Clear the whiteboard?",
     message: "This removes everything on it, for the whole family.",
-    cancel: { label: "Cancel", flat: true },
+    // No color, said outright: the dialog would give "Cancel" its own
+    // (primary, or amber in dark mode), and a highlight leaves colored text
+    // on a surface below 4.5:1. Without one it is a plain flat button in
+    // the text's color, with the theme's highlight for those
+    // (assets/css/hover-contrast.css).
+    cancel: { label: "Cancel", flat: true, color: undefined },
     ok: { label: "Clear", color: "negative", unelevated: true },
   }).onOk(() => whiteboardStore.clear());
 }
