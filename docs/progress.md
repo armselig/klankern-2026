@@ -520,7 +520,7 @@ Worth knowing for a next attempt: a `@fontsource` weight is one file per script 
 
 ## The `pwa` e2e project and a leftover `.output` (fixed 2026-10-11)
 
-The `pwa` project had failed twice on a blank page (see "Found on the way" under "Milestone 9" and "Found while building it" under "Releases"). The cause is now traced in Nitro (2.13.4), and the project no longer depends on `app/.output` being absent.
+The `pwa` project had failed twice on a blank page (see "Found on the way" under "Milestone 9" and "Found while building it" under "Releases"). The cause is now traced in Nitro (2.13.4) and removed in `nuxt.config.ts`.
 
 **Cause.** The Netlify preset (`netlify-static`) sets both of Nitro's output directories to `dist`, and Nitro empties only those before a build, so `.output` is left alone. The prerenderer is a second Nitro instance with the preset `nitro-prerender`, created from the config without the Netlify preset: its `output.publicDir` is the default, `.output/public`, and Nitro afterwards points only its `output.dir` at the main build's. That preset has `serveStatic: true`, so its static handler comes first and answers `/login` with an existing `.output/public/login/index.html`. The route is never rendered, and the old page is written into `dist`. With the plain `static` preset both instances use `.output/public`, which is emptied first, so `nuxt generate` on its own is fine; so are CI and Netlify, which build from a fresh checkout.
 
@@ -528,10 +528,13 @@ The `pwa` project had failed twice on a blank page (see "Found on the way" under
 
 **Changes.**
 
-- The `pwa` web server command removes `.output` before `netlify serve` (`playwright.config.ts`).
-- `pwa.e2e.ts` has a fifth test: the build id in the served page is the one in `/_nuxt/builds/latest.json`. Seen to fail with the leftover in place and the old command, while the other four passed; all five pass with the new command.
+- `nuxt.config.ts` gives the prerenderer the build's own public directory: a `nitro:init` hook registers Nitro's `prerender:config` hook and sets `output.publicDir` to the main instance's. With the Netlify preset that is `dist`, which every build empties before it prerenders, as it does `.output/public` with the `static` preset.
+- `pwa.e2e.ts` has a fifth test: the build id in the served page is the one in `/_nuxt/builds/latest.json`.
+- The `pwa` web server command writes a leftover login page into `.output/public` before `netlify serve` (`playwright.config.ts`), so that test exercises the hook on every run, in CI too. A first version of the command deleted `.output` instead; that hid the problem from the test and removed a local `nuxt build` with every e2e run.
 
-Not changed: the build itself. A `netlify build` or `netlify serve` run by hand after a local `nuxt generate` still takes the old pages; delete `app/.output` first. Pointing the prerenderer at `dist` in a `prerender:config` hook would remove the cause, and was not tried.
+Written test first. With the leftover planted and no hook, the build shipped the planted file as `dist/login/index.html` and the test failed; with the hook all five pass and the leftover is still in place. Also checked by hand, comparing whole builds apart from the build id and timestamps: a Netlify build without any `.output`, as on Netlify, has the same files with the same contents with and without the hook, so what gets deployed is unchanged, and the same again as a build with the leftover present. A plain `nuxt generate` still renders its nine pages, with matching build ids.
+
+Worth knowing: the hook relies on how Nitro builds its prerenderer, which no documentation promises. If the fifth test fails after an upgrade, read `prerender()` in Nitro's source again.
 
 ## Next steps
 

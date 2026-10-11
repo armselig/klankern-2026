@@ -64,8 +64,11 @@ test.describe("PWA", () => {
   // Every prerendered page carries the id of the build that rendered it, and
   // the build's own id is in /_nuxt/builds/latest.json. They differ when the
   // build took its pages from somewhere else, as it did from a leftover
-  // `.output/public` (see the web server command in playwright.config.ts).
-  // The other tests only notice that once a script's hashed name has changed.
+  // `.output/public` until the `nitro:init` hook in nuxt.config.ts. The web
+  // server command in playwright.config.ts plants such a leftover for the
+  // login page before every build, so this fails if the hook stops working.
+  // The other tests only notice a real leftover once a script's hashed name
+  // has changed.
   test("the served page was rendered by the build that is served", async ({
     page,
     request,

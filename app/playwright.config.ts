@@ -1,8 +1,11 @@
 import { defineConfig } from "@playwright/test";
+import { ROUTES } from "./app/utils/routes";
 
 const devURL = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 const productionPort = process.env.E2E_PRODUCTION_PORT ?? "3100";
 const productionURL = `http://localhost:${productionPort}`;
+// Where a local `nuxt generate` or `nuxt build` leaves the login page.
+const leftoverPageDir = `.output/public${ROUTES.login}`;
 
 /**
  * End-to-end tests drive the real app in the installed Google Chrome (no
@@ -51,12 +54,12 @@ export default defineConfig({
       // with the rules in public/_redirects, as the deployed site does.
       // `--offline` keeps it from contacting Netlify: no login, no linked site.
       //
-      // `.output` goes first: it is what a local `nuxt generate` or `nuxt
-      // build` leaves behind. The Netlify preset builds into `dist` and never
-      // empties it, but Nitro's prerenderer still serves the files in
-      // `.output/public`, so the build would take the old pages from there
-      // instead of rendering them.
-      command: `rm -rf .output && netlify serve --offline --port ${productionPort}`,
+      // A leftover page is planted first. The Netlify preset builds into
+      // `dist` and never empties `.output`, and Nitro's prerenderer took the
+      // pages it found in `.output/public` instead of rendering them, until
+      // the `nitro:init` hook in nuxt.config.ts. With the leftover in place on
+      // every run, pwa.e2e.ts fails if that ever comes back.
+      command: `mkdir -p ${leftoverPageDir} && echo "A leftover page" > ${leftoverPageDir}/index.html && netlify serve --offline --port ${productionPort}`,
       url: productionURL,
       env: { BROWSER: "none" },
       reuseExistingServer: false,

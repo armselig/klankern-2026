@@ -136,6 +136,25 @@ export default defineNuxtConfig({
     },
     client: { installPrompt: true, periodicSyncForUpdates: 3600 },
   },
+  hooks: {
+    // Nitro renders the pages with a second instance of itself, the
+    // prerenderer, which answers a route with a file from its own public
+    // directory if there is one, instead of rendering it. That directory
+    // stays `.output/public` when a preset moves the build's output (the
+    // Netlify preset: to `dist`), and then no build empties it. A page that a
+    // local `nuxt generate` left there would go into the next Netlify build
+    // unrendered. So the prerenderer gets the build's own public directory,
+    // which every build empties first, as it has without such a preset.
+    "nitro:init"(nitro) {
+      nitro.hooks.hook("prerender:config", (prerendererConfig) => {
+        // A new object: the config is a shallow copy of the build's own.
+        prerendererConfig.output = {
+          ...prerendererConfig.output,
+          publicDir: nitro.options.output.publicDir,
+        };
+      });
+    },
+  },
   vite: {
     build: {
       // A font stays a file of its own. Vite writes small files into the
