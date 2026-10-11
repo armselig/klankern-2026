@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.4.0](https://github.com/armselig/klankern-2026/compare/v1.3.1...v1.4.0) (2026-10-11)
+
+### Features
+
+* **recipes:** share recipes and put their ingredients on the shopping list ([7a02601](https://github.com/armselig/klankern-2026/commit/7a0260199b67a3b6a4a17e7d3bfa63d571cda8dc))
+
+### Bug Fixes
+
+* **lists:** create a household's to-do and shopping list only once ([165ecec](https://github.com/armselig/klankern-2026/commit/165ececdf5d979e7ef7d8423de80b410da5dad32))
+
 ## [1.3.1](https://github.com/armselig/klankern-2026/compare/v1.3.0...v1.3.1) (2026-10-11)
 
 ### Reverts
