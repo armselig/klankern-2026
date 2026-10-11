@@ -1,0 +1,73 @@
+/*
+ * The app's fonts: Bitter, a slab serif, for headlines over Nunito Sans, a
+ * rounded sans, for text, and JetBrains Mono for what is read or typed one
+ * character at a time.
+ *
+ * They ship with the app, from the @fontsource packages, so that every
+ * device shows the same page; a stack of the device's own fonts was tried
+ * and looked different on each system. Nothing is fetched from another
+ * host.
+ *
+ * Each import is one weight, and only these are there: any other weight
+ * that a rule asks for is drawn in the nearest of them, or thickened by the
+ * browser. A weight comes as one file per script (Latin, Cyrillic, ...),
+ * and a browser fetches a file only once a page has text for it.
+ */
+@import "@fontsource/bitter/700.css";
+@import "@fontsource/nunito-sans/400.css";
+@import "@fontsource/nunito-sans/500.css";
+@import "@fontsource/nunito-sans/700.css";
+@import "@fontsource/jetbrains-mono/500.css";
+
+:root {
+  /* Emoji are the device's own: none of the app's fonts has them. Named,
+     so that a browser takes the colored ones and not the black and white
+     signs of a symbol font. */
+  --theme-font-emoji:
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  /* The generic family shows until the font has loaded. The emoji fonts
+     come after it: they hold digits too, which must never stand in for
+     those of a text font. */
+  --theme-font-heading: "Bitter", serif, var(--theme-font-emoji);
+  --theme-font-text: "Nunito Sans", sans-serif, var(--theme-font-emoji);
+  --theme-font-mono: "JetBrains Mono", monospace, var(--theme-font-emoji);
+}
+
+body {
+  font-family: var(--theme-font-text);
+}
+
+/* Quasar's dialog plugin writes its title into a div. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.text-h1,
+.text-h2,
+.text-h3,
+.text-h4,
+.text-h5,
+.text-h6,
+.q-dialog__title {
+  font-family: var(--theme-font-heading);
+  /* Quasar asks for 300 to 500 here; Bitter is there in 700 only. */
+  font-weight: 700;
+}
+
+code,
+kbd,
+pre,
+samp,
+.text-mono {
+  font-family: var(--theme-font-mono);
+}
+
+/* After the headlines, so that a code in a headline's size (`text-h5
+   text-mono`) is set in the mono font and in the one weight it is there
+   in. For a `q-input`, pass the class as `input-class`. */
+.text-mono {
+  font-weight: 500;
+}

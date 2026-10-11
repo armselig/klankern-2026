@@ -96,14 +96,15 @@ async function signOut() {
 </template>
 
 <style scoped>
-/* Quasar styles a bare h1 as a 6rem display line; this one is a wordmark in
-   a toolbar. */
+/* Quasar styles a bare h1 as a 6rem display line, set tighter than the font
+   is drawn; this one is a wordmark in a toolbar, in the headline font's own
+   spacing. */
 .wordmark {
   margin: 0;
   font-size: 1.375rem;
   font-weight: 700;
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: normal;
 }
 
 /* The padding makes the link 44px high, a comfortable target for a thumb. */

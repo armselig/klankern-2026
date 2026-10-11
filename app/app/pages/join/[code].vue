@@ -99,6 +99,7 @@ async function join() {
           <q-input
             v-model="otp"
             label="Code from the email"
+            input-class="text-mono"
             inputmode="numeric"
             autocomplete="one-time-code"
             autofocus

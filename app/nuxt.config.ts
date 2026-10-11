@@ -19,10 +19,14 @@ export default defineNuxtConfig({
     "@nuxtjs/supabase",
   ],
   components: [{ path: "~/components", pathPrefix: false }],
-  // Loaded on every page: the color palette for light and dark mode, and the
-  // correction of a contrast problem of Quasar's hover and focus highlight
-  // that no single component could fix for itself.
-  css: ["~/assets/css/theme.css", "~/assets/css/hover-contrast.css"],
+  // Loaded on every page: the color palette for light and dark mode, the
+  // fonts, and the correction of a contrast problem of Quasar's hover and
+  // focus highlight that no single component could fix for itself.
+  css: [
+    "~/assets/css/theme.css",
+    "~/assets/css/typography.css",
+    "~/assets/css/hover-contrast.css",
+  ],
   runtimeConfig: {
     public: {
       // Shown in the footer. semantic-release writes the version into
@@ -67,9 +71,8 @@ export default defineNuxtConfig({
     // set (the module's default is 'material-icons') the module ships the
     // whole icon font, whatever extras.fontIcons says.
     iconSet: "svg-mdi-v7",
-    extras: {
-      font: "roboto-font",
-    },
+    // No `extras.font`: it would ship Roboto on top of the app's own fonts
+    // (assets/css/typography.css).
   },
   pwa: {
     // 'prompt', not 'autoUpdate': a new version waits until the user clicks
@@ -104,7 +107,15 @@ export default defineNuxtConfig({
       // Set explicitly: @vite-pwa/nuxt appends its own patterns to an empty
       // list, which would otherwise drop Workbox's defaults and precache
       // nothing the offline page needs.
-      globPatterns: ["offline.html", "pwa-*.png", "favicon.ico"],
+      // fonts/ holds the offline page's two fonts and nothing else. The
+      // app's own fonts in _nuxt/ stay out: that is one file per weight and
+      // script, and an install would fetch them all.
+      globPatterns: [
+        "offline.html",
+        "fonts/*.woff2",
+        "pwa-*.png",
+        "favicon.ico",
+      ],
       // Replaces @vite-pwa/nuxt's default transform, which renames precached
       // `x.html` to `x` (pretty URLs) -- but a server that falls back to the
       // app shell for unknown paths may answer /offline with the app's own
@@ -137,6 +148,13 @@ export default defineNuxtConfig({
     client: { installPrompt: true, periodicSyncForUpdates: 3600 },
   },
   vite: {
+    build: {
+      // A font stays a file of its own. Vite writes small files into the
+      // stylesheet instead, and the fonts' smallest files are those of the
+      // scripts that hardly any page needs; everyone would load them.
+      assetsInlineLimit: (filePath) =>
+        /\.woff2?$/.test(filePath) ? false : undefined,
+    },
     server: {
       watch: { usePolling: true },
     },
