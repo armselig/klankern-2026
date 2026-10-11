@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.1](https://github.com/armselig/klankern-2026/compare/v1.3.0...v1.3.1) (2026-10-11)
+
+### Reverts
+
+* feat(fonts): ship Bitter, Nunito Sans and JetBrains Mono ([7dc8c86](https://github.com/armselig/klankern-2026/commit/7dc8c86fdf0030d56b0c674d110abad38a260766))
+
 ## [1.3.0](https://github.com/armselig/klankern-2026/compare/v1.2.0...v1.3.0) (2026-10-11)
 
 ### Features
