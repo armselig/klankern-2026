@@ -2,7 +2,7 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of milestone 9, the shared whiteboard, the first automated release, v1.0.0 (2026-10-10), the member avatars with the hover-contrast fix, the header with the wordmark and the account menu, the Catppuccin theme with light and dark mode, the two font replacements that were tried and dropped, release v1.3.1, the fix for the `pwa` e2e project with a leftover `.output`, milestone 8 finished with the update notice checked on the deployed site, and milestone 10, the shared recipes (all 2026-10-11) (`develop`; the `.output` fix is not on `main` yet). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of milestone 9, the shared whiteboard, the first automated release, v1.0.0 (2026-10-10), the member avatars with the hover-contrast fix, the header with the wordmark and the account menu, the Catppuccin theme with light and dark mode, the two font replacements that were tried and dropped, release v1.3.1, the fix for the `pwa` e2e project with a leftover `.output`, milestone 8 finished with the update notice checked on the deployed site, milestone 10, the shared recipes, released as v1.4.0, and the fix of the success notices' colors (all 2026-10-11). `main` and `develop` are level at v1.4.0, except for that last fix, which is on `develop` only. Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
@@ -17,7 +17,7 @@ Tracks what's been built against the milestones in [`plan.md`](./plan.md), sessi
 | 7. PWA installability pass | ✅ Done — installability, offline page, update notice and install button covered by the Playwright `pwa` project; the install button also checked by hand in Chrome. Installing on Android moves to milestone 8 (needs HTTPS) |
 | 8. Deploy (Netlify; containers deferred) | ✅ Done — deployed to Netlify from `main`; routing and response headers checked on the deployed URL, and login, join link, install, offline page, the Android install and the update notice checked there in a browser |
 | 9. Shared whiteboard | ✅ Built — drawing, eraser, undo, clear and live sync, covered by unit, RLS and Playwright e2e tests, and tried by hand on a phone and with a second member |
-| 10. Shared recipes | ✅ Built — write, read, edit and remove recipes with live sync, and put a recipe's ingredients on the shopping list; covered by unit, RLS and Playwright e2e tests. Not yet tried by hand |
+| 10. Shared recipes | ✅ Built — write, read, edit and remove recipes with live sync, and put a recipe's ingredients on the shopping list; covered by unit, RLS and Playwright e2e tests, and clicked through in a browser by one member |
 
 ## What's built
 
@@ -357,6 +357,8 @@ Tests: `app-version.e2e.ts` (the footer shows the version from `package.json`; w
 **Four more releases on 2026-10-11: v1.1.0, v1.2.0, v1.3.0 and v1.3.1.** Each was a push of `develop` and `main` together, and the "Release" workflow passed every time, as did CI on both branches.
 
 - 1.1.0: the member avatars, the header with the account menu and the hover-contrast fix. 1.2.0: the theme. 1.3.0: the shipped fonts. 1.3.1: their revert.
+- **v1.4.0, the same day**: milestone 10 and the fix for the lists created twice, again as one push of `develop` and `main`, with the workflow and CI on both branches passing. The fix has a commit of its own (`fix(lists): …`) so that the changelog lists it; its unique constraints are in the feature commit's migration, which is why the feature commit comes first.
+- **Netlify's deploys can be read without the dashboard**: logged in, `npx netlify api listSiteDeploys --data '{"site_id":"<id>","per_page":2}'` lists them with their commit and state (`npx netlify sites:list --json` has the id), and the folder doesn't have to be linked. For v1.4.0 the release commit's deploy was `ready`, and the deployed page carried `appVersion:"1.4.0"`.
 - **A revert releases a patch**, by the commit analyzer's default rules (`.releaserc.yaml` sets none of its own). The rule goes by what the parser recognises as a revert, not by the commit type: the message has to start with `revert:` or `Revert` and keep git's line "This reverts commit <hash>.", as the 1.3.1 commit did. A hand-written `revert: …` without that line releases nothing.
 - Each release commit holds exactly `app/CHANGELOG.md`, `app/package.json` and `app/package-lock.json`, so the changelog's new place works (see "Changelog moved into `app/`").
 - `develop` was fast-forwarded to the release commit every time.
@@ -610,7 +612,9 @@ The household's recipes at `ROUTES.recipes` ("Recipes" button on the dashboard):
 - `a11y.e2e.ts` scans the empty list, the form with its error, the filled form, a recipe and the list, in both modes; `auth.e2e.ts` checks the auth guard of the four routes.
 - The stores have no unit tests, like the others; what they decide is in the reducers.
 - Not tested separately: a reconnect (same resync as the lists), and a failed save.
-- **Not tried by hand yet.** Screenshots of the dashboard, the list, the form, a recipe and the delete dialog at 375 px were looked at in both modes.
+- Screenshots of the dashboard, the list, the form, a recipe and the delete dialog at 375 px were looked at in both modes.
+- **Clicked through in a browser (2026-10-11)**, by the agent in the user's Chrome against `nuxt dev`, as one member, in dark mode at phone width: write a recipe with three ingredients (the form's focus order, the focus in a new row, Enter in the instructions making a new line), read it, edit the title and remove an ingredient, reload the recipe's address, put one of two ingredients on the shopping list and find it there, delete the recipe, and get "Recipe not found" at its address. The test recipe and the shopping item were removed again. The last step was pressed by script, because the browser window had gone out of view by then and clicks no longer arrived; the e2e test does it with real clicks.
+- **Still not tried by hand**: on a phone by touch, with a second member watching, in light mode, and on the deployed site.
 
 **Changed on the way**
 
@@ -621,9 +625,18 @@ The household's recipes at `ROUTES.recipes` ("Recipes" button on the dashboard):
 - The list stores and the whiteboard store put a row back after a failed write without checking that the store wasn't reset in between (a change of user). The recipe store checks.
 - `init()` of the list stores keeps the result of a fetch that ends after a reset; `load()` of the recipe store drops it.
 
+## Success notices readable in both modes (fixed 2026-10-11)
+
+Found in the click-through of milestone 10: the notice "1 item added to the shopping list" was hard to read in dark mode. It used Quasar's `positive` color, on which Quasar writes white. Measured with the palette's values, white on the theme's green is at 3.34:1 in light mode and at 1.49:1 in dark mode, so it failed the 4.5:1 of WCAG 1.4.3 in both. "Invite link copied" was built the same way.
+
+- **A text color alone doesn't fix it.** The theme's text for an accent (`--theme-on-accent`) is at 11.03:1 on Mocha's green but at 2.96:1 on Latte's, and no text color of the theme reaches 4.5:1 there (the comment at the top of `theme.css` says as much for every Latte accent but mauve and red).
+- **Both notices now use the primary color with `textColor: "on-accent"`**, as the update notice already did: 4.79:1 in light mode and 8.07:1 in dark mode. There is no `positive` notice left. A notice without a color (the "This recipe was removed." of the recipe form) is Quasar's dark grey with white text in both modes, at 12.82:1.
+- **A notice was never scanned**: it is gone after a few seconds, and `a11y.e2e.ts` only scanned pages at rest. It now adds a recipe's ingredients to the shopping list and scans while the notice shows, in both modes. Verified to fail on the notice's text before the fix, in both modes. "Invite link copied" is not scanned (it needs the clipboard); it is the same two options.
+
 ## Next steps
 
 Every milestone of the plan is built. The four checks that were listed here are done (the Gravatar photo, the whiteboard by hand, the update notice and the footer version on the deployed site, all 2026-10-11). The sections on the header and the theme still name a few things nobody has looked at, mostly in dark mode.
 
-1. Try milestone 10 by hand: write and edit a recipe on a phone, with a second member, and put its ingredients on the shopping list.
-2. Optional, later: the Podman production setup (`Containerfile.prod`, Quadlet units, Caddy).
+1. Try milestone 10 by hand where the click-through didn't reach: on a phone by touch, with a second member, in light mode and on the deployed site.
+2. The fix of the success notices is on `develop`; it is released (as a patch) with the next push to `main`.
+3. Optional, later: the Podman production setup (`Containerfile.prod`, Quadlet units, Caddy).
