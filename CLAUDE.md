@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Klankern is a family-organizer PWA: shared to-do and shopping lists and a shared whiteboard per household, synced live. Nuxt 4 SPA (`ssr: false`) + Quasar (`nuxt-quasar-ui`) + Pinia + `@vite-pwa/nuxt`, backed by Supabase Cloud (Postgres, Auth via email OTP, Realtime) through `@nuxtjs/supabase`.
+Klankern is a family-organizer PWA: shared to-do and shopping lists, a shared whiteboard and shared recipes per household, synced live. Nuxt 4 SPA (`ssr: false`) + Quasar (`nuxt-quasar-ui`) + Pinia + `@vite-pwa/nuxt`, backed by Supabase Cloud (Postgres, Auth via email OTP, Realtime) through `@nuxtjs/supabase`.
 
 - `docs/plan.md` is the original design and milestone list.
 - `docs/progress.md` is the current state, the decisions that deviate from the plan, and the bugs already found. Read it before larger work and update it when a milestone or notable fix lands.
@@ -57,7 +57,7 @@ Node `>=24.21.0 <25` is enforced (`engine-strict`), and dependencies are pinned 
 
 ### Layers
 
-Each feature is split the same way, and new features (recipes are planned) should follow it:
+Each feature is split the same way, and new features should follow it:
 
 1. **`composables/*-actions.ts`**: all Supabase calls, as plain functions that take a `SupabaseClient` as a parameter. No Nuxt imports, so they are unit tested with a fake client.
 2. **`stores/*.ts`** (Pinia options stores): thin. They call `useSupabaseClient()`/`useSupabaseUser()`, delegate to the actions, and hold state.
@@ -72,10 +72,12 @@ To-dos and shopping share one implementation of the hard part. `utils/list-state
 
 Whiteboard strokes (`stores/whiteboard.ts`) follow the same rules without being list items: the reducers that need only `id` and `deleted_at` are typed over `SyncedRow` (`types/synced-row.ts`) and shared, and `utils/whiteboard-state.ts` holds what differs. A fix to those rules usually belongs in all three stores.
 
+Recipes (`stores/recipes.ts`) are the fourth store on those rules, with `utils/recipe-state.ts` for what differs, and a fix usually belongs there too. They differ in three ways. Recipes hang on the household without a list or board row, so `householdId`, set once they are loaded, is what events and resync wait for. Several pages show them, so the pages call `load()`, which fetches once and merges afterwards (`resync()`), where `init()` replaces state. And a recipe can be edited: a new one is saved before it enters state (the form waits for it, so there is no `inserts-in-flight`), and an edit is optimistic and sends only the fields that changed (`utils/recipe-draft.ts`).
+
 The rules the reducers and stores encode:
 
 - **Client-generated ids.** An add creates the row locally under `crypto.randomUUID()` and inserts it with that id, so the server-confirmed row and the Realtime echo upsert instead of duplicating.
-- **Soft deletes only.** `deleted_at` is set, the row stays in state as a tombstone, and getters filter it out. Nothing may undo a local soft delete. Newer tables (0012) don't grant `delete` to `authenticated` at all.
+- **Soft deletes only.** `deleted_at` is set, the row stays in state as a tombstone, and getters filter it out. Nothing may undo a local soft delete. Newer tables (0012, 0014) don't grant `delete` to `authenticated` at all.
 - **`position` is a fractional numeric** for reordering without reindexing (`utils/position.ts`).
 - **`household_id` is denormalized onto every item table** so RLS policies and Realtime filters need no join.
 
@@ -89,7 +91,7 @@ Three pieces of bookkeeping live at module level in each store, outside Pinia st
 
 `subscribeToHouseholdChanges` (`composables/household-realtime.ts`) opens **one channel per household**, filtered by `household_id=eq.<id>`, and every item table adds its listeners to it. Only INSERT and UPDATE are subscribed: DELETE events can't be filtered and bypass RLS, and the app never hard-deletes. `postgres_changes` has no replay, so every `SUBSCRIBED` (first join and each rejoin) triggers `resync()` on every list store. A new table also has to be added to the `supabase_realtime` publication (see migration 0011), or events silently never arrive.
 
-An UPDATE event leaves out a large column the update didn't change (Postgres TOAST): a stroke's `points` is missing from its soft-delete event. A reducer for a table with such a column has to lay the event over the local row instead of replacing it (`applyStrokeRealtimeEvent`).
+An UPDATE event leaves out a large column the update didn't change (Postgres TOAST): a stroke's `points` is missing from its soft-delete event, and a recipe's `instructions` from a rename. A reducer for a table with such a column has to lay the event over the local row instead of replacing it (`applyStrokeRealtimeEvent`, `applyRecipeRealtimeEvent`). Where such a row can also be edited, an event may tell only part of a live row that isn't in state; the store then fetches it (`recipeEventNeedsFetch`).
 
 `layouts/default.vue` mounts this once. Order matters there: `useResetStoresOnUserChange()` runs before `useHouseholdRealtime()`, so a new user never sees the previous user's household.
 

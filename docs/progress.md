@@ -2,7 +2,7 @@
 
 Tracks what's been built against the milestones in [`plan.md`](./plan.md), session by session. Update this when picking the project back up or finishing a milestone — it's the fastest way to re-orient without re-reading the whole chat history.
 
-**Resuming in a new session**: everything below is current as of milestone 9, the shared whiteboard, the first automated release, v1.0.0 (2026-10-10), the member avatars with the hover-contrast fix, the header with the wordmark and the account menu, the Catppuccin theme with light and dark mode, the two font replacements that were tried and dropped, release v1.3.1, the fix for the `pwa` e2e project with a leftover `.output`, and milestone 8 finished with the update notice checked on the deployed site (all 2026-10-11) (`develop`; the `.output` fix is not on `main` yet). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
+**Resuming in a new session**: everything below is current as of milestone 9, the shared whiteboard, the first automated release, v1.0.0 (2026-10-10), the member avatars with the hover-contrast fix, the header with the wordmark and the account menu, the Catppuccin theme with light and dark mode, the two font replacements that were tried and dropped, release v1.3.1, the fix for the `pwa` e2e project with a leftover `.output`, milestone 8 finished with the update notice checked on the deployed site, and milestone 10, the shared recipes (all 2026-10-11) (`develop`; the `.output` fix is not on `main` yet). Start a fresh session by pointing it at this file — e.g. "read docs/progress.md and continue from there." No other state matters; the repo and this doc are the source of truth, not any prior chat history.
 
 ## Status at a glance
 
@@ -17,7 +17,7 @@ Tracks what's been built against the milestones in [`plan.md`](./plan.md), sessi
 | 7. PWA installability pass | ✅ Done — installability, offline page, update notice and install button covered by the Playwright `pwa` project; the install button also checked by hand in Chrome. Installing on Android moves to milestone 8 (needs HTTPS) |
 | 8. Deploy (Netlify; containers deferred) | ✅ Done — deployed to Netlify from `main`; routing and response headers checked on the deployed URL, and login, join link, install, offline page, the Android install and the update notice checked there in a browser |
 | 9. Shared whiteboard | ✅ Built — drawing, eraser, undo, clear and live sync, covered by unit, RLS and Playwright e2e tests, and tried by hand on a phone and with a second member |
-| 10. Shared recipes (deferred phase) | ⬜ Not started |
+| 10. Shared recipes | ✅ Built — write, read, edit and remove recipes with live sync, and put a recipe's ingredients on the shopping list; covered by unit, RLS and Playwright e2e tests. Not yet tried by hand |
 
 ## What's built
 
@@ -27,43 +27,44 @@ Tracks what's been built against the milestones in [`plan.md`](./plan.md), sessi
 ```
 app/app/
   types/            database.types.ts (generated), household.ts, synced-row.ts, list.ts, todo.ts,
-                    shopping.ts, whiteboard.ts
+                    shopping.ts, whiteboard.ts, recipe.ts
   composables/      current-user.ts, household-actions.ts, todo-actions.ts, shopping-actions.ts,
-                    whiteboard-actions.ts,
+                    whiteboard-actions.ts, recipe-actions.ts,
                     household-realtime.ts, reset-stores-on-user-change.ts,
                     use-gravatar-hash.ts (+ .spec.ts siblings),
                     use-household-realtime.ts, use-reset-stores-on-user-change.ts,
                     use-pwa-update-notice.ts
   utils/            position.ts, list-state.ts, shopping-state.ts, error-message.ts,
                     inserts-in-flight.ts, changes-during-fetch.ts, realtime-event-order.ts,
-                    whiteboard-state.ts, whiteboard-geometry.ts,
+                    whiteboard-state.ts, whiteboard-geometry.ts, recipe-state.ts, recipe-draft.ts,
                     gravatar.ts, avatar-rosette.ts, email.ts (+ .spec.ts siblings),
                     whiteboard-pen.ts, ink.ts (+ .spec.ts), routes.ts
-  stores/           household.ts, todos.ts, shopping.ts, whiteboard.ts
+  stores/           household.ts, todos.ts, shopping.ts, whiteboard.ts, recipes.ts
   pages/            login.vue, confirm.vue, index.vue, todos.vue, shopping.vue, whiteboard.vue,
-                    join/[code].vue
+                    join/[code].vue, recipes/{index,new}.vue, recipes/[id]/{index,edit}.vue
   components/       household/{CreateHouseholdForm,InviteDialog,MemberRoster}.vue,
                     todo/{TodoList,TodoItem}.vue, shopping/{ShoppingList,ShoppingItem}.vue,
                     whiteboard/{SharedWhiteboard,WhiteboardToolbar,WhiteboardSurface,WhiteboardStroke}.vue,
+                    recipe/{RecipeList,RecipeView,RecipeIngredients,RecipeEditor,RecipeForm}.vue,
                     user/{UserAvatar,AccountMenu}.vue
   layouts/          default.vue
   assets/css/       theme.css (the colors of light and dark mode), hover-contrast.css
 app/public/                 offline.html, icons, favicon.ico, robots.txt, _redirects (Netlify fallback for client-side routes)
 app/scripts/                generate-pwa-icons.mjs (writes the app icons and the favicon in `public/`)
-app/supabase/migrations/   0001_households.sql … 0013_list_household_members.sql
+app/supabase/migrations/   0001_households.sql … 0014_recipes.sql
 app/tests/support/          supabase-fixtures.ts (disposable users/households/invites via the Admin API, shared by RLS + e2e),
                             e2e-ui.ts (sign-in and list steps through the real UI), realtime-socket.ts (cut/watch the Realtime socket, hold back frames),
                             fake-supabase-client.ts (fake query builder + client for the `*-actions.spec.ts` unit tests)
 app/tests/rls/              household-isolation.spec.ts (two-JWT RLS proof against Supabase Cloud)
 app/tests/unit/             environment.spec.ts (the Vitest environment mounts a Vue component)
 app/tests/e2e/              Playwright `dev` project (against `nuxt dev`): auth, household, lists, realtime-sync,
-                            session-switch, whiteboard, avatars, a11y, app-version (*.e2e.ts); `pwa` project: pwa.e2e.ts (production build)
+                            session-switch, whiteboard, recipes, avatars, a11y, app-version (*.e2e.ts); `pwa` project: pwa.e2e.ts (production build)
 netlify.toml                at the git root: build settings for Netlify
 ```
 
-**Design pattern used throughout**: business logic lives in plain `composables/*-actions.ts` functions that take a `SupabaseClient` as a parameter, unit-tested with a mocked client (no Nuxt runtime needed). Pinia stores are thin — they call `useSupabaseClient()`/`useSupabaseUser()` and delegate to those functions. State-transition logic that needs testing on its own (optimistic add/dedup, soft-delete, sort order) is further extracted into pure reducer functions in `utils/`. List logic that doesn't depend on the item type (dedup, soft delete, Realtime events, reconnect merge) is **generic** over `ListItem` (`types/list.ts`) in `utils/list-state.ts` and shared by every list; only the actions, store, components and list-specific ordering are per list. The whiteboard follows it too (see "Milestone 9"), and it is the pattern to continue for recipes (a later phase).
+**Design pattern used throughout**: business logic lives in plain `composables/*-actions.ts` functions that take a `SupabaseClient` as a parameter, unit-tested with a mocked client (no Nuxt runtime needed). Pinia stores are thin — they call `useSupabaseClient()`/`useSupabaseUser()` and delegate to those functions. State-transition logic that needs testing on its own (optimistic add/dedup, soft-delete, sort order) is further extracted into pure reducer functions in `utils/`. List logic that doesn't depend on the item type (dedup, soft delete, Realtime events, reconnect merge) is **generic** over `ListItem` (`types/list.ts`) in `utils/list-state.ts` and shared by every list; only the actions, store, components and list-specific ordering are per list. The whiteboard follows it too (see "Milestone 9"), and so do the recipes (see "Milestone 10").
 
-**Testing**: Vitest, 178 tests in 22 files passing (including the RLS suite) (`npm test`, run 2026-10-11). Playwright e2e (`npm run test:e2e`, 28 tests in 10 files and two projects; see the milestone 5 and 7 sections and "E2E gap review") is separate and not in the pre-push hook; CI runs it on every push to `main` and `develop` (see "CI"). Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
+**Testing**: Vitest, 263 tests in 25 files passing (including the RLS suite) (`npm test`, run 2026-10-11). Playwright e2e (`npm run test:e2e`, 30 tests in 11 files and two projects; see the milestone 5 and 7 sections and "E2E gap review") is separate and not in the pre-push hook; CI runs it on every push to `main` and `develop` (see "CI"). Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
 
 **Database types**: generated from the live schema via `supabase gen types typescript`, saved to `app/app/types/database.types.ts`, picked up automatically by `@nuxtjs/supabase`'s default `types` path. Re-run after any migration changes:
 ```
@@ -309,7 +310,7 @@ One whiteboard per household at `ROUTES.whiteboard` ("Whiteboard" button on the 
 
 **Noticed, not changed** (the lists):
 
-- `fetchOrCreateTodoList` and `fetchOrCreateShoppingList` have the race the board's unique constraint prevents: two simultaneous first visits create two lists, after which `.maybeSingle()` fails for that household.
+- `fetchOrCreateTodoList` and `fetchOrCreateShoppingList` have the race the board's unique constraint prevents: two simultaneous first visits create two lists, after which `.maybeSingle()` fails for that household. Fixed with milestone 10 (see there).
 - `fetchTodoItems` and `fetchShoppingItems` are not paged, so a list with more than 1000 live items would be cut off.
 
 ## Icon strategy (2026-10-10)
@@ -555,9 +556,74 @@ Written test first. With the leftover planted and no hook, the build shipped the
 
 Worth knowing: the hook relies on how Nitro builds its prerenderer, which no documentation promises. If the fifth test fails after an upgrade, read `prerender()` in Nitro's source again.
 
+## Milestone 10: Shared recipes (built 2026-10-11)
+
+The household's recipes at `ROUTES.recipes` ("Recipes" button on the dashboard): a list sorted by title, a page per recipe, a form to write and edit one, and removal after a confirmation. A recipe has a title, optional servings, a list of ingredients and instructions. Decided with the user, and beyond the plan's "CRUD UI, no Realtime strictly needed": structured ingredients, live sync, a page of its own per recipe, and a button that puts a recipe's ingredients on the shopping list.
+
+**Schema** (`0014_recipes.sql`, applied to the cloud project with `supabase db push`)
+
+- `recipes` hangs on `household_id` directly. There is no container table like `todo_lists` or `boards`, so nothing has to be found or created on a first visit.
+- `ingredients` is one jsonb column, an array of `{ id, name, quantity }` in the order entered, so a recipe is one row to sync. `quantity` is free text or null, like a shopping item's. The `id` is a UUID the client generates; it keys the row in the form and in the pick list.
+- `servings` is free text; nothing is calculated from it. There is no `updated_at`, because no trigger would maintain it.
+- Check constraints limit the title to 200 characters, the servings to 50, the instructions to 20,000 and the ingredients to 100, each with a name of at most 200 and a quantity of at most 50, and reject an ingredient with a missing, mistyped or unknown field. RLS can't limit how large a row a member inserts, and every recipe travels whole in a Realtime payload. The same numbers are `RECIPE_LIMITS` in `utils/recipe-draft.ts`.
+- **The ingredient check is two jsonpath tests, for a reason.** A jsonpath filter unwraps an array before it looks at it, so `[[{…}]]` passed as the object inside; the elements' types are tested separately (`$[*].type() ? (@ != "object")`). And a comparison with a missing key or a value of another type is "unknown", not true, so existence and type are tested before the text.
+- Policies are the uniform `is_household_member(household_id)` ones. `authenticated` gets `select, insert, update` and no `delete`, as for strokes. `recipes` is in the `supabase_realtime` publication.
+- **The same migration allows only one to-do list and one shopping list per household** (`unique (household_id)` on both, as `boards` has). `fetchOrCreateTodoList` and `fetchOrCreateShoppingList` now insert with the conflict ignored and read the list back, like `fetchOrCreateBoard`. This closes the race noted under "Milestone 9", which mattered more now that a recipe page is a second place that creates the shopping list. No household had two lists when it was applied.
+
+**Code**, in the usual layers
+
+- `composables/recipe-actions.ts`: `fetchRecipes` (pages of 500 cut by id, like the strokes), `fetchRecipe`, `insertRecipe`, `updateRecipeRemote`, `softDeleteRecipeRemote`.
+- `stores/recipes.ts`, parallel to the other three (`pendingIds`, `resync()`, `changesDuringFetch`, `realtimeEventOrder`), with the differences below.
+- `utils/recipe-state.ts` holds only what differs from a list item (the Realtime reducer, applying and taking back an edit, the order); the store uses `upsertListItem`, `softDeleteListItem` and `mergeListResync` from `utils/list-state.ts`.
+- `utils/recipe-draft.ts`: what the form edits, what it saves as (text trimmed, empty optional fields as null, ingredient rows without a name dropped) and which fields an edit changed.
+- `subscribeToHouseholdChanges` has INSERT + UPDATE listeners for `recipes` (`onRecipeChange`); `useHouseholdRealtime` resyncs the recipes on every `SUBSCRIBED`; `useResetStoresOnUserChange` resets their store.
+- Components: `RecipeList`, `RecipeView` with `RecipeIngredients`, and `RecipeEditor` with `RecipeForm`. The first, second and fourth talk to the stores; the other two only render and emit.
+
+**Where the recipe store differs from the list stores**
+
+- **`load()` instead of `init()`.** Four pages show recipes, and members move between them all the time. Only the first `load()` fetches behind a spinner; later ones call `resync()`, which merges. Replacing state on every page, as `init()` does, would drop a write that is still on its way.
+- **Events and resync wait for `householdId`**, which is set once the recipes are loaded. It stands in for a list's id.
+- **A new recipe is not optimistic.** The form waits for the insert, so a failed save leaves the member on the form with what they typed. The id is still generated by the client, so the Realtime echo upserts. Because a recipe is in state only once it is saved, the store needs no `inserts-in-flight`.
+- **Edits are new in this app.** `update()` is optimistic and sends only the fields the member changed, compared with the recipe as it was when the form opened. Two members editing different fields don't overwrite each other. The ingredients are one column, so there the later save wins. A refused edit takes back only its own fields (`revertRecipeEdit`).
+- **An edit of a removed recipe is an error.** The update excludes deleted rows and asks for the updated ids back; none means nothing was saved ("This recipe was removed in the meantime.").
+
+**Behaviour worth knowing**
+
+- **Realtime leaves `instructions` and `ingredients` out of an UPDATE that didn't change them**, once they are large enough to be stored out of line (TOAST, as with a stroke's `points`). Here that is any update, a rename as much as a removal. `applyRecipeRealtimeEvent` lays the event over the local row.
+- **Part of a recipe that isn't in state can't be laid over anything.** If it is a removal, it is kept as a tombstone without content. If the recipe is live, the store fetches the row (`fetchUnknown`). This happens when a recipe's UPDATE arrives before its INSERT: `realtime-event-order.ts` then drops the INSERT as the older event, so without the fetch the recipe would be missing until the next resync.
+- **The edit form works on a copy.** A change by another member doesn't replace what is being typed. If another member removes the recipe meanwhile, the form closes with a notice and shows the list.
+- **A recipe that doesn't exist, was removed or belongs to another household is "not found"**: RLS returns no row for the last case.
+- **The ingredients are a pick list for the shopping list.** They are checkboxes, all ticked; "Add to shopping list" adds the ticked ones as shopping items (name as title, quantity as quantity) and reports how many. An ingredient that is on the list already is added again; quantities are free text and can't be summed.
+- **Adding goes through the shopping store's existing `add()`, once per ingredient** (`addAll`), not a batch insert. `add()` gives an item its position before it first waits, so the items are numbered one after the other even when started together. `add()` now returns whether the item was saved. `ensureLoaded()` loads the shopping list first when the member hasn't opened it in this session.
+- Instructions are plain text and keep their line breaks (`white-space: pre-wrap`). There is no Markdown.
+- Removed recipes stay as rows forever (soft delete); nothing purges them.
+- **Accessibility**: the list is a `ul` of links (a `q-item` that is a link is no list item, so a `q-list` would hold none). In the form, the ingredients are a `fieldset`, and each row is a group named "Ingredient N" with a "Remove ingredient N" button. Adding a row puts the focus in it; removing one moves the focus to "Add ingredient".
+
+**Not included**: photos (they would need Storage and its own policies), tags, search, scaling by servings, import from a URL, a source link, and reordering ingredients.
+
+**Tests**
+
+- Unit: `recipe-actions.spec.ts`, `recipe-state.spec.ts`, `recipe-draft.spec.ts`, the recipe listener in `household-realtime.spec.ts`, and the changed `fetchOrCreate…List` in the two list specs. `fakeClientWithQueries` (a client for an action that makes several queries) moved from the whiteboard spec into `tests/support/fake-supabase-client.ts`.
+- RLS (`household-isolation.spec.ts`): another household's recipes are invisible and can't be added to, edited or removed; a recipe can't be moved to another household; signed out, the table can't be read; no hard delete; each check constraint, and a recipe of the largest allowed size; one to-do list and one shopping list per household.
+- E2E (`recipes.e2e.ts`): two members. A recipe written by one appears in the other's list; the other reads it; an edit changes the page the other has open; a rename alone leaves the other the ingredients and the long instructions; a reload of the recipe's address; the ticked ingredients appear on the other's shopping list; a removal closes the form the other has open. A second test opens another household's recipe and an unknown id.
+- **Verified to fail** with the recipe listener disconnected (at the first live step), and with the reducer replacing the row instead of laying the event over it (at the rename: the instructions were gone). The second shows that the rename really arrives without them on the cloud project.
+- `a11y.e2e.ts` scans the empty list, the form with its error, the filled form, a recipe and the list, in both modes; `auth.e2e.ts` checks the auth guard of the four routes.
+- The stores have no unit tests, like the others; what they decide is in the reducers.
+- Not tested separately: a reconnect (same resync as the lists), and a failed save.
+- **Not tried by hand yet.** Screenshots of the dashboard, the list, the form, a recipe and the delete dialog at 375 px were looked at in both modes.
+
+**Changed on the way**
+
+- The dashboard's buttons are a wrapping row now (`row q-gutter-sm`): four don't fit one line on a phone.
+
+**Noticed, not changed**
+
+- The list stores and the whiteboard store put a row back after a failed write without checking that the store wasn't reset in between (a change of user). The recipe store checks.
+- `init()` of the list stores keeps the result of a fetch that ends after a reset; `load()` of the recipe store drops it.
+
 ## Next steps
 
-The four checks that were listed here are done (the Gravatar photo, the whiteboard by hand, the update notice and the footer version on the deployed site, all 2026-10-11). The sections on the header and the theme still name a few things nobody has looked at, mostly in dark mode.
+Every milestone of the plan is built. The four checks that were listed here are done (the Gravatar photo, the whiteboard by hand, the update notice and the footer version on the deployed site, all 2026-10-11). The sections on the header and the theme still name a few things nobody has looked at, mostly in dark mode.
 
-1. Milestone 10, shared recipes, is the only milestone not started.
+1. Try milestone 10 by hand: write and edit a recipe on a phone, with a second member, and put its ingredients on the shopping list.
 2. Optional, later: the Podman production setup (`Containerfile.prod`, Quadlet units, Caddy).

@@ -179,7 +179,7 @@ Pre-commit only touches staged files (fast, via lint-staged) so it stays cheap o
 7. PWA installability pass: manifest, icons (incl. maskable), Workbox caching rules, install-prompt button, Lighthouse PWA check.
 8. Containerize: dev Containerfile + compose, prod Containerfile + Quadlet units behind Caddy, one real deploy with HTTPS to confirm installability end-to-end. **→ MVP complete.** *(Changed 2026-10-10: the deploy goes to Netlify; containers are deferred, see section 6.)*
 9. *(Deferred)* Shared whiteboard: `boards`/`board_strokes`, same RLS pattern, canvas component, likely Realtime `broadcast` channel rather than `postgres_changes` given stroke volume. *(Changed 2026-10-10: built with one row per finished stroke over `postgres_changes` and an SVG surface instead; see `progress.md`.)*
-10. *(Deferred)* Shared recipes: `recipes` table, same RLS pattern, CRUD UI, no Realtime strictly needed.
+10. *(Deferred)* Shared recipes: `recipes` table, same RLS pattern, CRUD UI, no Realtime strictly needed. *(Changed 2026-10-11: built with live sync, structured ingredients and a button that puts them on the shopping list; see `progress.md`.)*
 
 ## Verification
 
