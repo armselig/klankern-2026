@@ -9,15 +9,9 @@ import {
 } from "./whiteboard-actions";
 import {
   fakeClient,
+  fakeClientWithQueries,
   fakeQueryBuilder,
 } from "../../tests/support/fake-supabase-client";
-
-/** A client whose n-th `.from()` call gets the n-th builder. */
-function clientWithQueries(queries: ReturnType<typeof fakeQueryBuilder>[]) {
-  let call = 0;
-  const from = vi.fn(() => queries[call++]!.builder);
-  return { client: fakeClient({ from }), from };
-}
 
 describe("fetchOrCreateBoard", () => {
   const board = {
@@ -40,7 +34,7 @@ describe("fetchOrCreateBoard", () => {
     const lookup = fakeQueryBuilder({ data: null, error: null });
     const create = fakeQueryBuilder({ data: null, error: null });
     const readBack = fakeQueryBuilder({ data: board, error: null });
-    const { client, from } = clientWithQueries([lookup, create, readBack]);
+    const { client, from } = fakeClientWithQueries([lookup, create, readBack]);
 
     expect(await fetchOrCreateBoard(client as never, "h1")).toEqual(board);
     expect(from).toHaveBeenCalledWith("boards");
@@ -56,7 +50,7 @@ describe("fetchOrCreateBoard", () => {
 
   it("throws when creating the board fails", async () => {
     const error = { message: "boom" };
-    const { client } = clientWithQueries([
+    const { client } = fakeClientWithQueries([
       fakeQueryBuilder({ data: null, error: null }),
       fakeQueryBuilder({ data: null, error }),
     ]);
@@ -69,7 +63,7 @@ describe("fetchBoardStrokes", () => {
   it("returns the non-deleted strokes of the board", async () => {
     const strokes = [{ id: "a" }, { id: "b" }];
     const query = fakeQueryBuilder({ data: strokes, error: null });
-    const { client, from } = clientWithQueries([query]);
+    const { client, from } = fakeClientWithQueries([query]);
 
     expect(await fetchBoardStrokes(client as never, "board-1")).toEqual(
       strokes,
@@ -89,7 +83,7 @@ describe("fetchBoardStrokes", () => {
     }));
     const first = fakeQueryBuilder({ data: fullPage, error: null });
     const second = fakeQueryBuilder({ data: [{ id: "last" }], error: null });
-    const { client, from } = clientWithQueries([first, second]);
+    const { client, from } = fakeClientWithQueries([first, second]);
 
     const strokes = await fetchBoardStrokes(client as never, "board-1");
 
@@ -103,7 +97,7 @@ describe("fetchBoardStrokes", () => {
     const fullPage = Array.from({ length: STROKE_PAGE_SIZE }, (_, index) => ({
       id: `id-${index}`,
     }));
-    const { client, from } = clientWithQueries([
+    const { client, from } = fakeClientWithQueries([
       fakeQueryBuilder({ data: fullPage, error: null }),
       fakeQueryBuilder({ data: [], error: null }),
     ]);
@@ -116,7 +110,7 @@ describe("fetchBoardStrokes", () => {
 
   it("throws on error", async () => {
     const error = { message: "boom" };
-    const { client } = clientWithQueries([
+    const { client } = fakeClientWithQueries([
       fakeQueryBuilder({ data: null, error }),
     ]);
 

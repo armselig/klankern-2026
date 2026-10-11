@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "~/types/database.types";
 import type { ListRealtimeEvent } from "~/types/list";
+import type { RecipeChange, RecipeRealtimeEvent } from "~/types/recipe";
 import type { ShoppingItem } from "~/types/shopping";
 import type { RowRealtimeEvent } from "~/types/synced-row";
 import type { TodoItem } from "~/types/todo";
@@ -33,6 +34,7 @@ export interface HouseholdChangeListeners {
   onTodoItemChange: (event: ListRealtimeEvent<TodoItem>) => void;
   onShoppingItemChange: (event: ListRealtimeEvent<ShoppingItem>) => void;
   onBoardStrokeChange: (event: BoardStrokeRealtimeEvent) => void;
+  onRecipeChange: (event: RecipeRealtimeEvent) => void;
   /** Fires on the first subscribe and on every automatic rejoin after a
    * dropped connection; postgres_changes has no replay, so this is the cue
    * to refetch. */
@@ -67,6 +69,7 @@ export function subscribeToHouseholdChanges(
     table: "board_strokes",
     filter,
   } as const;
+  const recipes = { schema: "public", table: "recipes", filter } as const;
 
   const channel = client
     .channel(`household:${householdId}`)
@@ -99,6 +102,16 @@ export function subscribeToHouseholdChanges(
       "postgres_changes",
       { ...boardStrokes, event: "UPDATE" },
       (payload) => listeners.onBoardStrokeChange(toRowRealtimeEvent(payload)),
+    )
+    .on<RecipeChange>(
+      "postgres_changes",
+      { ...recipes, event: "INSERT" },
+      (payload) => listeners.onRecipeChange(toRowRealtimeEvent(payload)),
+    )
+    .on<RecipeChange>(
+      "postgres_changes",
+      { ...recipes, event: "UPDATE" },
+      (payload) => listeners.onRecipeChange(toRowRealtimeEvent(payload)),
     )
     .subscribe((status) => {
       if (status === "SUBSCRIBED") listeners.onSubscribed();

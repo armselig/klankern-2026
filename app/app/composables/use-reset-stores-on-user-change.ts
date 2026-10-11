@@ -14,6 +14,7 @@ export function useResetStoresOnUserChange() {
       useTodoStore(),
       useShoppingStore(),
       useWhiteboardStore(),
+      useRecipeStore(),
     ],
   );
 }

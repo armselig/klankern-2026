@@ -175,6 +175,51 @@ export type Database = {
         };
         Relationships: [];
       };
+      recipes: {
+        Row: {
+          created_at: string;
+          created_by: string;
+          deleted_at: string | null;
+          household_id: string;
+          id: string;
+          ingredients: NonNullable<Json>;
+          instructions: string;
+          servings: string | null;
+          title: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by: string;
+          deleted_at?: string | null;
+          household_id: string;
+          id?: string;
+          ingredients?: NonNullable<Json>;
+          instructions?: string;
+          servings?: string | null;
+          title: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string;
+          deleted_at?: string | null;
+          household_id?: string;
+          id?: string;
+          ingredients?: NonNullable<Json>;
+          instructions?: string;
+          servings?: string | null;
+          title?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recipes_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       shopping_items: {
         Row: {
           checked: boolean;
@@ -257,7 +302,7 @@ export type Database = {
           {
             foreignKeyName: "shopping_lists_household_id_fkey";
             columns: ["household_id"];
-            isOneToOne: false;
+            isOneToOne: true;
             referencedRelation: "households";
             referencedColumns: ["id"];
           },
@@ -342,7 +387,7 @@ export type Database = {
           {
             foreignKeyName: "todo_lists_household_id_fkey";
             columns: ["household_id"];
-            isOneToOne: false;
+            isOneToOne: true;
             referencedRelation: "households";
             referencedColumns: ["id"];
           },

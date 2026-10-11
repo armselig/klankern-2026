@@ -116,9 +116,13 @@ export const useShoppingStore = defineStore("shopping", {
       }
     },
 
-    /** Optimistic add: the row appears immediately under a client-generated id,
+    /**
+     * Optimistic add: the row appears immediately under a client-generated id,
      * then gets reconciled (not duplicated) once the server confirms it,
-     * keeping any check or remove made in the meantime. */
+     * keeping any check or remove made in the meantime.
+     *
+     * @returns whether the item is saved; false also leaves `error` set
+     */
     async add(title: string, quantity: string | null) {
       if (!this.listId || !this.householdId) throw new Error("not_initialized");
       const userId = useSupabaseUser().value?.sub;
@@ -142,6 +146,7 @@ export const useShoppingStore = defineStore("shopping", {
       const listId = this.listId;
       const householdId = this.householdId;
 
+      let saved = false;
       await this.withPending(id, async () => {
         try {
           const confirmed = await insertsInFlight.track(
@@ -160,12 +165,37 @@ export const useShoppingStore = defineStore("shopping", {
             optimistic,
             confirmed,
           );
+          saved = true;
         } catch (e) {
           const { [id]: _removed, ...rest } = this.itemsById;
           this.itemsById = rest;
           this.error = errorMessage(e);
         }
       });
+      return saved;
+    },
+
+    /** Loads the household's list unless it is loaded already. For a page
+     * other than the shopping list that adds to it (a recipe's ingredients):
+     * add() needs the list's id, and the items for the next position. */
+    async ensureLoaded(householdId: string) {
+      if (this.listId && this.householdId === householdId) return;
+      await this.init(householdId);
+    },
+
+    /**
+     * Adds several items in the order given, each through add(), so each is
+     * its own optimistic row and insert. add() gives an item its position
+     * before it first waits, so starting them together still numbers them
+     * one after the other.
+     *
+     * @returns how many of them are saved
+     */
+    async addAll(entries: Pick<ShoppingItem, "title" | "quantity">[]) {
+      const saved = await Promise.all(
+        entries.map((entry) => this.add(entry.title, entry.quantity)),
+      );
+      return saved.filter(Boolean).length;
     },
 
     /** Optimistic; the server update waits for the item's add to be saved. */

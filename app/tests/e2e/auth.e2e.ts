@@ -23,6 +23,10 @@ const PROTECTED_ROUTES = [
   ROUTES.todos,
   ROUTES.shopping,
   ROUTES.whiteboard,
+  ROUTES.recipes,
+  ROUTES.recipeNew,
+  ROUTES.recipe("some-id"),
+  ROUTES.recipeEdit("some-id"),
 ];
 
 test.describe("auth", () => {

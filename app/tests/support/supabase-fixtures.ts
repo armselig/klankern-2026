@@ -159,8 +159,8 @@ export async function generateLoginCode(email: string): Promise<string> {
 
 /**
  * Deleting the households (service role, bypasses RLS) cascades to their
- * todo_lists/items, shopping_lists/items, boards and their strokes, invites
- * and membership rows.
+ * todo_lists/items, shopping_lists/items, boards and their strokes, recipes,
+ * invites and membership rows.
  */
 export async function deleteTestData(
   householdIds: (string | undefined)[],

@@ -8,6 +8,10 @@ export const ROUTES = {
   todos: "/todos",
   shopping: "/shopping",
   whiteboard: "/whiteboard",
+  recipes: "/recipes",
+  recipeNew: "/recipes/new",
+  recipe: (id: string) => `/recipes/${id}`,
+  recipeEdit: (id: string) => `/recipes/${id}/edit`,
   joinPrefix: "/join/",
   join: (code: string) => `/join/${code}`,
 } as const;

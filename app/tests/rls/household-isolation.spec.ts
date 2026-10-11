@@ -69,6 +69,27 @@ function strokeRow(user: TestUser, boardId: string, householdId: string) {
   };
 }
 
+/** An ingredient as the app stores it; the id only has to look like a UUID. */
+function ingredient(index: number, name = "Flour", quantity: unknown = null) {
+  return {
+    id: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
+    name,
+    quantity,
+  };
+}
+
+/** A recipe row as the app inserts it; tests override the field under test. */
+function recipeRow(user: TestUser, householdId: string) {
+  return {
+    household_id: householdId,
+    title: "Pancakes",
+    servings: "4",
+    ingredients: [ingredient(1, "Flour", "250 g"), ingredient(2, "Eggs")],
+    instructions: "Mix.\nFry.",
+    created_by: user.userId,
+  };
+}
+
 describe("household RLS isolation", () => {
   let userA: TestUser;
   let userB: TestUser;
@@ -78,6 +99,7 @@ describe("household RLS isolation", () => {
   let boardAId: string;
   let boardBId: string;
   let strokeAId: string;
+  let recipeAId: string;
 
   beforeAll(async () => {
     [userA, userB, userC] = await Promise.all([
@@ -101,6 +123,15 @@ describe("household RLS isolation", () => {
       .single();
     if (error || !stroke) throw error ?? new Error("stroke insert failed");
     strokeAId = stroke.id as string;
+
+    const { data: recipe, error: recipeError } = await userA.client
+      .from("recipes")
+      .insert(recipeRow(userA, householdAId))
+      .select("id")
+      .single();
+    if (recipeError || !recipe)
+      throw recipeError ?? new Error("recipe insert failed");
+    recipeAId = recipe.id as string;
   });
 
   afterAll(async () => {
@@ -360,6 +391,183 @@ describe("household RLS isolation", () => {
     const { error } = await userB.client.from("board_strokes").insert({
       ...strokeRow(userB, boardBId, householdBId),
       points: new Array(2000).fill(4000),
+    });
+    expect(error).toBeNull();
+  });
+
+  it.each(["todo_lists", "shopping_lists"])(
+    "allows only one of %s per household",
+    async (table) => {
+      // Whether the household has a list yet differs by table; after the
+      // first insert it has one either way.
+      await userB.client.from(table).insert({ household_id: householdBId });
+      const { error } = await userB.client
+        .from(table)
+        .insert({ household_id: householdBId });
+      expect(error).not.toBeNull();
+
+      const { data: lists } = await admin
+        .from(table)
+        .select("id")
+        .eq("household_id", householdBId);
+      expect(lists).toHaveLength(1);
+    },
+  );
+
+  it("returns zero of household A's recipes to a member of household B", async () => {
+    const { data, error } = await userB.client
+      .from("recipes")
+      .select("id")
+      .eq("household_id", householdAId);
+    expect(error).toBeNull();
+    expect(data).toHaveLength(0);
+  });
+
+  it("lets a member read their own household's recipes", async () => {
+    const { data, error } = await userA.client
+      .from("recipes")
+      .select("id, title, ingredients")
+      .eq("household_id", householdAId);
+    expect(error).toBeNull();
+    expect(data).toEqual([
+      {
+        id: recipeAId,
+        title: "Pancakes",
+        ingredients: recipeRow(userA, householdAId).ingredients,
+      },
+    ]);
+  });
+
+  it("does not let recipes be read without signing in", async () => {
+    const { data, error } = await signedOut.from("recipes").select("id");
+    expect(data).toBeNull();
+    expect(error).not.toBeNull();
+  });
+
+  it("blocks adding a recipe to another household", async () => {
+    const { error } = await userB.client
+      .from("recipes")
+      .insert(recipeRow(userB, householdAId));
+    expect(error).not.toBeNull();
+  });
+
+  it("leaves another household's recipe untouched by an edit or a removal (RLS filters, not an error)", async () => {
+    const { error } = await userB.client
+      .from("recipes")
+      .update({ title: "Taken over", deleted_at: new Date().toISOString() })
+      .eq("id", recipeAId);
+    expect(error).toBeNull();
+
+    const { data: recipe } = await admin
+      .from("recipes")
+      .select("title, deleted_at")
+      .eq("id", recipeAId)
+      .single();
+    expect(recipe).toEqual({ title: "Pancakes", deleted_at: null });
+  });
+
+  it("blocks moving a recipe into another household", async () => {
+    const { error } = await userA.client
+      .from("recipes")
+      .update({ household_id: householdBId })
+      .eq("id", recipeAId);
+    expect(error).not.toBeNull();
+  });
+
+  it("does not let a member hard-delete a recipe, only soft-delete it", async () => {
+    const { error } = await userA.client
+      .from("recipes")
+      .delete()
+      .eq("id", recipeAId);
+    expect(error).not.toBeNull();
+
+    const { data: recipe } = await admin
+      .from("recipes")
+      .select("id")
+      .eq("id", recipeAId)
+      .single();
+    expect(recipe).toEqual({ id: recipeAId });
+  });
+
+  it.each([
+    ["a blank title", { title: "  " }],
+    ["a title that is too long", { title: "a".repeat(201) }],
+    ["blank servings", { servings: " " }],
+    ["servings that are too long", { servings: "4".repeat(51) }],
+    ["instructions that are too long", { instructions: "a".repeat(20001) }],
+    ["ingredients that are not an array", { ingredients: { name: "Flour" } }],
+    [
+      "more ingredients than a recipe may have",
+      { ingredients: Array.from({ length: 101 }, (_, i) => ingredient(i)) },
+    ],
+    ["an ingredient that is not an object", { ingredients: ["Flour"] }],
+    ["an ingredient wrapped in an array", { ingredients: [[ingredient(1)]] }],
+    [
+      "an ingredient without an id",
+      { ingredients: [{ name: "Flour", quantity: null }] },
+    ],
+    [
+      "an ingredient whose id is not a UUID",
+      { ingredients: [{ ...ingredient(1), id: "first" }] },
+    ],
+    [
+      "an ingredient without a name",
+      { ingredients: [{ id: ingredient(1).id, quantity: null }] },
+    ],
+    ["an ingredient with a blank name", { ingredients: [ingredient(1, " ")] }],
+    [
+      "an ingredient whose name is too long",
+      { ingredients: [ingredient(1, "a".repeat(201))] },
+    ],
+    [
+      "an ingredient without a quantity field",
+      { ingredients: [{ id: ingredient(1).id, name: "Flour" }] },
+    ],
+    [
+      "an ingredient whose quantity is not text",
+      { ingredients: [ingredient(1, "Eggs", 6)] },
+    ],
+    [
+      "an ingredient with a blank quantity",
+      { ingredients: [ingredient(1, "Eggs", " ")] },
+    ],
+    [
+      "an ingredient whose quantity is too long",
+      { ingredients: [ingredient(1, "Eggs", "6".repeat(51))] },
+    ],
+    [
+      "an ingredient with a field the app doesn't know",
+      { ingredients: [{ ...ingredient(1), note: "sifted" }] },
+    ],
+    [
+      "one bad ingredient among good ones",
+      { ingredients: [ingredient(1), ingredient(2, "")] },
+    ],
+  ])("rejects a recipe with %s", async (_name, override) => {
+    const { error } = await userB.client
+      .from("recipes")
+      .insert({ ...recipeRow(userB, householdBId), ...override });
+    expect(error).not.toBeNull();
+  });
+
+  it("accepts a recipe of the largest allowed size", async () => {
+    const { error } = await userB.client.from("recipes").insert({
+      ...recipeRow(userB, householdBId),
+      title: "ä".repeat(200),
+      servings: "4".repeat(50),
+      instructions: "a".repeat(20000),
+      ingredients: Array.from({ length: 100 }, (_, i) =>
+        ingredient(i, "ä".repeat(200), "6".repeat(50)),
+      ),
+    });
+    expect(error).toBeNull();
+  });
+
+  it("accepts a recipe with nothing but a title", async () => {
+    const { error } = await userB.client.from("recipes").insert({
+      household_id: householdBId,
+      title: "Toast",
+      created_by: userB.userId,
     });
     expect(error).toBeNull();
   });

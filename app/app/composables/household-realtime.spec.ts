@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "~/types/database.types";
+import type { Recipe } from "~/types/recipe";
 import type { ShoppingItem } from "~/types/shopping";
 import type { TodoItem } from "~/types/todo";
 import type { BoardStroke } from "~/types/whiteboard";
@@ -90,11 +91,24 @@ const strokeRow: BoardStroke = {
   deleted_at: null,
 };
 
+const recipeRow: Recipe = {
+  id: "recipe-1",
+  household_id: "house-1",
+  title: "Pancakes",
+  servings: "4",
+  ingredients: [{ id: "ingredient-1", name: "Flour", quantity: "250 g" }],
+  instructions: "Mix.\nFry.",
+  created_by: "user-1",
+  created_at: "2026-01-01T00:00:00Z",
+  deleted_at: null,
+};
+
 function listeners() {
   return {
     onTodoItemChange: vi.fn(),
     onShoppingItemChange: vi.fn(),
     onBoardStrokeChange: vi.fn(),
+    onRecipeChange: vi.fn(),
     onSubscribed: vi.fn(),
   };
 }
@@ -110,12 +124,16 @@ describe("subscribeToHouseholdChanges", () => {
     const fake = fakeRealtimeClient();
     subscribeToHouseholdChanges(fake.client, "house-1", listeners());
 
-    const expected = ["todo_items", "shopping_items", "board_strokes"].flatMap(
-      (table) =>
-        ["INSERT", "UPDATE"].map((event) => [
-          "postgres_changes",
-          { event, schema: "public", table, filter: "household_id=eq.house-1" },
-        ]),
+    const expected = [
+      "todo_items",
+      "shopping_items",
+      "board_strokes",
+      "recipes",
+    ].flatMap((table) =>
+      ["INSERT", "UPDATE"].map((event) => [
+        "postgres_changes",
+        { event, schema: "public", table, filter: "household_id=eq.house-1" },
+      ]),
     );
     expect(fake.registrations.map((r) => [r.type, r.filter])).toEqual(expected);
   });
@@ -232,6 +250,43 @@ describe("subscribeToHouseholdChanges", () => {
     });
     expect(l.onTodoItemChange).not.toHaveBeenCalled();
     expect(l.onShoppingItemChange).not.toHaveBeenCalled();
+  });
+
+  it("passes recipes on to the recipe listener, with or without their large columns", () => {
+    const fake = fakeRealtimeClient();
+    const l = listeners();
+    subscribeToHouseholdChanges(fake.client, "house-1", l);
+    // An UPDATE of a long recipe arrives without the columns it didn't change.
+    const {
+      ingredients: _ingredients,
+      instructions: _instructions,
+      ...renamed
+    } = { ...recipeRow, title: "Crêpes" };
+
+    callbackFor(
+      fake,
+      "recipes",
+      "INSERT",
+    )({ eventType: "INSERT", new: recipeRow, commit_timestamp: committedAt });
+    callbackFor(
+      fake,
+      "recipes",
+      "UPDATE",
+    )({ eventType: "UPDATE", new: renamed, commit_timestamp: committedLater });
+
+    expect(l.onRecipeChange).toHaveBeenNthCalledWith(1, {
+      eventType: "INSERT",
+      new: recipeRow,
+      commitTimestamp: committedAt,
+    });
+    expect(l.onRecipeChange).toHaveBeenNthCalledWith(2, {
+      eventType: "UPDATE",
+      new: renamed,
+      commitTimestamp: committedLater,
+    });
+    expect(l.onTodoItemChange).not.toHaveBeenCalled();
+    expect(l.onShoppingItemChange).not.toHaveBeenCalled();
+    expect(l.onBoardStrokeChange).not.toHaveBeenCalled();
   });
 
   it("asks for a resync on every SUBSCRIBED, including reconnects, and on nothing else", () => {

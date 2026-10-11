@@ -74,3 +74,13 @@ export function fakeClient({
     rpc: vi.fn(rpc ?? (() => Promise.resolve({ data: null, error: null }))),
   };
 }
+
+/** A client whose n-th `.from()` call gets the n-th builder, for an action
+ * that makes several queries. `from` is the spy, to assert on the tables. */
+export function fakeClientWithQueries(
+  queries: ReturnType<typeof fakeQueryBuilder>[],
+) {
+  let call = 0;
+  const from = vi.fn((_table: string) => queries[call++]!.builder);
+  return { client: fakeClient({ from }), from };
+}

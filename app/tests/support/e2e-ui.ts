@@ -238,3 +238,70 @@ export async function dragOnWhiteboard(
 
 /** The text both lists show when they have no items. */
 export const EMPTY_LIST_TEXT = "Nothing on the list yet.";
+
+/** The text the recipe list shows when the household has no recipes. */
+export const NO_RECIPES_TEXT = "No recipes yet.";
+
+/** A recipe's link in the list of recipes. */
+export function recipeLink(page: Page, title: string) {
+  return page
+    .getByRole("main")
+    .getByRole("listitem")
+    .getByRole("link", { name: title, exact: true });
+}
+
+/** Opens the recipes from the dashboard and waits until they have loaded:
+ * the list, or the text that stands in for an empty one, shows only then. */
+export async function openRecipes(page: Page) {
+  await page.getByRole("link", { name: "Recipes", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`${ROUTES.recipes}$`));
+  await expect(
+    page
+      .getByRole("main")
+      .getByRole("list")
+      .or(page.getByText(NO_RECIPES_TEXT)),
+  ).toBeVisible();
+}
+
+/** A row of the recipe form's ingredients, counted from 1 as its name is. */
+export function ingredientRow(page: Page, number: number) {
+  return page.getByRole("group", {
+    name: `Ingredient ${number}`,
+    exact: true,
+  });
+}
+
+/** What a test types into the recipe form; a field left out is not touched. */
+export interface RecipeFormEntry {
+  title?: string;
+  servings?: string;
+  /** Typed into the rows from the first one on; rows are added as needed. */
+  ingredients?: [name: string, quantity?: string][];
+  instructions?: string;
+}
+
+/** Fills the recipe form, which has to be open, without saving it. */
+export async function fillRecipeForm(page: Page, entry: RecipeFormEntry) {
+  if (entry.title !== undefined)
+    await page.getByLabel("Title").fill(entry.title);
+  if (entry.servings !== undefined)
+    await page.getByLabel("Servings (optional)").fill(entry.servings);
+  for (const [index, [name, quantity = ""]] of (
+    entry.ingredients ?? []
+  ).entries()) {
+    const row = ingredientRow(page, index + 1);
+    if ((await row.count()) === 0)
+      await page.getByRole("button", { name: "Add ingredient" }).click();
+    await row.getByLabel("Ingredient", { exact: true }).fill(name);
+    await row.getByLabel("Quantity (optional)").fill(quantity);
+  }
+  if (entry.instructions !== undefined)
+    await page.getByLabel("Instructions").fill(entry.instructions);
+}
+
+/** Saves the open recipe form and waits for the recipe's own page, which
+ * the app shows only once the server has the recipe. */
+export async function saveRecipeForm(page: Page) {
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page).toHaveURL(new RegExp(`${ROUTES.recipes}/[0-9a-f-]{36}$`));
+}

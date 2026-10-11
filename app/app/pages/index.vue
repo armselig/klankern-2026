@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   mdiCartOutline,
+  mdiChefHat,
   mdiDraw,
   mdiFormatListChecks,
 } from "@quasar/extras/mdi-v7";
@@ -32,29 +33,37 @@ watch(
         <member-roster />
       </q-card-section>
       <q-card-section>
-        <q-btn
-          :to="ROUTES.todos"
-          color="primary"
-          :icon="mdiFormatListChecks"
-          label="To-dos"
-          unelevated
-        />
-        <q-btn
-          :to="ROUTES.shopping"
-          color="primary"
-          :icon="mdiCartOutline"
-          label="Shopping"
-          unelevated
-          class="q-ml-sm"
-        />
-        <q-btn
-          :to="ROUTES.whiteboard"
-          color="primary"
-          :icon="mdiDraw"
-          label="Whiteboard"
-          unelevated
-          class="q-ml-sm"
-        />
+        <!-- A wrapping row: the buttons don't fit one line on a phone. -->
+        <div class="row q-gutter-sm">
+          <q-btn
+            :to="ROUTES.todos"
+            color="primary"
+            :icon="mdiFormatListChecks"
+            label="To-dos"
+            unelevated
+          />
+          <q-btn
+            :to="ROUTES.shopping"
+            color="primary"
+            :icon="mdiCartOutline"
+            label="Shopping"
+            unelevated
+          />
+          <q-btn
+            :to="ROUTES.whiteboard"
+            color="primary"
+            :icon="mdiDraw"
+            label="Whiteboard"
+            unelevated
+          />
+          <q-btn
+            :to="ROUTES.recipes"
+            color="primary"
+            :icon="mdiChefHat"
+            label="Recipes"
+            unelevated
+          />
+        </div>
       </q-card-section>
     </q-card>
   </q-page>

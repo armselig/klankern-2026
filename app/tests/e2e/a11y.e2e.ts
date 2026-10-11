@@ -7,11 +7,16 @@ import {
   addTodo,
   dragOnWhiteboard,
   expectStrokeCount,
+  fillRecipeForm,
   listItem,
   memberAvatar,
+  NO_RECIPES_TEXT,
   openAccountMenu,
   openList,
+  openRecipes,
   openWhiteboard,
+  recipeLink,
+  saveRecipeForm,
   signIn,
   untilSaved,
 } from "../support/e2e-ui";
@@ -257,7 +262,43 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
           page,
           "the clear dialog with Cancel hovered",
         );
+        await cancel.click();
       });
+
+      await page.getByRole("link", { name: "Klankern" }).click();
+      await openRecipes(page);
+      await expect(page).toHaveTitle("Recipes · Klankern");
+      await expect(page.getByText(NO_RECIPES_TEXT)).toBeVisible();
+      await expectNoBlockingViolations(page, "the empty recipe list");
+
+      await page.getByRole("link", { name: "New recipe" }).click();
+      await expect(page).toHaveTitle("New recipe · Klankern");
+      // Saved without a title first, to scan the form with its error shown.
+      await page.getByLabel("Title").fill(" ");
+      await page.getByRole("button", { name: "Save" }).click();
+      await expect(page.getByText("Give the recipe a title.")).toBeVisible();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "the recipe form with an error");
+
+      await fillRecipeForm(page, {
+        title: "Pancakes",
+        servings: "4",
+        ingredients: [["Flour", "250 g"], ["Eggs"]],
+        instructions: "Mix.\nFry.",
+      });
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "the filled recipe form");
+
+      await saveRecipeForm(page);
+      await expect(page).toHaveTitle("Pancakes · Klankern");
+      await expect(
+        page.getByRole("checkbox", { name: "Flour (250 g)" }),
+      ).toBeChecked();
+      await expectNoBlockingViolations(page, "a recipe");
+
+      await page.getByRole("link", { name: "All recipes" }).click();
+      await expect(recipeLink(page, "Pancakes")).toBeVisible();
+      await expectNoBlockingViolations(page, "the recipe list");
     });
   });
 }
