@@ -1,0 +1,27 @@
+/*
+ * Quasar shows hover and keyboard focus by laying a veil in the control's
+ * text color over it. On the primary color the text is white, so the veil
+ * lightens the background, and white text on it falls below the 4.5:1 that
+ * WCAG 1.4.3 asks for. Here the veil is black instead: the background gets
+ * darker and the contrast rises.
+ *
+ * First selector: a control that is primary itself (a filled button).
+ * Second: a control on a primary surface (a flat button in the header).
+ */
+.bg-primary:is(.q-hoverable:hover, .q-focusable:focus-visible, .q-manual-focusable--focused)
+  > .q-focus-helper,
+.bg-primary
+  :is(.q-hoverable:hover, .q-focusable:focus-visible, .q-manual-focusable--focused)
+  > .q-focus-helper {
+  background: #000;
+}
+
+/* Quasar lays some white over its veil. Over a black one that would only
+   grey it and take back part of the darkening. */
+.bg-primary:is(.q-hoverable:hover, .q-focusable:focus-visible, .q-manual-focusable--focused)
+  > .q-focus-helper::after,
+.bg-primary
+  :is(.q-hoverable:hover, .q-focusable:focus-visible, .q-manual-focusable--focused)
+  > .q-focus-helper::after {
+  opacity: 0;
+}

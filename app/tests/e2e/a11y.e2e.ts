@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import { ROUTES } from '../../app/utils/routes'
 import {
   addShoppingItem,
@@ -47,6 +47,19 @@ async function expectNoBlockingViolations(page: Page, name: string) {
   expect.soft(blocking, `accessibility violations on ${name}`).toEqual([])
 }
 
+/**
+ * Waits until a hovered or keyboard-focused control shows its highlight in
+ * full. Quasar fades the highlight in (a veil over the control), and a scan
+ * in the middle of that would measure a state nobody sees for long.
+ */
+async function untilHighlightShown(control: Locator) {
+  const veil = control.locator('.q-focus-helper')
+  await expect.poll(() => veil.evaluate((el) => getComputedStyle(el).opacity)).not.toBe('0')
+  await control.evaluate((el) =>
+    Promise.all(el.getAnimations({ subtree: true }).map((animation) => animation.finished)),
+  )
+}
+
 test.describe('accessibility', () => {
   let user: TestUser
   let householdId: string
@@ -75,6 +88,36 @@ test.describe('accessibility', () => {
     await expect(page.getByText(`E2E a11y ${runId}`)).toBeVisible()
     await expect(page).toHaveTitle('Klankern')
     await expectNoBlockingViolations(page, 'the dashboard')
+
+    // White text on the primary color is close to the contrast limit, and a
+    // highlight that lightens the background takes it below (see
+    // assets/css/hover-contrast.css). Checked for hover and for keyboard
+    // focus, which is marked more strongly than hover.
+    await test.step('highlighted controls on the primary color keep their contrast', async () => {
+      const todosLink = page.getByRole('link', { name: 'To-dos' })
+      await todosLink.hover()
+      await untilHighlightShown(todosLink)
+      await expectNoBlockingViolations(page, 'the dashboard with a filled button hovered')
+
+      // Tab from "To-dos" moves the keyboard focus to "Shopping".
+      await todosLink.focus()
+      await page.keyboard.press('Tab')
+      const shoppingLink = page.getByRole('link', { name: 'Shopping' })
+      await expect(shoppingLink).toBeFocused()
+      await untilHighlightShown(shoppingLink)
+      await expectNoBlockingViolations(page, 'the dashboard with a filled button focused')
+
+      // axe can't judge anything in the header: the header's shadow layer
+      // lies over it, so axe reports the background as undetermined. A
+      // button there has the same text and the same highlight as a filled
+      // one, so the check is that its highlight is the dark one as well.
+      const signOutButton = page.getByRole('button', { name: 'Sign out' })
+      await signOutButton.hover()
+      await untilHighlightShown(signOutButton)
+      await expect
+        .soft(signOutButton.locator('.q-focus-helper'), 'the highlight of a header button')
+        .toHaveCSS('background-color', 'rgb(0, 0, 0)')
+    })
 
     await page.getByRole('button', { name: 'Invite a family member' }).click()
     await expect(page.getByLabel('Invite link')).toHaveValue(/.+/)

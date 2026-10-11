@@ -8,6 +8,9 @@ export default defineNuxtConfig({
   ssr: false,
   modules: ['@pinia/nuxt', 'nuxt-quasar-ui', '@vite-pwa/nuxt', '@nuxtjs/supabase'],
   components: [{ path: '~/components', pathPrefix: false }],
+  // Loaded on every page: corrects a contrast problem of Quasar's hover and
+  // focus highlight that no single component could fix for itself.
+  css: ['~/assets/css/hover-contrast.css'],
   runtimeConfig: {
     public: {
       // Shown in the footer. semantic-release writes the version into

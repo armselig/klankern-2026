@@ -44,6 +44,7 @@ app/app/
                     shopping/{ShoppingList,ShoppingItem}.vue,
                     whiteboard/{SharedWhiteboard,WhiteboardToolbar,WhiteboardSurface,WhiteboardStroke}.vue
   layouts/          default.vue
+  assets/css/       hover-contrast.css (the only global stylesheet)
 app/public/                 offline.html, icons, _redirects (Netlify fallback for client-side routes)
 app/supabase/migrations/   0001_households.sql … 0012_whiteboard.sql
 app/tests/support/          supabase-fixtures.ts (disposable users/households/invites via the Admin API, shared by RLS + e2e),
@@ -349,6 +350,18 @@ Tests: `app-version.e2e.ts` (the footer shows the version from `package.json`; w
 - The CI runs for the pushed commit passed on both branches, the new `app-version.e2e.ts` included.
 
 Still open: whether Netlify built the release commit. Netlify reports nothing back to GitHub, so this can only be seen on the deployed site, where the footer should read `Version 1.0.0`. The fast-forward step's failure paths (`develop` moved on, or workflow changes on `main` that `develop` lacks) have not happened yet either.
+
+## Hover and focus contrast on the primary color (fixed 2026-10-11)
+
+The `a11y` scan of the dashboard failed with `color-contrast` on the "To-dos" button once the member row was there. The taller card had moved that button under the spot where the pointer rests after the click on "Verify", so the scan saw it hovered.
+
+- **Cause**: Quasar shows hover and keyboard focus with a veil in the control's text color, laid over the control (`.q-focus-helper`; 15 % for hover, 22 % for keyboard focus). White text on the primary color is 4.6:1 at rest (axe's figure). The white veil lightens the background and takes the text below 4.5:1.
+- It affected every filled primary button and the flat buttons in the header, and had been there from the start. The scan had only never happened to hover one.
+- **Fix** (user decision, over scanning pages only at rest): `assets/css/hover-contrast.css`, the app's first global stylesheet (`css` in `nuxt.config.ts`). It makes the veil black for a control that is `bg-primary` itself or sits on a `bg-primary` surface, so hover and focus darken these controls instead of lightening them.
+- **Tests** (`a11y.e2e.ts`): axe scans the dashboard with a filled button hovered and with one focused by keyboard, each after the highlight has faded in (`untilHighlightShown` waits for the control's transitions).
+- **axe can't judge anything in the header.** The elevated header's shadow layer (`.q-layout__shadow`) lies over it, so axe reports the background as undetermined ("incomplete"), which the spec doesn't count. For a header button the spec therefore checks that its highlight is the dark one. The header's email text and buttons at rest have the same colors as a filled button.
+- All three checks were seen to fail before the fix, and pass with it.
+- **Noticed, not changed**: "Cancel" in the whiteboard's "Clear" dialog is primary-colored text on white. Its veil is primary-colored and darkens the white behind it. By calculation, not measured, the hovered text is at about 3.8:1. The black veil doesn't apply there.
 
 ## Next steps
 
