@@ -8,17 +8,17 @@
  * or serialize.
  */
 export function createInsertsInFlight() {
-  const inserts = new Map<string, Promise<unknown>>()
+  const inserts = new Map<string, Promise<unknown>>();
 
   return {
     /** Registers an item's insert until it settles, and returns it unchanged. */
     track<T>(id: string, insert: Promise<T>): Promise<T> {
-      inserts.set(id, insert)
+      inserts.set(id, insert);
       insert.then(
         () => inserts.delete(id),
         () => inserts.delete(id),
-      )
-      return insert
+      );
+      return insert;
     },
 
     /** Resolves once the item's insert has settled, whether it worked or not
@@ -27,7 +27,7 @@ export function createInsertsInFlight() {
       return Promise.resolve(inserts.get(id)).then(
         () => undefined,
         () => undefined,
-      )
+      );
     },
-  }
+  };
 }

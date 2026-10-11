@@ -1,8 +1,8 @@
-import { watch, type WatchSource } from 'vue'
+import { watch, type WatchSource } from "vue";
 
 /** The part of a Pinia store this needs; options stores provide it. */
 export interface ResettableStore {
-  $reset(): void
+  $reset(): void;
 }
 
 /**
@@ -20,8 +20,8 @@ export function resetStoresOnUserChange(
   return watch(
     userId,
     () => {
-      for (const store of stores) store.$reset()
+      for (const store of stores) store.$reset();
     },
-    { flush: 'sync' },
-  )
+    { flush: "sync" },
+  );
 }

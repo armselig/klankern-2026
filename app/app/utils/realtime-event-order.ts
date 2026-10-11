@@ -11,7 +11,7 @@
  * can still arrive after it.
  */
 export function createRealtimeEventOrder() {
-  const newestCommitById = new Map<string, number>()
+  const newestCommitById = new Map<string, number>();
 
   return {
     /**
@@ -23,12 +23,12 @@ export function createRealtimeEventOrder() {
      * rather than dropping changes over a format surprise.
      */
     accept(id: string, commitTimestamp: string): boolean {
-      const committedAt = Date.parse(commitTimestamp)
-      if (Number.isNaN(committedAt)) return true
-      const newest = newestCommitById.get(id)
-      if (newest !== undefined && committedAt < newest) return false
-      newestCommitById.set(id, committedAt)
-      return true
+      const committedAt = Date.parse(commitTimestamp);
+      if (Number.isNaN(committedAt)) return true;
+      const newest = newestCommitById.get(id);
+      if (newest !== undefined && committedAt < newest) return false;
+      newestCommitById.set(id, committedAt);
+      return true;
     },
-  }
+  };
 }

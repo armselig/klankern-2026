@@ -1,11 +1,11 @@
 <script setup lang="ts">
-useHead({ title: 'Shopping' })
+useHead({ title: "Shopping" });
 
-const householdStore = useHouseholdStore()
+const householdStore = useHouseholdStore();
 
 onMounted(async () => {
-  if (!householdStore.household) await householdStore.fetchMine()
-})
+  if (!householdStore.household) await householdStore.fetchMine();
+});
 </script>
 
 <template>
@@ -13,11 +13,11 @@ onMounted(async () => {
     <q-spinner v-if="householdStore.loading" color="primary" size="2em" />
     <div v-else-if="householdStore.household" style="max-width: 480px">
       <h1 class="text-h6">Shopping</h1>
-      <ShoppingList :household-id="householdStore.household.id" />
+      <shopping-list :household-id="householdStore.household.id" />
     </div>
     <p v-else>
       You need a household first -- go to
-      <NuxtLink :to="ROUTES.home">the dashboard</NuxtLink>
+      <nuxt-link :to="ROUTES.home">the dashboard</nuxt-link>
       to create or join one.
     </p>
   </q-page>

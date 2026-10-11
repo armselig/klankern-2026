@@ -1,16 +1,21 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-import { ROUTES } from './app/utils/routes'
-import packageJson from './package.json'
+import { ROUTES } from "./app/utils/routes";
+import packageJson from "./package.json";
 
 export default defineNuxtConfig({
-  compatibilityDate: '2025-07-15',
+  compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
   ssr: false,
-  modules: ['@pinia/nuxt', 'nuxt-quasar-ui', '@vite-pwa/nuxt', '@nuxtjs/supabase'],
-  components: [{ path: '~/components', pathPrefix: false }],
+  modules: [
+    "@pinia/nuxt",
+    "nuxt-quasar-ui",
+    "@vite-pwa/nuxt",
+    "@nuxtjs/supabase",
+  ],
+  components: [{ path: "~/components", pathPrefix: false }],
   // Loaded on every page: corrects a contrast problem of Quasar's hover and
   // focus highlight that no single component could fix for itself.
-  css: ['~/assets/css/hover-contrast.css'],
+  css: ["~/assets/css/hover-contrast.css"],
   runtimeConfig: {
     public: {
       // Shown in the footer. semantic-release writes the version into
@@ -21,8 +26,8 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
-      meta: [{ name: 'theme-color', content: '#1976D2' }],
-      link: [{ rel: 'apple-touch-icon', href: '/pwa-192.png' }],
+      meta: [{ name: "theme-color", content: "#1976D2" }],
+      link: [{ rel: "apple-touch-icon", href: "/pwa-192.png" }],
     },
   },
   supabase: {
@@ -33,30 +38,36 @@ export default defineNuxtConfig({
     },
   },
   quasar: {
-    plugins: ['Notify', 'Dialog'],
+    plugins: ["Notify", "Dialog"],
     // An SVG set, so only the icons a screen imports are bundled. With a font
     // set (the module's default is 'material-icons') the module ships the
     // whole icon font, whatever extras.fontIcons says.
-    iconSet: 'svg-mdi-v7',
+    iconSet: "svg-mdi-v7",
     extras: {
-      font: 'roboto-font',
+      font: "roboto-font",
     },
   },
   pwa: {
     // 'prompt', not 'autoUpdate': a new version waits until the user clicks
     // "Reload" in the update notice, so an edit in progress isn't lost.
-    registerType: 'prompt',
+    registerType: "prompt",
     manifest: {
-      name: 'Klankern — Family Hub',
-      short_name: 'Klankern',
-      description: 'Shared to-dos, shopping, whiteboard and recipes for the family.',
-      theme_color: '#1976D2',
-      background_color: '#ffffff',
-      display: 'standalone',
+      name: "Klankern — Family Hub",
+      short_name: "Klankern",
+      description:
+        "Shared to-dos, shopping, whiteboard and recipes for the family.",
+      theme_color: "#1976D2",
+      background_color: "#ffffff",
+      display: "standalone",
       icons: [
-        { src: 'pwa-192.png', sizes: '192x192', type: 'image/png' },
-        { src: 'pwa-512.png', sizes: '512x512', type: 'image/png' },
-        { src: 'pwa-512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        { src: "pwa-192.png", sizes: "192x192", type: "image/png" },
+        { src: "pwa-512.png", sizes: "512x512", type: "image/png" },
+        {
+          src: "pwa-512-maskable.png",
+          sizes: "512x512",
+          type: "image/png",
+          purpose: "maskable",
+        },
       ],
     },
     workbox: {
@@ -67,7 +78,7 @@ export default defineNuxtConfig({
       // Set explicitly: @vite-pwa/nuxt appends its own patterns to an empty
       // list, which would otherwise drop Workbox's defaults and precache
       // nothing the offline page needs.
-      globPatterns: ['offline.html', 'pwa-*.png', 'favicon.ico'],
+      globPatterns: ["offline.html", "pwa-*.png", "favicon.ico"],
       // Replaces @vite-pwa/nuxt's default transform, which renames precached
       // `x.html` to `x` (pretty URLs) -- but a server that falls back to the
       // app shell for unknown paths may answer /offline with the app's own
@@ -75,13 +86,13 @@ export default defineNuxtConfig({
       manifestTransforms: [],
       runtimeCaching: [
         {
-          urlPattern: ({ request }) => request.mode === 'navigate',
-          handler: 'NetworkOnly',
-          options: { precacheFallback: { fallbackURL: 'offline.html' } },
+          urlPattern: ({ request }) => request.mode === "navigate",
+          handler: "NetworkOnly",
+          options: { precacheFallback: { fallbackURL: "offline.html" } },
         },
         {
-          urlPattern: ({ url }) => url.hostname.endsWith('.supabase.co'),
-          handler: 'NetworkOnly',
+          urlPattern: ({ url }) => url.hostname.endsWith(".supabase.co"),
+          handler: "NetworkOnly",
         },
       ],
     },
@@ -93,8 +104,8 @@ export default defineNuxtConfig({
       // nothing, which Workbox warns about on every build.
       beforeBuildServiceWorker(options) {
         options.workbox.globPatterns = options.workbox.globPatterns?.filter(
-          (pattern) => !pattern.includes('/builds/'),
-        )
+          (pattern) => !pattern.includes("/builds/"),
+        );
       },
     },
     client: { installPrompt: true, periodicSyncForUpdates: 3600 },
@@ -104,4 +115,4 @@ export default defineNuxtConfig({
       watch: { usePolling: true },
     },
   },
-})
+});

@@ -1,4 +1,4 @@
-import { Notify } from 'quasar'
+import { Notify } from "quasar";
 
 /**
  * Shows a persistent notice once a new app version has been downloaded,
@@ -7,22 +7,26 @@ import { Notify } from 'quasar'
  * from the default layout.
  */
 export function usePwaUpdateNotice() {
-  const { $pwa } = useNuxtApp()
+  const { $pwa } = useNuxtApp();
 
   watch(
     () => $pwa?.needRefresh,
     (needRefresh) => {
-      if (!needRefresh) return
+      if (!needRefresh) return;
       Notify.create({
-        message: 'A new version of Klankern is available.',
-        color: 'primary',
+        message: "A new version of Klankern is available.",
+        color: "primary",
         timeout: 0,
         actions: [
-          { label: 'Reload', color: 'white', handler: () => void $pwa?.updateServiceWorker(true) },
-          { label: 'Later', color: 'white' },
+          {
+            label: "Reload",
+            color: "white",
+            handler: () => void $pwa?.updateServiceWorker(true),
+          },
+          { label: "Later", color: "white" },
         ],
-      })
+      });
     },
     { immediate: true },
-  )
+  );
 }

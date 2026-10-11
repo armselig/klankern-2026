@@ -1,5 +1,5 @@
-import type { ItemsById, ListItem, ListRealtimeEvent } from '~/types/list'
-import type { SyncedRow } from '~/types/synced-row'
+import type { ItemsById, ListItem, ListRealtimeEvent } from "~/types/list";
+import type { SyncedRow } from "~/types/synced-row";
 
 // The reducers typed over SyncedRow need only a row's id and deleted_at, so
 // they also serve rows that are not list items (whiteboard strokes).
@@ -13,7 +13,7 @@ export function upsertListItem<T extends SyncedRow>(
   itemsById: ItemsById<T>,
   item: T,
 ): ItemsById<T> {
-  return { ...itemsById, [item.id]: item }
+  return { ...itemsById, [item.id]: item };
 }
 
 /**
@@ -28,13 +28,13 @@ export function confirmListItem<T extends SyncedRow>(
   optimistic: T,
   confirmed: T,
 ): ItemsById<T> {
-  const local = itemsById[confirmed.id]
-  if (!local) return itemsById
-  const merged = { ...confirmed }
+  const local = itemsById[confirmed.id];
+  if (!local) return itemsById;
+  const merged = { ...confirmed };
   for (const key of Object.keys(local) as (keyof T)[]) {
-    if (local[key] !== optimistic[key]) merged[key] = local[key]
+    if (local[key] !== optimistic[key]) merged[key] = local[key];
   }
-  return upsertListItem(itemsById, merged)
+  return upsertListItem(itemsById, merged);
 }
 
 /** Deletes are soft (deleted_at set) rather than removed from state, so an
@@ -43,9 +43,12 @@ export function softDeleteListItem<T extends SyncedRow>(
   itemsById: ItemsById<T>,
   id: string,
 ): ItemsById<T> {
-  const existing = itemsById[id]
-  if (!existing) return itemsById
-  return { ...itemsById, [id]: { ...existing, deleted_at: new Date().toISOString() } }
+  const existing = itemsById[id];
+  if (!existing) return itemsById;
+  return {
+    ...itemsById,
+    [id]: { ...existing, deleted_at: new Date().toISOString() },
+  };
 }
 
 /**
@@ -61,10 +64,11 @@ export function applyListRealtimeEvent<T extends ListItem>(
   event: ListRealtimeEvent<T>,
   listId: string | null,
 ): ItemsById<T> {
-  const incoming = event.new
-  if (!listId || incoming.list_id !== listId) return itemsById
-  if (itemsById[incoming.id]?.deleted_at && !incoming.deleted_at) return itemsById
-  return upsertListItem(itemsById, incoming)
+  const incoming = event.new;
+  if (!listId || incoming.list_id !== listId) return itemsById;
+  if (itemsById[incoming.id]?.deleted_at && !incoming.deleted_at)
+    return itemsById;
+  return upsertListItem(itemsById, incoming);
 }
 
 /**
@@ -81,17 +85,22 @@ export function mergeListResync<T extends SyncedRow>(
   fetched: T[],
   keepLocalIds: readonly string[],
 ): ItemsById<T> {
-  const merged: ItemsById<T> = Object.fromEntries(fetched.map((item) => [item.id, item]))
+  const merged: ItemsById<T> = Object.fromEntries(
+    fetched.map((item) => [item.id, item]),
+  );
   for (const local of Object.values(itemsById)) {
-    if (keepLocalIds.includes(local.id) || local.deleted_at) merged[local.id] = local
+    if (keepLocalIds.includes(local.id) || local.deleted_at)
+      merged[local.id] = local;
   }
-  return merged
+  return merged;
 }
 
 /** Non-deleted items in list order. Lists with their own ordering (shopping:
  * checked items last) sort this result further. */
-export function visibleListItems<T extends ListItem>(itemsById: ItemsById<T>): T[] {
+export function visibleListItems<T extends ListItem>(
+  itemsById: ItemsById<T>,
+): T[] {
   return Object.values(itemsById)
     .filter((item) => !item.deleted_at)
-    .sort((a, b) => a.position - b.position)
+    .sort((a, b) => a.position - b.position);
 }

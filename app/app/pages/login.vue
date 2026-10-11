@@ -4,46 +4,46 @@
  * instead of this installed PWA and would leave it looking logged out, so
  * the user instead types the emailed code back into the app itself.
  */
-useHead({ title: 'Sign in' })
+useHead({ title: "Sign in" });
 
-const client = useSupabaseClient()
-const router = useRouter()
+const client = useSupabaseClient();
+const router = useRouter();
 
-const step = ref<'email' | 'code'>('email')
-const email = ref('')
-const code = ref('')
-const loading = ref(false)
-const error = ref<string | null>(null)
+const step = ref<"email" | "code">("email");
+const email = ref("");
+const code = ref("");
+const loading = ref(false);
+const error = ref<string | null>(null);
 
 async function requestCode() {
-  loading.value = true
-  error.value = null
+  loading.value = true;
+  error.value = null;
   const { error: sendError } = await client.auth.signInWithOtp({
     email: email.value,
     options: { shouldCreateUser: true },
-  })
-  loading.value = false
+  });
+  loading.value = false;
   if (sendError) {
-    error.value = sendError.message
-    return
+    error.value = sendError.message;
+    return;
   }
-  step.value = 'code'
+  step.value = "code";
 }
 
 async function verifyCode() {
-  loading.value = true
-  error.value = null
+  loading.value = true;
+  error.value = null;
   const { error: verifyError } = await client.auth.verifyOtp({
     email: email.value,
     token: code.value,
-    type: 'email',
-  })
-  loading.value = false
+    type: "email",
+  });
+  loading.value = false;
   if (verifyError) {
-    error.value = verifyError.message
-    return
+    error.value = verifyError.message;
+    return;
   }
-  await router.push(ROUTES.home)
+  await router.push(ROUTES.home);
 }
 </script>
 
@@ -65,7 +65,13 @@ async function verifyCode() {
             required
           />
           <div class="q-mt-md">
-            <q-btn type="submit" color="primary" label="Send code" :loading="loading" unelevated />
+            <q-btn
+              type="submit"
+              color="primary"
+              label="Send code"
+              :loading="loading"
+              unelevated
+            />
           </div>
         </q-form>
       </q-card-section>
@@ -82,7 +88,13 @@ async function verifyCode() {
             required
           />
           <div class="q-mt-md row q-gutter-sm">
-            <q-btn type="submit" color="primary" label="Verify" :loading="loading" unelevated />
+            <q-btn
+              type="submit"
+              color="primary"
+              label="Verify"
+              :loading="loading"
+              unelevated
+            />
             <q-btn flat label="Use a different email" @click="step = 'email'" />
           </div>
         </q-form>

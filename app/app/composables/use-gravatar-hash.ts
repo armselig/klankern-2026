@@ -1,5 +1,5 @@
-import { readonly, ref, toValue, watch, type MaybeRefOrGetter } from 'vue'
-import { gravatarHash } from '~/utils/gravatar'
+import { readonly, ref, toValue, watch, type MaybeRefOrGetter } from "vue";
+import { gravatarHash } from "~/utils/gravatar";
 
 /**
  * The Gravatar hash of an email address, as a ref: hashing is asynchronous,
@@ -12,27 +12,29 @@ import { gravatarHash } from '~/utils/gravatar'
  * would show the previous user. Imports from `vue` only, so it can be unit
  * tested without the Nuxt runtime.
  */
-export function useGravatarHash(email: MaybeRefOrGetter<string | null | undefined>) {
-  const hash = ref<string | null>(null)
+export function useGravatarHash(
+  email: MaybeRefOrGetter<string | null | undefined>,
+) {
+  const hash = ref<string | null>(null);
 
   watch(
     () => toValue(email),
     async (address, _previousAddress, onCleanup) => {
-      let outdated = false
+      let outdated = false;
       onCleanup(() => {
-        outdated = true
-      })
-      hash.value = null
-      if (!address) return
+        outdated = true;
+      });
+      hash.value = null;
+      if (!address) return;
       try {
-        const computed = await gravatarHash(address)
-        if (!outdated) hash.value = computed
+        const computed = await gravatarHash(address);
+        if (!outdated) hash.value = computed;
       } catch {
         // Stays null: the avatar then shows its neutral disc.
       }
     },
     { immediate: true },
-  )
+  );
 
-  return readonly(hash)
+  return readonly(hash);
 }

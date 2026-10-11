@@ -1,18 +1,21 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '~/types/database.types'
-import type { ListRealtimeEvent } from '~/types/list'
-import type { ShoppingItem } from '~/types/shopping'
-import type { RowRealtimeEvent } from '~/types/synced-row'
-import type { TodoItem } from '~/types/todo'
-import type { BoardStrokeChange, BoardStrokeRealtimeEvent } from '~/types/whiteboard'
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "~/types/database.types";
+import type { ListRealtimeEvent } from "~/types/list";
+import type { ShoppingItem } from "~/types/shopping";
+import type { RowRealtimeEvent } from "~/types/synced-row";
+import type { TodoItem } from "~/types/todo";
+import type {
+  BoardStrokeChange,
+  BoardStrokeRealtimeEvent,
+} from "~/types/whiteboard";
 
-type Client = SupabaseClient<Database>
+type Client = SupabaseClient<Database>;
 
 /** The fields of a realtime-js INSERT or UPDATE payload the stores need. */
 interface RowChangePayload<T extends { id: string }> {
-  eventType: RowRealtimeEvent<T>['eventType']
-  new: T
-  commit_timestamp: string
+  eventType: RowRealtimeEvent<T>["eventType"];
+  new: T;
+  commit_timestamp: string;
 }
 
 /** Keeps realtime-js's payload shape out of the stores and reducers. */
@@ -23,17 +26,17 @@ function toRowRealtimeEvent<T extends { id: string }>(
     eventType: payload.eventType,
     new: payload.new,
     commitTimestamp: payload.commit_timestamp,
-  }
+  };
 }
 
 export interface HouseholdChangeListeners {
-  onTodoItemChange: (event: ListRealtimeEvent<TodoItem>) => void
-  onShoppingItemChange: (event: ListRealtimeEvent<ShoppingItem>) => void
-  onBoardStrokeChange: (event: BoardStrokeRealtimeEvent) => void
+  onTodoItemChange: (event: ListRealtimeEvent<TodoItem>) => void;
+  onShoppingItemChange: (event: ListRealtimeEvent<ShoppingItem>) => void;
+  onBoardStrokeChange: (event: BoardStrokeRealtimeEvent) => void;
   /** Fires on the first subscribe and on every automatic rejoin after a
    * dropped connection; postgres_changes has no replay, so this is the cue
    * to refetch. */
-  onSubscribed: () => void
+  onSubscribed: () => void;
 }
 
 /**
@@ -52,36 +55,56 @@ export function subscribeToHouseholdChanges(
   householdId: string,
   listeners: HouseholdChangeListeners,
 ): () => void {
-  const filter = `household_id=eq.${householdId}`
-  const todoItems = { schema: 'public', table: 'todo_items', filter } as const
-  const shoppingItems = { schema: 'public', table: 'shopping_items', filter } as const
-  const boardStrokes = { schema: 'public', table: 'board_strokes', filter } as const
+  const filter = `household_id=eq.${householdId}`;
+  const todoItems = { schema: "public", table: "todo_items", filter } as const;
+  const shoppingItems = {
+    schema: "public",
+    table: "shopping_items",
+    filter,
+  } as const;
+  const boardStrokes = {
+    schema: "public",
+    table: "board_strokes",
+    filter,
+  } as const;
 
   const channel = client
     .channel(`household:${householdId}`)
-    .on<TodoItem>('postgres_changes', { ...todoItems, event: 'INSERT' }, (payload) =>
-      listeners.onTodoItemChange(toRowRealtimeEvent(payload)),
+    .on<TodoItem>(
+      "postgres_changes",
+      { ...todoItems, event: "INSERT" },
+      (payload) => listeners.onTodoItemChange(toRowRealtimeEvent(payload)),
     )
-    .on<TodoItem>('postgres_changes', { ...todoItems, event: 'UPDATE' }, (payload) =>
-      listeners.onTodoItemChange(toRowRealtimeEvent(payload)),
+    .on<TodoItem>(
+      "postgres_changes",
+      { ...todoItems, event: "UPDATE" },
+      (payload) => listeners.onTodoItemChange(toRowRealtimeEvent(payload)),
     )
-    .on<ShoppingItem>('postgres_changes', { ...shoppingItems, event: 'INSERT' }, (payload) =>
-      listeners.onShoppingItemChange(toRowRealtimeEvent(payload)),
+    .on<ShoppingItem>(
+      "postgres_changes",
+      { ...shoppingItems, event: "INSERT" },
+      (payload) => listeners.onShoppingItemChange(toRowRealtimeEvent(payload)),
     )
-    .on<ShoppingItem>('postgres_changes', { ...shoppingItems, event: 'UPDATE' }, (payload) =>
-      listeners.onShoppingItemChange(toRowRealtimeEvent(payload)),
+    .on<ShoppingItem>(
+      "postgres_changes",
+      { ...shoppingItems, event: "UPDATE" },
+      (payload) => listeners.onShoppingItemChange(toRowRealtimeEvent(payload)),
     )
-    .on<BoardStrokeChange>('postgres_changes', { ...boardStrokes, event: 'INSERT' }, (payload) =>
-      listeners.onBoardStrokeChange(toRowRealtimeEvent(payload)),
+    .on<BoardStrokeChange>(
+      "postgres_changes",
+      { ...boardStrokes, event: "INSERT" },
+      (payload) => listeners.onBoardStrokeChange(toRowRealtimeEvent(payload)),
     )
-    .on<BoardStrokeChange>('postgres_changes', { ...boardStrokes, event: 'UPDATE' }, (payload) =>
-      listeners.onBoardStrokeChange(toRowRealtimeEvent(payload)),
+    .on<BoardStrokeChange>(
+      "postgres_changes",
+      { ...boardStrokes, event: "UPDATE" },
+      (payload) => listeners.onBoardStrokeChange(toRowRealtimeEvent(payload)),
     )
     .subscribe((status) => {
-      if (status === 'SUBSCRIBED') listeners.onSubscribed()
-    })
+      if (status === "SUBSCRIBED") listeners.onSubscribed();
+    });
 
   return () => {
-    void client.removeChannel(channel)
-  }
+    void client.removeChannel(channel);
+  };
 }

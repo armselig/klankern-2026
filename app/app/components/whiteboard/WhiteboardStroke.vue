@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { StrokeShape } from '~/types/whiteboard'
+import type { StrokeShape } from "~/types/whiteboard";
 
-const props = defineProps<{ stroke: StrokeShape }>()
+const props = defineProps<{ stroke: StrokeShape }>();
 
 /** A tap leaves a single point, which a line can't show. */
-const isDot = computed(() => props.stroke.points.length === 2)
+const isDot = computed(() => props.stroke.points.length === 2);
 </script>
 
 <template>

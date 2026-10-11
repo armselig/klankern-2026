@@ -1,10 +1,10 @@
 <script setup lang="ts">
-const householdStore = useHouseholdStore()
-const name = ref('')
+const householdStore = useHouseholdStore();
+const name = ref("");
 
 async function submit() {
-  if (!name.value.trim()) return
-  await householdStore.create(name.value.trim())
+  if (!name.value.trim()) return;
+  await householdStore.create(name.value.trim());
 }
 </script>
 

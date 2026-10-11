@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { mdiDeleteOutline } from '@quasar/extras/mdi-v7'
-import type { ShoppingItem } from '~/types/shopping'
+import { mdiDeleteOutline } from "@quasar/extras/mdi-v7";
+import type { ShoppingItem } from "~/types/shopping";
 
-const props = defineProps<{ item: ShoppingItem }>()
-const emit = defineEmits<{ toggle: [id: string]; remove: [id: string] }>()
+const props = defineProps<{ item: ShoppingItem }>();
+const emit = defineEmits<{ toggle: [id: string]; remove: [id: string] }>();
 
 /** The quantity is part of the checkbox label, so screen readers announce it with the item. */
 const label = computed(() =>
-  props.item.quantity ? `${props.item.title} (${props.item.quantity})` : props.item.title,
-)
+  props.item.quantity
+    ? `${props.item.title} (${props.item.quantity})`
+    : props.item.title,
+);
 </script>
 
 <template>

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { mdiDeleteOutline } from '@quasar/extras/mdi-v7'
-import type { TodoItem } from '~/types/todo'
+import { mdiDeleteOutline } from "@quasar/extras/mdi-v7";
+import type { TodoItem } from "~/types/todo";
 
-defineProps<{ item: TodoItem }>()
-const emit = defineEmits<{ toggle: [id: string]; remove: [id: string] }>()
+defineProps<{ item: TodoItem }>();
+const emit = defineEmits<{ toggle: [id: string]; remove: [id: string] }>();
 </script>
 
 <template>

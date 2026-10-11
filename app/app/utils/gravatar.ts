@@ -4,7 +4,7 @@
  * the hash is the one their picture is stored under.
  */
 
-const GRAVATAR_AVATAR_URL = 'https://gravatar.com/avatar'
+const GRAVATAR_AVATAR_URL = "https://gravatar.com/avatar";
 
 /**
  * The hash Gravatar knows an email address by: SHA-256 of the address,
@@ -12,9 +12,14 @@ const GRAVATAR_AVATAR_URL = 'https://gravatar.com/avatar'
  * it only exists in a secure context (HTTPS or localhost).
  */
 export async function gravatarHash(email: string): Promise<string> {
-  const normalized = email.trim().toLowerCase()
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(normalized))
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+  const normalized = email.trim().toLowerCase();
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(normalized),
+  );
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
 }
 
 /**
@@ -24,5 +29,5 @@ export async function gravatarHash(email: string): Promise<string> {
  * No rating parameter: without one Gravatar only serves pictures rated `g`.
  */
 export function gravatarUrl(hash: string, sizePx: number): string {
-  return `${GRAVATAR_AVATAR_URL}/${hash}?s=${sizePx}&d=404`
+  return `${GRAVATAR_AVATAR_URL}/${hash}?s=${sizePx}&d=404`;
 }

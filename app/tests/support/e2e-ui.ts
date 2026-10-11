@@ -1,6 +1,6 @@
-import { expect, type Page } from '@playwright/test'
-import { ROUTES } from '../../app/utils/routes'
-import { generateLoginCode, type TestUser } from './supabase-fixtures'
+import { expect, type Page } from "@playwright/test";
+import { ROUTES } from "../../app/utils/routes";
+import { generateLoginCode, type TestUser } from "./supabase-fixtures";
 
 // UI steps shared by the e2e specs. They drive the app through its real
 // forms, so a renamed label or button breaks the tests like it would a user.
@@ -11,9 +11,9 @@ import { generateLoginCode, type TestUser } from './supabase-fixtures'
  * still hits the real auth server.
  */
 export async function stubOtpRequest(page: Page) {
-  await page.route('**/auth/v1/otp**', (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
-  )
+  await page.route("**/auth/v1/otp**", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "{}" }),
+  );
 }
 
 /**
@@ -21,11 +21,17 @@ export async function stubOtpRequest(page: Page) {
  * login page ("Verify") and the join page ("Join household"), which use the
  * same two-step OTP flow.
  */
-export async function enterLoginCode(page: Page, email: string, submitLabel: string) {
-  await page.getByLabel('Email address').fill(email)
-  await page.getByRole('button', { name: 'Send code' }).click()
-  await page.getByLabel('Code from the email').fill(await generateLoginCode(email))
-  await page.getByRole('button', { name: submitLabel }).click()
+export async function enterLoginCode(
+  page: Page,
+  email: string,
+  submitLabel: string,
+) {
+  await page.getByLabel("Email address").fill(email);
+  await page.getByRole("button", { name: "Send code" }).click();
+  await page
+    .getByLabel("Code from the email")
+    .fill(await generateLoginCode(email));
+  await page.getByRole("button", { name: submitLabel }).click();
 }
 
 /**
@@ -36,9 +42,11 @@ export async function enterLoginCode(page: Page, email: string, submitLabel: str
 export async function waitForSessionCookie(page: Page) {
   await expect
     .poll(async () =>
-      (await page.context().cookies()).some((cookie) => cookie.name.endsWith('-auth-token')),
+      (await page.context().cookies()).some((cookie) =>
+        cookie.name.endsWith("-auth-token"),
+      ),
     )
-    .toBe(true)
+    .toBe(true);
 }
 
 /**
@@ -50,54 +58,58 @@ export async function waitForSessionCookie(page: Page) {
  * shows it too ("We sent a login code to ...").
  */
 export async function signIn(page: Page, user: TestUser) {
-  await stubOtpRequest(page)
-  await page.goto(ROUTES.login)
-  await enterLoginCode(page, user.email, 'Verify')
-  await expect(page).toHaveURL(ROUTES.home)
-  await expect(page.getByRole('banner').getByText(user.email)).toBeVisible()
-  await waitForSessionCookie(page)
+  await stubOtpRequest(page);
+  await page.goto(ROUTES.login);
+  await enterLoginCode(page, user.email, "Verify");
+  await expect(page).toHaveURL(ROUTES.home);
+  await expect(page.getByRole("banner").getByText(user.email)).toBeVisible();
+  await waitForSessionCookie(page);
 }
 
 /** Signs out through the header and waits for the login page. */
 export async function signOut(page: Page) {
-  await page.getByRole('button', { name: 'Sign out' }).click()
-  await expect(page).toHaveURL(new RegExp(`${ROUTES.login}$`))
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page).toHaveURL(new RegExp(`${ROUTES.login}$`));
 }
 
 /** The dashboard's list of the household's members. */
 export function memberRoster(page: Page) {
-  return page.getByRole('list', { name: 'Household members' })
+  return page.getByRole("list", { name: "Household members" });
 }
 
 /** A member's avatar in that list. It is named by the member's email
  * address, whether it shows a photo or the app's own drawing. */
 export function memberAvatar(page: Page, email: string) {
-  return memberRoster(page).getByRole('img', { name: email })
+  return memberRoster(page).getByRole("img", { name: email });
 }
 
 /** Both lists render an item as a checkbox labelled with its text. */
 export function listItem(page: Page, label: string) {
-  return page.getByRole('checkbox', { name: label, exact: true })
+  return page.getByRole("checkbox", { name: label, exact: true });
 }
 
 /** Remove buttons all share one label, so find the one in the item's row. */
 export async function removeListItem(page: Page, label: string) {
   await page
-    .locator('.q-item')
+    .locator(".q-item")
     .filter({ has: listItem(page, label) })
-    .getByRole('button', { name: 'Remove' })
-    .click()
+    .getByRole("button", { name: "Remove" })
+    .click();
 }
 
 export async function addTodo(page: Page, title: string) {
-  await page.getByLabel('Add a to-do').fill(title)
-  await page.keyboard.press('Enter')
+  await page.getByLabel("Add a to-do").fill(title);
+  await page.keyboard.press("Enter");
 }
 
-export async function addShoppingItem(page: Page, title: string, quantity = '') {
-  await page.getByLabel('Item', { exact: true }).fill(title)
-  await page.getByLabel('Quantity (optional)').fill(quantity)
-  await page.keyboard.press('Enter')
+export async function addShoppingItem(
+  page: Page,
+  title: string,
+  quantity = "",
+) {
+  await page.getByLabel("Item", { exact: true }).fill(title);
+  await page.getByLabel("Quantity (optional)").fill(quantity);
+  await page.keyboard.press("Enter");
 }
 
 /**
@@ -105,11 +117,11 @@ export async function addShoppingItem(page: Page, title: string, quantity = '') 
  * has loaded: the list replaces its spinner only then, and an add before
  * that is ignored.
  */
-export async function openList(page: Page, linkName: 'To-dos' | 'Shopping') {
-  await page.getByRole('link', { name: linkName }).click()
-  const path = linkName === 'To-dos' ? ROUTES.todos : ROUTES.shopping
-  await expect(page).toHaveURL(new RegExp(`${path}$`))
-  await expect(page.getByRole('list')).toBeVisible()
+export async function openList(page: Page, linkName: "To-dos" | "Shopping") {
+  await page.getByRole("link", { name: linkName }).click();
+  const path = linkName === "To-dos" ? ROUTES.todos : ROUTES.shopping;
+  await expect(page).toHaveURL(new RegExp(`${path}$`));
+  await expect(page.getByRole("list")).toBeVisible();
 }
 
 /**
@@ -122,10 +134,10 @@ export async function untilSaved(page: Page, action: () => Promise<void>) {
   const saved = page.waitForResponse(
     (response) =>
       /\/rest\/v1\/(todo|shopping)_items/.test(response.url()) &&
-      response.request().method() === 'PATCH',
-  )
-  await action()
-  expect((await saved).ok()).toBe(true)
+      response.request().method() === "PATCH",
+  );
+  await action();
+  expect((await saved).ok()).toBe(true);
 }
 
 /**
@@ -134,9 +146,10 @@ export async function untilSaved(page: Page, action: () => Promise<void>) {
  */
 export async function delayItemInserts(page: Page, ms: number) {
   await page.route(/\/rest\/v1\/(todo|shopping)_items/, async (route) => {
-    if (route.request().method() === 'POST') await new Promise((resolve) => setTimeout(resolve, ms))
-    await route.fallback()
-  })
+    if (route.request().method() === "POST")
+      await new Promise((resolve) => setTimeout(resolve, ms));
+    await route.fallback();
+  });
 }
 
 /**
@@ -146,29 +159,29 @@ export async function delayItemInserts(page: Page, ms: number) {
  * still under the pen.
  */
 export function whiteboard(page: Page) {
-  return page.getByRole('img', { name: /^Whiteboard, / })
+  return page.getByRole("img", { name: /^Whiteboard, / });
 }
 
 /** The strokes on the board, oldest first. */
 export function whiteboardStrokes(page: Page) {
-  return whiteboard(page).locator('polyline, circle')
+  return whiteboard(page).locator("polyline, circle");
 }
 
 export async function expectStrokeCount(page: Page, count: number) {
   await expect(whiteboard(page)).toHaveAccessibleName(
-    `Whiteboard, ${count} ${count === 1 ? 'stroke' : 'strokes'}`,
-  )
+    `Whiteboard, ${count} ${count === 1 ? "stroke" : "strokes"}`,
+  );
 }
 
 /** Opens the whiteboard from the dashboard and waits until it has loaded. */
 export async function openWhiteboard(page: Page) {
-  await page.getByRole('link', { name: 'Whiteboard' }).click()
-  await expect(page).toHaveURL(new RegExp(`${ROUTES.whiteboard}$`))
-  await expect(whiteboard(page)).toBeVisible()
+  await page.getByRole("link", { name: "Whiteboard" }).click();
+  await expect(page).toHaveURL(new RegExp(`${ROUTES.whiteboard}$`));
+  await expect(whiteboard(page)).toBeVisible();
 }
 
 /** A position on the board as fractions of its width and height (0 to 1). */
-export type BoardFraction = [x: number, y: number]
+export type BoardFraction = [x: number, y: number];
 
 /**
  * Drags the mouse over the board along `path`, with the tool selected in the
@@ -177,24 +190,28 @@ export type BoardFraction = [x: number, y: number]
  * around it can be wider than the board. `stepsPerSegment` is the number of
  * mouse positions reported per segment, i.e. roughly the points of a stroke.
  */
-export async function dragOnWhiteboard(page: Page, path: BoardFraction[], stepsPerSegment = 5) {
-  const board = whiteboard(page).locator('rect')
+export async function dragOnWhiteboard(
+  page: Page,
+  path: BoardFraction[],
+  stepsPerSegment = 5,
+) {
+  const board = whiteboard(page).locator("rect");
   // The mouse only reaches what is in the viewport, and it doesn't scroll.
-  await board.scrollIntoViewIfNeeded()
-  const box = await board.boundingBox()
-  if (!box) throw new Error('the whiteboard is not on screen')
+  await board.scrollIntoViewIfNeeded();
+  const box = await board.boundingBox();
+  if (!box) throw new Error("the whiteboard is not on screen");
   const [start, ...rest] = path.map(([x, y]) => ({
     x: box.x + x * box.width,
     y: box.y + y * box.height,
-  }))
-  if (!start) throw new Error('a drag needs a starting position')
-  await page.mouse.move(start.x, start.y)
-  await page.mouse.down()
+  }));
+  if (!start) throw new Error("a drag needs a starting position");
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
   for (const position of rest) {
-    await page.mouse.move(position.x, position.y, { steps: stepsPerSegment })
+    await page.mouse.move(position.x, position.y, { steps: stepsPerSegment });
   }
-  await page.mouse.up()
+  await page.mouse.up();
 }
 
 /** The text both lists show when they have no items. */
-export const EMPTY_LIST_TEXT = 'Nothing on the list yet.'
+export const EMPTY_LIST_TEXT = "Nothing on the list yet.";

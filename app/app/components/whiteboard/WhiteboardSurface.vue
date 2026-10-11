@@ -1,101 +1,118 @@
 <script setup lang="ts">
-import type { BoardStroke, StrokeShape, WhiteboardTool } from '~/types/whiteboard'
-import type { BoardPoint } from '~/utils/whiteboard-geometry'
+import type {
+  BoardStroke,
+  StrokeShape,
+  WhiteboardTool,
+} from "~/types/whiteboard";
+import type { BoardPoint } from "~/utils/whiteboard-geometry";
 
 const props = defineProps<{
-  strokes: BoardStroke[]
-  tool: WhiteboardTool
-  color: string
-  width: number
-}>()
-const emit = defineEmits<{ draw: [stroke: StrokeShape]; erase: [id: string] }>()
+  strokes: BoardStroke[];
+  tool: WhiteboardTool;
+  color: string;
+  width: number;
+}>();
+const emit = defineEmits<{
+  draw: [stroke: StrokeShape];
+  erase: [id: string];
+}>();
 
-const surface = useTemplateRef<SVGSVGElement>('surface')
+const surface = useTemplateRef<SVGSVGElement>("surface");
 
 /** The pointer a gesture started with. Further fingers are ignored until it
  * lifts, so a resting palm doesn't draw. */
-const activePointerId = ref<number | null>(null)
+const activePointerId = ref<number | null>(null);
 /** The stroke under the pen, shown but not yet saved; null while erasing.
  * Shallow: the array is replaced on every change and handed on as it is. */
-const draftPoints = shallowRef<number[] | null>(null)
+const draftPoints = shallowRef<number[] | null>(null);
 /** Where the eraser was at the previous pointer event of the gesture. */
-let lastEraserPoint: BoardPoint | null = null
+let lastEraserPoint: BoardPoint | null = null;
 
 const label = computed(() => {
-  const count = props.strokes.length
-  return `Whiteboard, ${count} ${count === 1 ? 'stroke' : 'strokes'}`
-})
+  const count = props.strokes.length;
+  return `Whiteboard, ${count} ${count === 1 ? "stroke" : "strokes"}`;
+});
 
 const draft = computed<StrokeShape | null>(() =>
-  draftPoints.value ? { color: props.color, width: props.width, points: draftPoints.value } : null,
-)
+  draftPoints.value
+    ? { color: props.color, width: props.width, points: draftPoints.value }
+    : null,
+);
 
 /** Converts a pointer position to board units through the SVG's own
  * transform, which accounts for the element's size, its position and the
  * bars the browser adds when the element's box is not 4:3. */
 function boardPointOf(event: PointerEvent): BoardPoint | null {
-  const toBoard = surface.value?.getScreenCTM()?.inverse()
-  if (!toBoard) return null
-  const { x, y } = new DOMPoint(event.clientX, event.clientY).matrixTransform(toBoard)
-  return toBoardPoint(x, y)
+  const toBoard = surface.value?.getScreenCTM()?.inverse();
+  if (!toBoard) return null;
+  const { x, y } = new DOMPoint(event.clientX, event.clientY).matrixTransform(
+    toBoard,
+  );
+  return toBoardPoint(x, y);
 }
 
 /** Erases every stroke the eraser passed over since the previous event. */
 function eraseAlongTo(point: BoardPoint) {
-  for (const position of pointsBetween(lastEraserPoint ?? point, point, ERASER_RADIUS)) {
+  for (const position of pointsBetween(
+    lastEraserPoint ?? point,
+    point,
+    ERASER_RADIUS,
+  )) {
     for (const stroke of props.strokes) {
-      if (strokeIsWithin(stroke, position, ERASER_RADIUS)) emit('erase', stroke.id)
+      if (strokeIsWithin(stroke, position, ERASER_RADIUS))
+        emit("erase", stroke.id);
     }
   }
-  lastEraserPoint = point
+  lastEraserPoint = point;
 }
 
 function startGesture(event: PointerEvent) {
-  if (activePointerId.value !== null || !event.isPrimary || event.button !== 0) return
-  const point = boardPointOf(event)
-  if (!point) return
+  if (activePointerId.value !== null || !event.isPrimary || event.button !== 0)
+    return;
+  const point = boardPointOf(event);
+  if (!point) return;
   // Keeps the events coming when the pointer leaves the board mid-stroke.
-  surface.value?.setPointerCapture(event.pointerId)
-  activePointerId.value = event.pointerId
-  if (props.tool === 'pen') draftPoints.value = [...point]
-  else eraseAlongTo(point)
+  surface.value?.setPointerCapture(event.pointerId);
+  activePointerId.value = event.pointerId;
+  if (props.tool === "pen") draftPoints.value = [...point];
+  else eraseAlongTo(point);
 }
 
 function continueGesture(event: PointerEvent) {
-  if (event.pointerId !== activePointerId.value) return
-  const point = boardPointOf(event)
-  if (!point) return
+  if (event.pointerId !== activePointerId.value) return;
+  const point = boardPointOf(event);
+  if (!point) return;
   // A gesture stays what it started as, whatever the toolbar says since.
   if (!draftPoints.value) {
-    eraseAlongTo(point)
-    return
+    eraseAlongTo(point);
+    return;
   }
-  const points = extendStroke(draftPoints.value, point)
+  const points = extendStroke(draftPoints.value, point);
   if (isStrokeFull(points)) {
     // Saved as it is; the line continues in a new stroke from the same point.
-    emit('draw', { color: props.color, width: props.width, points })
-    draftPoints.value = [...lastStrokePoint(points)]
+    emit("draw", { color: props.color, width: props.width, points });
+    draftPoints.value = [...lastStrokePoint(points)];
   } else {
-    draftPoints.value = points
+    draftPoints.value = points;
   }
 }
 
 function endGesture() {
-  activePointerId.value = null
-  draftPoints.value = null
-  lastEraserPoint = null
+  activePointerId.value = null;
+  draftPoints.value = null;
+  lastEraserPoint = null;
 }
 
 function finishGesture(event: PointerEvent) {
-  if (event.pointerId !== activePointerId.value) return
-  if (draft.value) emit('draw', draft.value)
-  endGesture()
+  if (event.pointerId !== activePointerId.value) return;
+  if (draft.value) emit("draw", draft.value);
+  endGesture();
 }
 
 /** The browser took the gesture over (e.g. a system swipe): what was drawn
  * so far was not meant as a stroke. */
 function cancelGesture(event: PointerEvent) {
-  if (event.pointerId === activePointerId.value) endGesture()
+  if (event.pointerId === activePointerId.value) endGesture();
 }
 </script>
 
@@ -125,8 +142,12 @@ function cancelGesture(event: PointerEvent) {
       stroke-width="2"
       vector-effect="non-scaling-stroke"
     />
-    <WhiteboardStroke v-for="stroke in strokes" :key="stroke.id" :stroke="stroke" />
-    <WhiteboardStroke v-if="draft" :stroke="draft" />
+    <whiteboard-stroke
+      v-for="stroke in strokes"
+      :key="stroke.id"
+      :stroke="stroke"
+    />
+    <whiteboard-stroke v-if="draft" :stroke="draft" />
   </svg>
 </template>
 

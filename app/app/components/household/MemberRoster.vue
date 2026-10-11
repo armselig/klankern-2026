@@ -1,7 +1,7 @@
 <script setup lang="ts">
-const householdStore = useHouseholdStore()
+const householdStore = useHouseholdStore();
 
-const AVATAR_SIZE = 48
+const AVATAR_SIZE = 48;
 </script>
 
 <template>
@@ -16,7 +16,11 @@ const AVATAR_SIZE = 48
     >
       <!-- The whole address is the avatar's name and tooltip. The caption
            is only the part before the @, which fits under an avatar. -->
-      <UserAvatar :email="member.email" :size="AVATAR_SIZE" :label="member.email" />
+      <user-avatar
+        :email="member.email"
+        :size="AVATAR_SIZE"
+        :label="member.email"
+      />
       <span class="member-roster__name text-caption ellipsis">
         {{ emailLocalPart(member.email) }}
       </span>

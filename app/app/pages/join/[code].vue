@@ -4,67 +4,68 @@
 // invite link, log in with OTP right on this page, and be redeemed into
 // the household in one flow -- rather than bouncing through a separate
 // login page and losing the invite code.
-useHead({ title: 'Join your household' })
+useHead({ title: "Join your household" });
 
-const route = useRoute()
-const code = route.params.code as string
+const route = useRoute();
+const code = route.params.code as string;
 
-const client = useSupabaseClient()
-const user = useSupabaseUser()
-const householdStore = useHouseholdStore()
-const router = useRouter()
+const client = useSupabaseClient();
+const user = useSupabaseUser();
+const householdStore = useHouseholdStore();
+const router = useRouter();
 
-const step = ref<'email' | 'code' | 'joining' | 'error'>('email')
-const email = ref('')
-const otp = ref('')
-const error = ref<string | null>(null)
+const step = ref<"email" | "code" | "joining" | "error">("email");
+const email = ref("");
+const otp = ref("");
+const error = ref<string | null>(null);
 
 onMounted(() => {
-  if (user.value) join()
-})
+  if (user.value) join();
+});
 
 async function requestCode() {
-  error.value = null
+  error.value = null;
   const { error: sendError } = await client.auth.signInWithOtp({
     email: email.value,
     options: { shouldCreateUser: true },
-  })
+  });
   if (sendError) {
-    error.value = sendError.message
-    return
+    error.value = sendError.message;
+    return;
   }
-  step.value = 'code'
+  step.value = "code";
 }
 
 async function verifyCode() {
-  error.value = null
+  error.value = null;
   const { error: verifyError } = await client.auth.verifyOtp({
     email: email.value,
     token: otp.value,
-    type: 'email',
-  })
+    type: "email",
+  });
   if (verifyError) {
-    error.value = verifyError.message
-    return
+    error.value = verifyError.message;
+    return;
   }
-  await join()
+  await join();
 }
 
 /** redeem_invite's error codes are for code, not people: known ones get a
  * sentence the invited family member can act on. */
 const JOIN_ERROR_TEXT: Record<string, string> = {
-  invalid_or_expired_invite: 'This invite link is invalid or has expired. Ask for a new one.',
-}
+  invalid_or_expired_invite:
+    "This invite link is invalid or has expired. Ask for a new one.",
+};
 
 async function join() {
-  step.value = 'joining'
+  step.value = "joining";
   try {
-    await householdStore.redeem(code)
-    await router.push(ROUTES.home)
+    await householdStore.redeem(code);
+    await router.push(ROUTES.home);
   } catch (e) {
-    const message = errorMessage(e)
-    error.value = JOIN_ERROR_TEXT[message] ?? message
-    step.value = 'error'
+    const message = errorMessage(e);
+    error.value = JOIN_ERROR_TEXT[message] ?? message;
+    step.value = "error";
   }
 }
 </script>
@@ -104,7 +105,12 @@ async function join() {
             required
           />
           <div class="q-mt-md">
-            <q-btn type="submit" color="primary" label="Join household" unelevated />
+            <q-btn
+              type="submit"
+              color="primary"
+              label="Join household"
+              unelevated
+            />
           </div>
         </q-form>
       </q-card-section>

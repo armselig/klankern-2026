@@ -1,4 +1,4 @@
-import { resetStoresOnUserChange } from './reset-stores-on-user-change'
+import { resetStoresOnUserChange } from "./reset-stores-on-user-change";
 
 /**
  * Clears every store that holds a user's data when the signed-in user
@@ -6,9 +6,14 @@ import { resetStoresOnUserChange } from './reset-stores-on-user-change'
  * before useHouseholdRealtime.
  */
 export function useResetStoresOnUserChange() {
-  const user = useSupabaseUser()
+  const user = useSupabaseUser();
   resetStoresOnUserChange(
     () => user.value?.sub,
-    [useHouseholdStore(), useTodoStore(), useShoppingStore(), useWhiteboardStore()],
-  )
+    [
+      useHouseholdStore(),
+      useTodoStore(),
+      useShoppingStore(),
+      useWhiteboardStore(),
+    ],
+  );
 }

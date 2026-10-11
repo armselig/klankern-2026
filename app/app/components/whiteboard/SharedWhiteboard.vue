@@ -1,24 +1,24 @@
 <script setup lang="ts">
-import { Dialog } from 'quasar'
-import type { WhiteboardTool } from '~/types/whiteboard'
+import { Dialog } from "quasar";
+import type { WhiteboardTool } from "~/types/whiteboard";
 
-const props = defineProps<{ householdId: string }>()
-const whiteboardStore = useWhiteboardStore()
+const props = defineProps<{ householdId: string }>();
+const whiteboardStore = useWhiteboardStore();
 
-onMounted(() => whiteboardStore.init(props.householdId))
+onMounted(() => whiteboardStore.init(props.householdId));
 
-const tool = ref<WhiteboardTool>('pen')
-const color = ref(DEFAULT_PEN_COLOR)
-const width = ref(DEFAULT_PEN_WIDTH)
+const tool = ref<WhiteboardTool>("pen");
+const color = ref(DEFAULT_PEN_COLOR);
+const width = ref(DEFAULT_PEN_WIDTH);
 
 /** Clearing removes every member's strokes and can't be undone, so it asks first. */
 function confirmClear() {
   Dialog.create({
-    title: 'Clear the whiteboard?',
-    message: 'This removes everything on it, for the whole family.',
-    cancel: { label: 'Cancel', flat: true },
-    ok: { label: 'Clear', color: 'negative', unelevated: true },
-  }).onOk(() => whiteboardStore.clear())
+    title: "Clear the whiteboard?",
+    message: "This removes everything on it, for the whole family.",
+    cancel: { label: "Cancel", flat: true },
+    ok: { label: "Clear", color: "negative", unelevated: true },
+  }).onOk(() => whiteboardStore.clear());
 }
 </script>
 
@@ -28,7 +28,7 @@ function confirmClear() {
 
     <!-- Only once the board is loaded: a stroke needs the board's id. -->
     <template v-else-if="whiteboardStore.boardId">
-      <WhiteboardToolbar
+      <whiteboard-toolbar
         v-model:tool="tool"
         v-model:color="color"
         v-model:width="width"
@@ -37,7 +37,7 @@ function confirmClear() {
         @undo="whiteboardStore.undo"
         @clear="confirmClear"
       />
-      <WhiteboardSurface
+      <whiteboard-surface
         :strokes="whiteboardStore.visible"
         :tool="tool"
         :color="color"
@@ -47,6 +47,8 @@ function confirmClear() {
       />
     </template>
 
-    <p v-if="whiteboardStore.error" class="text-negative">{{ whiteboardStore.error }}</p>
+    <p v-if="whiteboardStore.error" class="text-negative">
+      {{ whiteboardStore.error }}
+    </p>
   </div>
 </template>

@@ -5,6 +5,6 @@
  * as it is.
  */
 export function emailLocalPart(email: string): string {
-  const at = email.lastIndexOf('@')
-  return at > 0 ? email.slice(0, at) : email
+  const at = email.lastIndexOf("@");
+  return at > 0 ? email.slice(0, at) : email;
 }

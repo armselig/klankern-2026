@@ -1,4 +1,4 @@
-import { subscribeToHouseholdChanges } from './household-realtime'
+import { subscribeToHouseholdChanges } from "./household-realtime";
 
 /**
  * Keeps one Realtime channel open for the signed-in user's household and
@@ -12,31 +12,35 @@ import { subscribeToHouseholdChanges } from './household-realtime'
  * or becomes null, and when the calling component's scope is disposed.
  */
 export function useHouseholdRealtime() {
-  const client = useSupabaseClient()
-  const user = useSupabaseUser()
-  const householdStore = useHouseholdStore()
-  const todoStore = useTodoStore()
-  const shoppingStore = useShoppingStore()
-  const whiteboardStore = useWhiteboardStore()
+  const client = useSupabaseClient();
+  const user = useSupabaseUser();
+  const householdStore = useHouseholdStore();
+  const todoStore = useTodoStore();
+  const shoppingStore = useShoppingStore();
+  const whiteboardStore = useWhiteboardStore();
 
-  const householdId = computed(() => (user.value ? (householdStore.household?.id ?? null) : null))
+  const householdId = computed(() =>
+    user.value ? (householdStore.household?.id ?? null) : null,
+  );
 
   watch(
     householdId,
     (id, _previousId, onCleanup) => {
-      if (!id) return
+      if (!id) return;
       const unsubscribe = subscribeToHouseholdChanges(client, id, {
         onTodoItemChange: (event) => todoStore.applyRealtimeEvent(event),
-        onShoppingItemChange: (event) => shoppingStore.applyRealtimeEvent(event),
-        onBoardStrokeChange: (event) => whiteboardStore.applyRealtimeEvent(event),
+        onShoppingItemChange: (event) =>
+          shoppingStore.applyRealtimeEvent(event),
+        onBoardStrokeChange: (event) =>
+          whiteboardStore.applyRealtimeEvent(event),
         onSubscribed: () => {
-          void todoStore.resync()
-          void shoppingStore.resync()
-          void whiteboardStore.resync()
+          void todoStore.resync();
+          void shoppingStore.resync();
+          void whiteboardStore.resync();
         },
-      })
-      onCleanup(unsubscribe)
+      });
+      onCleanup(unsubscribe);
     },
     { immediate: true },
-  )
+  );
 }

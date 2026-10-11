@@ -1,35 +1,35 @@
 <script setup lang="ts">
 const props = defineProps<{
-  email: string
+  email: string;
   /** Width and height in CSS pixels. */
-  size: number
+  size: number;
   /** Names the person for assistive technology and as a tooltip. Left out
    * where the address is written right beside the avatar, which then is
    * decoration. */
-  label?: string
-}>()
+  label?: string;
+}>();
 
 /** How much of the ink colors the disc behind the rosette. Laid over white,
  * so the tint is the same on the white card and on the blue header. */
-const DISC_TINT = 0.14
+const DISC_TINT = 0.14;
 
-const center = ROSETTE_BOX / 2
+const center = ROSETTE_BOX / 2;
 
-const hash = useGravatarHash(() => props.email)
+const hash = useGravatarHash(() => props.email);
 
 /** The app's own drawing. It is there as soon as the hash is, so an avatar
  * never waits for Gravatar, and it stays when Gravatar has no picture or
  * can't be reached. */
-const rosette = computed(() => (hash.value ? avatarRosette(hash.value) : null))
+const rosette = computed(() => (hash.value ? avatarRosette(hash.value) : null));
 
 /** Where the Gravatar picture is: asked for, shown, or not to be had (the
  * person has none, or the device is offline). */
-const photo = ref<'pending' | 'loaded' | 'missing'>('pending')
+const photo = ref<"pending" | "loaded" | "missing">("pending");
 
 // Another address is another picture, which has to be asked for anew.
 watch(hash, () => {
-  photo.value = 'pending'
-})
+  photo.value = "pending";
+});
 </script>
 
 <template>
@@ -59,7 +59,7 @@ watch(hash, () => {
         :fill="rosette.color"
         :fill-opacity="DISC_TINT"
       />
-      <WhiteboardStroke :stroke="rosette" />
+      <whiteboard-stroke :stroke="rosette" />
     </svg>
     <!-- Twice the size, for screens with two device pixels per CSS pixel.
          Lazy, so a slow gravatar.com never holds up the page's load event.

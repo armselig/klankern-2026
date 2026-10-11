@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { mdiCartOutline, mdiDraw, mdiFormatListChecks } from '@quasar/extras/mdi-v7'
+import {
+  mdiCartOutline,
+  mdiDraw,
+  mdiFormatListChecks,
+} from "@quasar/extras/mdi-v7";
 
-const householdStore = useHouseholdStore()
+const householdStore = useHouseholdStore();
 
-onMounted(() => householdStore.fetchMine())
+onMounted(() => householdStore.fetchMine());
 
 // The members are fetched here, not by the roster: fetchMine() swaps the
 // whole card for the spinner and back, so the roster is mounted twice on a
@@ -13,22 +17,22 @@ watch(
   () => householdStore.household?.id,
   () => void householdStore.fetchMembers(),
   { immediate: true },
-)
+);
 </script>
 
 <template>
   <q-page padding class="flex flex-center">
     <q-spinner v-if="householdStore.loading" color="primary" size="2em" />
 
-    <CreateHouseholdForm v-else-if="!householdStore.household" />
+    <create-household-form v-else-if="!householdStore.household" />
 
     <q-card v-else style="width: 100%; max-width: 480px">
       <q-card-section>
         <div class="text-h6">{{ householdStore.household.name }}</div>
-        <MemberRoster />
+        <member-roster />
       </q-card-section>
       <q-card-section>
-        <InviteDialog />
+        <invite-dialog />
       </q-card-section>
       <q-card-section>
         <q-btn

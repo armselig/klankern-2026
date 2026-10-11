@@ -1,9 +1,9 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '~/types/database.types'
-import type { ShoppingItem, ShoppingList } from '~/types/shopping'
-import { getCurrentUserId } from './current-user'
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "~/types/database.types";
+import type { ShoppingItem, ShoppingList } from "~/types/shopping";
+import { getCurrentUserId } from "./current-user";
 
-type Client = SupabaseClient<Database>
+type Client = SupabaseClient<Database>;
 
 /**
  * Plain, framework-agnostic shopping-list operations -- see
@@ -16,31 +16,34 @@ export async function fetchOrCreateShoppingList(
   householdId: string,
 ): Promise<ShoppingList> {
   const { data: existing, error: fetchError } = await client
-    .from('shopping_lists')
+    .from("shopping_lists")
     .select()
-    .eq('household_id', householdId)
-    .maybeSingle()
-  if (fetchError) throw fetchError
-  if (existing) return existing
+    .eq("household_id", householdId)
+    .maybeSingle();
+  if (fetchError) throw fetchError;
+  if (existing) return existing;
 
   const { data: created, error: createError } = await client
-    .from('shopping_lists')
+    .from("shopping_lists")
     .insert({ household_id: householdId })
     .select()
-    .single()
-  if (createError) throw createError
-  return created
+    .single();
+  if (createError) throw createError;
+  return created;
 }
 
-export async function fetchShoppingItems(client: Client, listId: string): Promise<ShoppingItem[]> {
+export async function fetchShoppingItems(
+  client: Client,
+  listId: string,
+): Promise<ShoppingItem[]> {
   const { data, error } = await client
-    .from('shopping_items')
+    .from("shopping_items")
     .select()
-    .eq('list_id', listId)
-    .is('deleted_at', null)
-    .order('position')
-  if (error) throw error
-  return data
+    .eq("list_id", listId)
+    .is("deleted_at", null)
+    .order("position");
+  if (error) throw error;
+  return data;
 }
 
 /** Inserts with a client-supplied id so the store's optimistic entry and the
@@ -48,17 +51,17 @@ export async function fetchShoppingItems(client: Client, listId: string): Promis
 export async function insertShoppingItem(
   client: Client,
   item: {
-    id: string
-    listId: string
-    householdId: string
-    title: string
-    quantity: string | null
-    position: number
+    id: string;
+    listId: string;
+    householdId: string;
+    title: string;
+    quantity: string | null;
+    position: number;
   },
 ): Promise<ShoppingItem> {
-  const userId = await getCurrentUserId(client)
+  const userId = await getCurrentUserId(client);
   const { data, error } = await client
-    .from('shopping_items')
+    .from("shopping_items")
     .insert({
       id: item.id,
       list_id: item.listId,
@@ -69,9 +72,9 @@ export async function insertShoppingItem(
       created_by: userId,
     })
     .select()
-    .single()
-  if (error) throw error
-  return data
+    .single();
+  if (error) throw error;
+  return data;
 }
 
 export async function setShoppingItemChecked(
@@ -79,14 +82,20 @@ export async function setShoppingItemChecked(
   id: string,
   checked: boolean,
 ): Promise<void> {
-  const { error } = await client.from('shopping_items').update({ checked }).eq('id', id)
-  if (error) throw error
+  const { error } = await client
+    .from("shopping_items")
+    .update({ checked })
+    .eq("id", id);
+  if (error) throw error;
 }
 
-export async function softDeleteShoppingItemRemote(client: Client, id: string): Promise<void> {
+export async function softDeleteShoppingItemRemote(
+  client: Client,
+  id: string,
+): Promise<void> {
   const { error } = await client
-    .from('shopping_items')
+    .from("shopping_items")
     .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id)
-  if (error) throw error
+    .eq("id", id);
+  if (error) throw error;
 }

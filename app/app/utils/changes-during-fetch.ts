@@ -10,26 +10,26 @@
  * open collections are bookkeeping, not state to render or serialize.
  */
 export function createChangesDuringFetch() {
-  const open = new Set<Set<string>>()
+  const open = new Set<Set<string>>();
 
   return {
     /** Starts collecting for one fetch. Overlapping fetches each collect on
      * their own, so finishing one doesn't stop the other's. */
     start() {
-      const changed = new Set<string>()
-      open.add(changed)
+      const changed = new Set<string>();
+      open.add(changed);
       return {
         /** Stops collecting and returns what changed since start(). */
         stop(): string[] {
-          open.delete(changed)
-          return [...changed]
+          open.delete(changed);
+          return [...changed];
         },
-      }
+      };
     },
 
     /** Notes a changed item for every fetch in flight; a no-op without one. */
     record(id: string) {
-      for (const changed of open) changed.add(id)
+      for (const changed of open) changed.add(id);
     },
-  }
+  };
 }

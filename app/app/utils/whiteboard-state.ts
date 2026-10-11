@@ -1,6 +1,6 @@
-import type { ItemsById } from '~/types/list'
-import type { BoardStroke, BoardStrokeRealtimeEvent } from '~/types/whiteboard'
-import { upsertListItem } from './list-state'
+import type { ItemsById } from "~/types/list";
+import type { BoardStroke, BoardStrokeRealtimeEvent } from "~/types/whiteboard";
+import { upsertListItem } from "./list-state";
 
 // Strokes follow the same rules as list items (client-generated ids, soft
 // deletes, resync); the store uses the reducers in list-state.ts for those.
@@ -21,11 +21,11 @@ export function applyStrokeRealtimeEvent(
   event: BoardStrokeRealtimeEvent,
   boardId: string | null,
 ): ItemsById<BoardStroke> {
-  const incoming = event.new
-  if (!boardId || incoming.board_id !== boardId) return strokesById
-  const local = strokesById[incoming.id]
-  if (local?.deleted_at && !incoming.deleted_at) return strokesById
-  return upsertListItem(strokesById, { points: [], ...local, ...incoming })
+  const incoming = event.new;
+  if (!boardId || incoming.board_id !== boardId) return strokesById;
+  const local = strokesById[incoming.id];
+  if (local?.deleted_at && !incoming.deleted_at) return strokesById;
+  return upsertListItem(strokesById, { points: [], ...local, ...incoming });
 }
 
 /** Non-deleted strokes, oldest first, so a newer stroke is painted over an
@@ -33,10 +33,16 @@ export function applyStrokeRealtimeEvent(
  * text: an optimistic stroke, a fetched row and a Realtime row each write
  * the timestamp differently. The id breaks ties, to keep the order the same
  * everywhere. */
-export function visibleStrokes(strokesById: ItemsById<BoardStroke>): BoardStroke[] {
+export function visibleStrokes(
+  strokesById: ItemsById<BoardStroke>,
+): BoardStroke[] {
   return Object.values(strokesById)
     .filter((stroke) => !stroke.deleted_at)
-    .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at) || a.id.localeCompare(b.id))
+    .sort(
+      (a, b) =>
+        Date.parse(a.created_at) - Date.parse(b.created_at) ||
+        a.id.localeCompare(b.id),
+    );
 }
 
 /**
@@ -50,17 +56,22 @@ export function lastUndoableStrokeId(
   strokesById: ItemsById<BoardStroke>,
   drawnIds: readonly string[],
 ): string | null {
-  return drawnIds.findLast((id) => strokesById[id] && !strokesById[id].deleted_at) ?? null
+  return (
+    drawnIds.findLast((id) => strokesById[id] && !strokesById[id].deleted_at) ??
+    null
+  );
 }
 
 /** Clears the board locally: every stroke becomes a tombstone, in one step
  * rather than stroke by stroke, since a full board holds thousands. */
-export function softDeleteAllStrokes(strokesById: ItemsById<BoardStroke>): ItemsById<BoardStroke> {
-  const deletedAt = new Date().toISOString()
+export function softDeleteAllStrokes(
+  strokesById: ItemsById<BoardStroke>,
+): ItemsById<BoardStroke> {
+  const deletedAt = new Date().toISOString();
   return Object.fromEntries(
     Object.entries(strokesById).map(([id, stroke]) => [
       id,
       stroke.deleted_at ? stroke : { ...stroke, deleted_at: deletedAt },
     ]),
-  )
+  );
 }

@@ -8,20 +8,36 @@
  * First selector: a control that is primary itself (a filled button).
  * Second: a control on a primary surface (a flat button in the header).
  */
-.bg-primary:is(.q-hoverable:hover, .q-focusable:focus-visible, .q-manual-focusable--focused)
+.bg-primary:is(
+    .q-hoverable:hover,
+    .q-focusable:focus-visible,
+    .q-manual-focusable--focused
+  )
   > .q-focus-helper,
 .bg-primary
-  :is(.q-hoverable:hover, .q-focusable:focus-visible, .q-manual-focusable--focused)
+  :is(
+    .q-hoverable:hover,
+    .q-focusable:focus-visible,
+    .q-manual-focusable--focused
+  )
   > .q-focus-helper {
   background: #000;
 }
 
 /* Quasar lays some white over its veil. Over a black one that would only
    grey it and take back part of the darkening. */
-.bg-primary:is(.q-hoverable:hover, .q-focusable:focus-visible, .q-manual-focusable--focused)
+.bg-primary:is(
+    .q-hoverable:hover,
+    .q-focusable:focus-visible,
+    .q-manual-focusable--focused
+  )
   > .q-focus-helper::after,
 .bg-primary
-  :is(.q-hoverable:hover, .q-focusable:focus-visible, .q-manual-focusable--focused)
+  :is(
+    .q-hoverable:hover,
+    .q-focusable:focus-visible,
+    .q-manual-focusable--focused
+  )
   > .q-focus-helper::after {
   opacity: 0;
 }
