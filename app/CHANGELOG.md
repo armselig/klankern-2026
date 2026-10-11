@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.1.0](https://github.com/armselig/klankern-2026/compare/v1.0.0...v1.1.0) (2026-10-11)
+
+### Features
+
+* **avatars:** show an avatar for every user, from Gravatar ([807db86](https://github.com/armselig/klankern-2026/commit/807db86c808c93fb7d5bebc10092bb3dbafc7e25))
+* **header:** add a wordmark heading and an account menu ([b156164](https://github.com/armselig/klankern-2026/commit/b15616458448fee1031cb5ec4ca2412fbbf57044))
+
+### Bug Fixes
+
+* **ui:** keep the contrast of hovered and focused controls on the primary color ([7b2a584](https://github.com/armselig/klankern-2026/commit/7b2a5844c19a750b0aec0b46c5acfcfc525b0fb8))
+
 ## 1.0.0 (2026-10-10)
 
 ### Features
