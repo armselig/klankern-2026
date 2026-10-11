@@ -6,3 +6,5 @@
 dist
 node_modules
 public/*.png
+# Written by semantic-release, in a format Prettier would rewrite.
+CHANGELOG.md

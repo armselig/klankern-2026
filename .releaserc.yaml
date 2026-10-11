@@ -16,6 +16,8 @@ plugins:
   # written before the git plugin commits them.
   - - '@semantic-release/changelog'
     - changelogTitle: '# Changelog'
+      # Beside the package it describes; the default is the git root.
+      changelogFile: app/CHANGELOG.md
 
   # Only bumps the version in app/package.json and app/package-lock.json. The
   # app is private and never published to npm.
@@ -27,7 +29,7 @@ plugins:
     # Listed explicitly: the defaults are package.json and package-lock.json
     # at the git root, which don't exist here.
     - assets:
-        - CHANGELOG.md
+        - app/CHANGELOG.md
         - app/package.json
         - app/package-lock.json
       # Without the `[skip ci]` of the plugin's default message: Netlify has to

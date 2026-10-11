@@ -325,7 +325,7 @@ Checked by the user in a browser (2026-10-10).
 
 ## Releases: automated versions and changelog (built 2026-10-10, v1.0.0 released the same day)
 
-Every push to `main` is now a release, cut by semantic-release in `.github/workflows/release.yml`: the version follows from the commit messages since the last tag, and `CHANGELOG.md` (git root), the version in `app/package.json`, the tag and the GitHub release are written by the workflow. How it works day to day is in `CLAUDE.md` ("Releases").
+Every push to `main` is now a release, cut by semantic-release in `.github/workflows/release.yml`: the version follows from the commit messages since the last tag, and `CHANGELOG.md` (at the git root until 2026-10-11, since then `app/CHANGELOG.md`), the version in `app/package.json`, the tag and the GitHub release are written by the workflow. How it works day to day is in `CLAUDE.md` ("Releases").
 
 Decisions:
 
@@ -428,6 +428,10 @@ The `a11y` scan of the dashboard failed with `color-contrast` on the "To-dos" bu
 - **axe can't judge anything in the header.** The elevated header's shadow layer (`.q-layout__shadow`) lies over it, so axe reports the background as undetermined ("incomplete"), which the spec doesn't count. For a header button the spec therefore checks that its highlight is the dark one. The header's email text and buttons at rest have the same colors as a filled button.
 - All three checks were seen to fail before the fix, and pass with it.
 - **Noticed, not changed**: "Cancel" in the whiteboard's "Clear" dialog is primary-colored text on white. Its veil is primary-colored and darkens the white behind it. By calculation, not measured, the hovered text is at about 3.8:1. The black veil doesn't apply there.
+
+## Changelog moved into `app/` (2026-10-11)
+
+On the user's request `CHANGELOG.md` moved from the git root to `app/CHANGELOG.md`: `changelogFile` and the git plugin's `assets` in `.releaserc.yaml` point there, and `app/.prettierignore` lists the file, because Prettier rejects the generated format and `format:check` would fail on every release commit. **Not yet tried with a release**: `--dry-run` doesn't write the changelog, so the next push to `main` with a `feat` or `fix` is the first real run of this path.
 
 ## Next steps
 
