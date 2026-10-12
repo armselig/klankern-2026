@@ -157,3 +157,20 @@ npx prettier --write app/types/database.types.ts
 - Login is email OTP with a code typed into the app, not a magic link (a link would open the system browser instead of the installed PWA). UI text does not name a code length.
 - E2E helpers in `tests/support/` drive the real forms by label and button text, so renaming UI text breaks them. `supabase-fixtures.ts` creates and deletes the disposable users and households for both the RLS and e2e suites.
 - Prettier runs with its defaults; `.prettierrc.json` is empty on purpose. Don't add an option that only restates a default. It checks the whole repository, `docs/` included; `.prettierignore` leaves out the agent skills (`.agents`, `skills-lock.json`), which are another project's files.
+
+## Skill routing
+
+When the user's request matches an available skill, invoke it via the Skill tool. Route only to skills in the session's available-skills list; answer directly for quick questions or small scoped edits.
+
+Key routing rules:
+
+- Product ideas/brainstorming → invoke /office-hours
+- Strategy/scope → invoke /plan-ceo-review
+- Architecture → invoke /plan-eng-review
+- Design system/plan review → invoke /design-consultation or /plan-design-review
+- Full review pipeline → invoke /autoplan
+- Bugs/errors → invoke /investigate
+- QA/testing site behavior → invoke /qa or /qa-only
+- Code review/diff check → invoke /review
+- Visual polish → invoke /design-review
+- Ship/deploy → never /ship or /land-and-deploy: a release is a push of `develop` and `main`, and semantic-release owns the version and the changelog (see "Releases")
