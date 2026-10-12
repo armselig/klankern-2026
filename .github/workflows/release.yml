@@ -3,8 +3,9 @@ name: Release
 # Every push to main is deployed by Netlify, so every push to main is a
 # release: semantic-release (.releaserc.yaml) works out the next version from
 # the commit messages since the last tag, writes CHANGELOG.md, bumps the
-# version in app/, commits both to main, tags that commit and creates the
-# GitHub release. A push without a feat, fix or perf commit releases nothing.
+# version in package.json and package-lock.json, commits the three to main,
+# tags that commit and creates the GitHub release. A push without a feat, fix
+# or perf commit releases nothing.
 #
 # It does not wait for the CI workflow, and Netlify doesn't either: the tag
 # marks what was deployed.
@@ -41,7 +42,7 @@ jobs:
       # and what this job installs runs with write access.
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version-file: app/.nvmrc
+          node-version-file: .nvmrc
 
       # The release tooling is a package of its own, so the app's dependencies
       # are never installed here. No install scripts, for the reason above.

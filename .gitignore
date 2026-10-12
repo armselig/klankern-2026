@@ -4,5 +4,31 @@
 # Local Netlify folder
 .netlify
 
-# Release tooling installed locally (see .github/workflows/release.yml)
-.github/release/node_modules
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
+
+# Node dependencies, the release tooling's in .github/release too
+node_modules
+
+# Logs
+logs
+*.log
+
+# Misc
+.DS_Store
+.fleet
+.idea
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Playwright output
+test-results
+playwright-report

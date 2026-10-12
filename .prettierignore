@@ -8,3 +8,7 @@ node_modules
 public/*.png
 # Written by semantic-release, in a format Prettier would rewrite.
 CHANGELOG.md
+# Agent skills are another project's files, and the lock file records a hash of
+# them.
+.agents
+skills-lock.json
