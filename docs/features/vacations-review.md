@@ -44,7 +44,7 @@ Every rule of the tables gets a test in the RLS suite: another household reads a
 ### Still open
 
 - What a person without an email address looks like (open decision 4 of the design), before slice 2. (Decided 2026-10-12, see "Open decisions" in [`features/vacations.md`](./vacations.md).)
-- Whether only the latest rejection is kept (open decision 6 of the design), before slice 2.
+- Whether only the latest rejection is kept (open decision 6 of the design), before slice 2. (Decided 2026-10-12, see "Open decisions" in [`features/vacations.md`](./vacations.md).)
 - What the hotel template leaves out (open decision 7 of the design), before slice 1.
 
 ### Noticed, not changed
