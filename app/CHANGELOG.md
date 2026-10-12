@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.5.0](https://github.com/armselig/klankern-2026/compare/v1.4.0...v1.5.0) (2026-10-12)
+
+### Features
+
+* **dashboard:** show what each page holds in live tiles ([f5bdc8f](https://github.com/armselig/klankern-2026/commit/f5bdc8fa0c7437812ec8ee0a488f83a5721b7e6c))
+
+### Bug Fixes
+
+* **notices:** make the success notices readable in light and dark mode ([8df9419](https://github.com/armselig/klankern-2026/commit/8df941961878ba65ea64f86ff3d81d0a8c8b0573))
+
 ## [1.4.0](https://github.com/armselig/klankern-2026/compare/v1.3.1...v1.4.0) (2026-10-11)
 
 ### Features
