@@ -55,7 +55,7 @@ Develop against a free **Supabase Cloud** project directly (matches the prod tar
 
 ### Folder structure
 
-```
+```text
 app/
   nuxt.config.ts
   app.vue

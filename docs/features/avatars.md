@@ -37,14 +37,14 @@ Decided with the user:
 - No view over `auth.users`, no profile table, no trigger on `auth.users`.
 - Checked before applying: the migration role (`postgres`) can read `auth.users` (`has_table_privilege`). Postgres checks a SQL function's privileges only when it is called, so a role without that privilege would have created a function that fails on first use.
 
-**Code**
+### Code
 
 - `fetchHouseholdMembers` (`household-actions.ts`); `members`, `membersError` and `fetchMembers()` in `stores/household.ts`.
 - `fetchMembers` keeps its result only if the household is still the one it asked for. A fetch that ends after a user switch would otherwise show the previous household's addresses to the next user.
 - `pages/index.vue` fetches the members when the household's id appears or changes; `MemberRoster` only renders. A fetch in the roster's own `onMounted` would run twice on every revisit, because `fetchMine()` swaps the whole card for the spinner and back.
 - The full address is deliberately not in the roster's text: `getByText(user.email)` in the `auth`, `household` and `session-switch` specs would match twice.
 
-**Tests**
+### Tests
 
 - Unit: `gravatar.spec.ts` (Gravatar's documented example hash), `avatar-rosette.spec.ts` (each of the 384 variants stays inside the disc, is closed and differs from the others), `email.spec.ts`, `use-gravatar-hash.spec.ts`, and `fetchHouseholdMembers` in `household-actions.spec.ts`.
 - RLS: a member gets their household's addresses and none of another household's; a member of another household gets no rows; a signed-out client (`signedOut` in `supabase-fixtures.ts`) can't call the function.
@@ -53,14 +53,14 @@ Decided with the user:
 - Seen to fail with the feature broken: the avatar spec with a wrong hash, without the `error` handler and without the `load` handler, and the `household` check with the members not fetched when the household appears. The roster checks added to `session-switch` and `a11y` were not broken on purpose.
 - The other specs make real requests to gravatar.com for their disposable addresses, which answer 404. Nothing waits for them.
 
-**Not included**
+### Not included
 
 - A member who joins while someone else has the dashboard open appears there on that person's next visit to the dashboard: `household_members` is not in the Realtime publication.
 - Display names, uploading a picture, a way to opt out of Gravatar.
 
 **Looked at, and not yet**: the rosettes were judged on a contact sheet of all shapes at 32, 48 and 96 px, and the header and the dashboard in screenshots from the e2e run (a stand-in picture for the Gravatar). A real Gravatar photo had not been seen in the app then; the user checked one on 2026-10-11, signed in with an address that has a Gravatar.
 
-**Found on the way**
+### Found on the way
 
 - **A long-running `nuxt dev` keeps showing the old version in the footer**, and `app-version.e2e.ts` then fails locally. The version is read from `package.json` when the process starts. A dev server started before a release was pulled still served `0.0.0` after `package.json` said `1.0.0`, and the reload Nuxt does by itself after a change to `nuxt.config.ts` did not re-read it. Stop and start `npm run dev`. CI starts a fresh server, and the production build from the same run had `1.0.0`.
 - The member row made the dashboard card taller, which uncovered the contrast problem of "Hover and focus contrast on the primary color" in [`ui/theme-and-contrast.md`](../ui/theme-and-contrast.md).

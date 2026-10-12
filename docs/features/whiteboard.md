@@ -6,7 +6,7 @@ The history of the shared whiteboard, oldest first. The current state is in [`pr
 
 One whiteboard per household at `ROUTES.whiteboard` ("Whiteboard" button on the dashboard): a pen in four colors and three widths, an eraser that removes whole strokes, "Undo" and "Clear board". Decided with the user: one board, a fixed 4:3 board without panning or zooming, and those three tools.
 
-**Deviations from the plan**
+### Deviations from the plan
 
 - **Rows and `postgres_changes`, not Realtime `broadcast`** (user decision). Every finished stroke is one `board_strokes` row and syncs like a list item, on the existing household channel. The volume is one row per stroke, not per point, and RLS stays the only security boundary. A broadcast channel would need `private: true` plus RLS policies on `realtime.messages`. The price: other members see a stroke when the pen lifts, not while it is drawn. A live preview over broadcast can be added on top.
 - **SVG, not a `<canvas>`.** The surface is an `<svg>` with one `<polyline>` per stroke (a `<circle>` for a tap), rendered by Vue from store state. It scales by itself (`viewBox`), needs no redraw on resize or device-pixel-ratio handling, and the e2e test can read the strokes from the DOM.
@@ -27,7 +27,7 @@ One whiteboard per household at `ROUTES.whiteboard` ("Whiteboard" button on the 
 - `utils/whiteboard-geometry.ts`: point thinning, the eraser's hit test, clamping to the board.
 - `subscribeToHouseholdChanges` has INSERT + UPDATE listeners for `board_strokes` (`onBoardStrokeChange`); `useHouseholdRealtime` resyncs the whiteboard on every `SUBSCRIBED`; `useResetStoresOnUserChange` resets its store.
 
-**Behaviour worth knowing**
+### Behaviour worth knowing
 
 - **Realtime leaves `points` out of an UPDATE for a large stroke.** Postgres stores a large value out of line (TOAST) and doesn't put it in the change record when the update didn't touch it. Measured on the cloud project: the UPDATE of a 2-point stroke carries `points`, the UPDATE of a 1000-point stroke has no `points` key at all. The only update the app makes is a soft delete, so `applyStrokeRealtimeEvent` lays the event's row over the local one instead of replacing it (`BoardStrokeChange` in `types/whiteboard.ts` has `points` optional). The same would hit any future table with a large column.
 - **Strokes are fetched in pages of 500, cut by id** (`.gt('id', lastId)`), not by offset: PostgREST returns at most 1000 rows per request, and a stroke erased between two requests would shift an offset. The fetch order doesn't matter; `visibleStrokes` sorts by `created_at`, parsed as a date because the client, PostgREST and Realtime each format it differently.
@@ -38,7 +38,7 @@ One whiteboard per household at `ROUTES.whiteboard` ("Whiteboard" button on the 
 - **Accessibility**: the toolbar is three radio groups and two buttons. The surface is `role="img"` with the name "Whiteboard, N strokes"; the drawing itself has no text alternative, and drawing needs a pointer.
 - Erased strokes stay as rows forever (soft delete); nothing purges them. The partial index `board_strokes_live_idx` keeps loading a board independent of their number.
 
-**Tests**
+### Tests
 
 - Unit: `whiteboard-actions.spec.ts`, `whiteboard-state.spec.ts`, `whiteboard-geometry.spec.ts`, and the stroke listener in `household-realtime.spec.ts`.
 - RLS (`household-isolation.spec.ts`): another household's board and strokes are invisible and can't be drawn on or erased; the composite key rejects a stroke on another household's board; no hard delete; one board per household; each check constraint.
@@ -46,7 +46,7 @@ One whiteboard per household at `ROUTES.whiteboard` ("Whiteboard" button on the 
 - Not tested separately: a reconnect (same resync as the lists), and touch or pen input (the e2e test draws with the mouse).
 - **Tried by hand by the user (2026-10-11)**: the whiteboard on a phone and with a second member. No automated test draws by touch.
 
-**Found on the way**
+### Found on the way
 
 - A long-running `nuxt dev` did not pick up the new page file (`/whiteboard` answered 404) until the file was moved away and back.
 - **The `pwa` project failed once in the working tree** (all 4 tests, blank page): the HTML in `dist` referenced `/_nuxt/*.js` files that the same build had not written. A fresh copy of the same tree built correctly and passed all 4. Not explained then: Playwright always runs `nuxt dev` and the production build side by side, in CI too, so that alone is not the cause. Explained and fixed on 2026-10-11, see "The `pwa` e2e project and a leftover `.output`" in [`infra/testing.md`](../infra/testing.md).

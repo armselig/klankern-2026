@@ -20,7 +20,7 @@ Decided with the user:
 How it is built:
 
 - **The wordmark** is Roboto 700 with a hand-drawn pen stroke under it, an inline SVG that is hidden from assistive technology, so the link's name stays "Klankern". No new font or dependency. Hover and keyboard focus thicken the stroke; focus also draws a white outline. Quasar styles a bare `h1` at 6rem, so the layout's scoped style resets it.
-- **The account button's name is "Account, <email>"**, and the avatar inside has no label. The e2e helpers find the signed-in user by that name (`accountButton` in `tests/support/e2e-ui.ts`), since the address is no longer text in the header.
+- **The account button's name is "Account, `<email>`"**, and the avatar inside has no label. The e2e helpers find the signed-in user by that name (`accountButton` in `tests/support/e2e-ui.ts`), since the address is no longer text in the header.
 - **The menu is `role="group"`, and its entries are real buttons.** `role="menu"` allows only menu items, and the address is none; a clickable `q-item` is a list item with no role that says it can be pressed.
 - **`InviteDialog` no longer has its own button.** It is a dialog with a `v-model`, rendered beside the menu, and asks for a code each time it opens. Inside the menu it would be removed together with the menu's content.
 - **Closing the invite dialog puts the keyboard focus on the account button.** The menu entry that opened the dialog is gone by then, and the focus was left on `<body>`. `a11y.e2e.ts` checks it.

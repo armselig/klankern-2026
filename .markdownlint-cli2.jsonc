@@ -1,0 +1,12 @@
+{
+  // Prettier keeps the form of the Markdown files; this style turns off line
+  // length and every spacing rule, so the linter keeps only their structure.
+  "config": {
+    "extends": "markdownlint/style/prettier",
+  },
+  "gitignore": true,
+  // Written by semantic-release, and the agent skills are another project's
+  // files (`.claude/skills` links to them). With the leading `**/`, because
+  // lint-staged passes absolute paths, which a bare `.agents` doesn't match.
+  "ignores": ["**/CHANGELOG.md", "**/.agents/**", "**/.claude/**"],
+}

@@ -25,7 +25,7 @@ The current state of the project against the milestones in [`plan.md`](./plan.md
 
 **Project layout** (relative to `app/`, the Nuxt project root):
 
-```
+```text
 app/app/
   types/            database.types.ts (generated), household.ts, synced-row.ts, list.ts, todo.ts,
                     shopping.ts, whiteboard.ts, recipe.ts, dashboard.ts
@@ -71,7 +71,7 @@ netlify.toml                at the git root: build settings for Netlify
 
 **Database types**: generated from the live schema via `supabase gen types typescript`, saved to `app/app/types/database.types.ts`, picked up automatically by `@nuxtjs/supabase`'s default `types` path. Re-run after any migration changes:
 
-```
+```bash
 npx supabase gen types typescript --db-url "$DB_URL" --schema public > app/types/database.types.ts
 npx prettier --write app/types/database.types.ts
 ```

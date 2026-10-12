@@ -16,7 +16,7 @@ The dashboard was one card in the middle of the screen: the household's name, th
 - **No spinner on a return visit.** `fetchMine()` still runs on every visit, but the spinner only shows while there is no household to show, so the tiles of a household that is known stay on screen.
 - **The preview draws no stroke thinner than 48 board units** (`utils/whiteboard-preview.ts`): the thin pen's 16 units would be half a pixel at a tile's width.
 
-**Tests**
+### Tests
 
 - Unit: `list-preview.spec.ts`, `whiteboard-preview.spec.ts`.
 - `dashboard.e2e.ts`, with two members: A stays on the dashboard while B adds a to-do and checks it, adds five shopping items, draws a stroke and saves a recipe; A's tiles follow each change. Then the roster's button with the keyboard, and a tile pressed away from its link.
@@ -24,7 +24,7 @@ The dashboard was one card in the middle of the screen: the household's name, th
 - `session-switch.e2e.ts`: the second user's tiles show nothing of the first user's lists.
 - `untilFadesEnd` of `a11y.e2e.ts` looked for running fades once, right after the account menu appeared. A fade starts a frame or two after its element is in the page, so the look could come too early; on the fuller dashboard it did, and the menu was scanned half faded in (seen in the trace's frames, light mode, once in one run). It now waits until the page has been still for three frames in a row.
 
-**Not done**
+### Not done
 
 - A layout for wide screens: the dashboard stays one column of 480px.
 - Nobody has used it on a phone by touch yet.

@@ -25,7 +25,7 @@ The household's recipes at `ROUTES.recipes` ("Recipes" button on the dashboard):
 - `subscribeToHouseholdChanges` has INSERT + UPDATE listeners for `recipes` (`onRecipeChange`); `useHouseholdRealtime` resyncs the recipes on every `SUBSCRIBED`; `useResetStoresOnUserChange` resets their store.
 - Components: `RecipeList`, `RecipeView` with `RecipeIngredients`, and `RecipeEditor` with `RecipeForm`. The first, second and fourth talk to the stores; the other two only render and emit.
 
-**Where the recipe store differs from the list stores**
+### Where the recipe store differs from the list stores
 
 - **`load()` instead of `init()`.** Four pages show recipes, and members move between them all the time. Only the first `load()` fetches behind a spinner; later ones call `resync()`, which merges. Replacing state on every page, as `init()` does, would drop a write that is still on its way.
 - **Events and resync wait for `householdId`**, which is set once the recipes are loaded. It stands in for a list's id.
@@ -33,7 +33,7 @@ The household's recipes at `ROUTES.recipes` ("Recipes" button on the dashboard):
 - **Edits are new in this app.** `update()` is optimistic and sends only the fields the member changed, compared with the recipe as it was when the form opened. Two members editing different fields don't overwrite each other. The ingredients are one column, so there the later save wins. A refused edit takes back only its own fields (`revertRecipeEdit`).
 - **An edit of a removed recipe is an error.** The update excludes deleted rows and asks for the updated ids back; none means nothing was saved ("This recipe was removed in the meantime.").
 
-**Behaviour worth knowing**
+### Behaviour worth knowing
 
 - **Realtime leaves `instructions` and `ingredients` out of an UPDATE that didn't change them**, once they are large enough to be stored out of line (TOAST, as with a stroke's `points`). Here that is any update, a rename as much as a removal. `applyRecipeRealtimeEvent` lays the event over the local row.
 - **Part of a recipe that isn't in state can't be laid over anything.** If it is a removal, it is kept as a tombstone without content. If the recipe is live, the store fetches the row (`fetchUnknown`). This happens when a recipe's UPDATE arrives before its INSERT: `realtime-event-order.ts` then drops the INSERT as the older event, so without the fetch the recipe would be missing until the next resync.
@@ -47,7 +47,7 @@ The household's recipes at `ROUTES.recipes` ("Recipes" button on the dashboard):
 
 **Not included**: photos (they would need Storage and its own policies), tags, search, scaling by servings, import from a URL, a source link, and reordering ingredients.
 
-**Tests**
+### Tests
 
 - Unit: `recipe-actions.spec.ts`, `recipe-state.spec.ts`, `recipe-draft.spec.ts`, the recipe listener in `household-realtime.spec.ts`, and the changed `fetchOrCreate…List` in the two list specs. `fakeClientWithQueries` (a client for an action that makes several queries) moved from the whiteboard spec into `tests/support/fake-supabase-client.ts`.
 - RLS (`household-isolation.spec.ts`): another household's recipes are invisible and can't be added to, edited or removed; a recipe can't be moved to another household; signed out, the table can't be read; no hard delete; each check constraint, and a recipe of the largest allowed size; one to-do list and one shopping list per household.
@@ -60,11 +60,11 @@ The household's recipes at `ROUTES.recipes` ("Recipes" button on the dashboard):
 - **Clicked through in a browser (2026-10-11)**, by the agent in the user's Chrome against `nuxt dev`, as one member, in dark mode at phone width: write a recipe with three ingredients (the form's focus order, the focus in a new row, Enter in the instructions making a new line), read it, edit the title and remove an ingredient, reload the recipe's address, put one of two ingredients on the shopping list and find it there, delete the recipe, and get "Recipe not found" at its address. The test recipe and the shopping item were removed again. The last step was pressed by script, because the browser window had gone out of view by then and clicks no longer arrived; the e2e test does it with real clicks.
 - **Still not tried by hand**: on a phone by touch, with a second member watching, in light mode, and on the deployed site.
 
-**Changed on the way**
+### Changed on the way
 
 - The dashboard's buttons are a wrapping row now (`row q-gutter-sm`): four don't fit one line on a phone.
 
-**Noticed, not changed**
+### Noticed, not changed
 
 - The list stores and the whiteboard store put a row back after a failed write without checking that the store wasn't reset in between (a change of user). The recipe store checks.
 - `init()` of the list stores keeps the result of a fetch that ends after a reset; `load()` of the recipe store drops it. (Fixed with the dashboard, see "Dashboard with live tiles" in [`features/dashboard.md`](dashboard.md).)
