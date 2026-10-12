@@ -4,7 +4,7 @@ The history of the checks that run on GitHub, oldest first. The current state is
 
 ## CI (added 2026-10-10)
 
-`.github/workflows/ci.yml` runs on every push to `main` and `develop` (a merged pull request is a push): lint, format check, typecheck, `npm test` (unit + RLS), then `npm run test:e2e` (both Playwright projects). The e2e tests had only ever been started by hand. The hooks are unchanged.
+`.github/workflows/ci.yml` runs on every push to `main` and `develop` (a merged pull request is a push): lint, format check, typecheck, `npm test` (unit + RLS), then `npm run test:e2e` (both Playwright projects). The e2e tests had only ever been started by hand. The hooks are unchanged. Since 2026-10-12 the job runs from the git root instead of `app/`, and it lints the Markdown files after the code (see "The move to the git root" in [`infra/project-layout.md`](project-layout.md)).
 
 - Needs the repository secrets `SUPABASE_URL`, `SUPABASE_KEY` and `SUPABASE_SECRET_KEY`.
 - One run at a time for the whole repo (`concurrency`), since every run uses the same cloud project and its sign-in limit. A push to `develop` followed quickly by a merge to `main`, or a CI run overlapping a local e2e run, can still exceed that limit (see "Running e2e tests repeatedly" in [`infra/testing.md`](testing.md)); it shows as sign-in timeouts across specs, and rerunning the job later fixes it.

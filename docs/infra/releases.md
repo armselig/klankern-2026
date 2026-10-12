@@ -4,7 +4,7 @@ The history of the automated releases and the changelog, oldest first. The curre
 
 ## Releases: automated versions and changelog (built 2026-10-10, v1.0.0 released the same day)
 
-Every push to `main` is now a release, cut by semantic-release in `.github/workflows/release.yml`: the version follows from the commit messages since the last tag, and `CHANGELOG.md` (at the git root until 2026-10-11, since then `app/CHANGELOG.md`), the version in `app/package.json`, the tag and the GitHub release are written by the workflow. How it works day to day is in `CLAUDE.md` ("Releases").
+Every push to `main` is now a release, cut by semantic-release in `.github/workflows/release.yml`: the version follows from the commit messages since the last tag, and `CHANGELOG.md` (at the git root until 2026-10-11, since then `app/CHANGELOG.md`), the version in `app/package.json`, the tag and the GitHub release are written by the workflow. How it works day to day is in `CLAUDE.md` ("Releases"). Since 2026-10-12 the Nuxt project is the git root: where this file says `app/CHANGELOG.md`, `app/package.json`, `app/package-lock.json`, `app/.prettierignore` or `app/.output`, the file or folder is at the root now, and `.releaserc.yaml` names no paths (see "The move to the git root" in [`infra/project-layout.md`](project-layout.md)).
 
 Decisions:
 
@@ -48,3 +48,5 @@ Still open: the fast-forward step's failure paths (`develop` moved on, or workfl
 ## Changelog moved into `app/` (2026-10-11)
 
 On the user's request `CHANGELOG.md` moved from the git root to `app/CHANGELOG.md`: `changelogFile` and the git plugin's `assets` in `.releaserc.yaml` point there, and `app/.prettierignore` lists the file, because Prettier rejects the generated format and `format:check` would fail on every release commit. `--dry-run` doesn't write the changelog, so the first real run of this path was the next release, 1.1.0, the same day: it and the three releases after it wrote `app/CHANGELOG.md` and committed it with the version bump.
+
+Back at the git root since 2026-10-12, still beside `package.json`, which moved there with the whole Nuxt project (see "The move to the git root" in [`infra/project-layout.md`](project-layout.md)).

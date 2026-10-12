@@ -31,7 +31,7 @@ Start with `progress.md`, then read the topic files for what you are about to to
 - [`ci.md`](./infra/ci.md): the checks on GitHub.
 - [`deploy-and-pwa.md`](./infra/deploy-and-pwa.md): milestones 7 and 8, the installable app and its deployment to Netlify.
 - [`releases.md`](./infra/releases.md): the automated releases, each release so far, the changelog.
-- [`project-layout.md`](./infra/project-layout.md): where the Nuxt project sits in the repository; the plan to move it from `app/` to the git root.
+- [`project-layout.md`](./infra/project-layout.md): where the Nuxt project sits in the repository: the plan to move it from `app/` to the git root, how the move went, and the Markdown linter that came with it.
 
 ## Writing documentation
 
@@ -44,4 +44,5 @@ Start with `progress.md`, then read the topic files for what you are about to to
 - **References name the section.** Within a file: the section's name in quotes. To another file: the name in quotes and a relative link to the file, shown as its path from `docs/`, as in ``see "Milestone 8" in [`infra/deploy-and-pwa.md`](../infra/deploy-and-pwa.md)``. Don't link to a heading's anchor, since headings carry dates and change, and don't refer to a section by its position ("the next section").
 - **Write what the code and the git history don't tell**: why something was decided and what was rejected, how a bug showed and how its fix was verified, what was tried by hand and by whom, and what was knowingly left undone.
 - **A rule for future work goes into the root `CLAUDE.md`, once.** The topic file tells how the rule came about.
+- **Prettier keeps the form and a linter the structure.** `npm run format` formats the files, and `npm run lint:md` (markdownlint-cli2) checks what Prettier can't. A heading is a real heading, never a bold line standing in for one. A code block names its language. A placeholder in angle brackets is written as code (`` `<hash>` ``): outside code Markdown reads it as HTML, and a renderer drops it. Neither tool checks that a link to another file leads somewhere, nor any rule of this list.
 - **Nothing local or personal.** No machine paths, host quirks, account names, email addresses or ids of a site or project, and never a secret: the repository may become public.

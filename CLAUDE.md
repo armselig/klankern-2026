@@ -12,9 +12,7 @@ Klankern is a family-organizer PWA: shared to-do and shopping lists, a shared wh
 
 ## Layout
 
-The git root is **not** the Nuxt project. The Nuxt project is `app/`, and its source directory is `app/app/` (Nuxt 4 convention). Run every `npm`/`npx` command from `app/`. Paths below are relative to `app/` unless they start with `docs/`.
-
-Husky is wired for this nesting: hooks live in `app/.husky`, and the `prepare` script installs them from the git root.
+The Nuxt project is the git root, and its source directory is `app/` (Nuxt 4 convention). Run every `npm`/`npx` command from the root. Paths below are relative to the root, except that the source's own folders (`composables/`, `stores/`, `utils/`, `types/`, `components/`, `pages/`, `layouts/`, `assets/`) are usually named without their leading `app/`.
 
 ## Commands
 
@@ -23,6 +21,7 @@ npm run dev            # nuxt dev on :3000
 npm run build          # production build for a Node server (not what is deployed)
 npm run generate       # static production build; this is what Netlify deploys
 npm run lint           # eslint; lint:fix to autofix
+npm run lint:md        # markdownlint-cli2 over the Markdown files
 npm run format:check   # prettier; format to write
 npm run typecheck      # nuxt typecheck (vue-tsc)
 npm test               # nuxt prepare + vitest run (unit + RLS suite)
@@ -44,11 +43,11 @@ Node `>=24.21.0 <25` is enforced (`engine-strict`), and dependencies are pinned 
 
 ### What the tests need
 
-- **`npm test` is not offline.** It includes `tests/rls/household-isolation.spec.ts`, which runs against the real Supabase Cloud project and needs `app/.env` with `SUPABASE_URL`, `SUPABASE_KEY` and `SUPABASE_SECRET_KEY` (see `.env.example`).
-- **Git hooks**: pre-commit runs lint-staged (eslint --fix + prettier on staged files); commit-msg runs commitlint (`@commitlint/config-conventional`, configured in `package.json`), because the commit messages decide the next version (see "Releases"); pre-push runs `npm run typecheck` and `npm test`, so a push needs network and the secrets too. E2E is not in any hook.
-- **CI** (`.github/workflows/ci.yml`) runs lint, format check, typecheck, `npm test` and `npm run test:e2e` on every push to `main` and `develop`, with the three Supabase values as repository secrets. Runs are queued one at a time for the whole repo, because they share the cloud project and its sign-in limit.
+- **`npm test` is not offline.** It includes `tests/rls/household-isolation.spec.ts`, which runs against the real Supabase Cloud project and needs `.env` with `SUPABASE_URL`, `SUPABASE_KEY` and `SUPABASE_SECRET_KEY` (see `.env.example`).
+- **Git hooks**: pre-commit runs lint-staged (eslint --fix + prettier on staged files, and markdownlint-cli2 --fix before prettier on Markdown files); commit-msg runs commitlint (`@commitlint/config-conventional`, configured in `package.json`), because the commit messages decide the next version (see "Releases"); pre-push runs `npm run typecheck` and `npm test`, so a push needs network and the secrets too. E2E is not in any hook.
+- **CI** (`.github/workflows/ci.yml`) runs lint, the Markdown lint, format check, typecheck, `npm test` and `npm run test:e2e` on every push to `main` and `develop`, with the three Supabase values as repository secrets. Runs are queued one at a time for the whole repo, because they share the cloud project and its sign-in limit.
 - **E2E** drives the installed Google Chrome (`channel: 'chrome'`, no Playwright browser download) against Supabase Cloud with disposable users. Two projects: `dev` (every spec except `pwa.e2e.ts`, against `nuxt dev` on :3000, reusing a running one) and `pwa` (`pwa.e2e.ts`, against a fresh static build served by `netlify serve --offline` on :3100, which applies `_redirects` but not the generated `_headers`).
-- With the Netlify preset, Nitro's prerenderer would serve the pages that a local `nuxt generate` or `nuxt build` left in `app/.output/public` instead of rendering them, and the build would ship those old pages. The `nitro:init` hook in `nuxt.config.ts` prevents it by giving the prerenderer the build's own public directory; check it again after a Nuxt or Nitro upgrade. The test for it is in `pwa.e2e.ts` (the page's build id is the served build's), and it needs a leftover to mean anything: the `pwa` web server writes one, `app/.output/public/login/index.html`, before it builds. Playwright starts that server on every run, whichever project is selected, so an e2e run replaces a real login page in that folder.
+- With the Netlify preset, Nitro's prerenderer would serve the pages that a local `nuxt generate` or `nuxt build` left in `.output/public` instead of rendering them, and the build would ship those old pages. The `nitro:init` hook in `nuxt.config.ts` prevents it by giving the prerenderer the build's own public directory; check it again after a Nuxt or Nitro upgrade. The test for it is in `pwa.e2e.ts` (the page's build id is the served build's), and it needs a leftover to mean anything: the `pwa` web server writes one, `.output/public/login/index.html`, before it builds. Playwright starts that server on every run, whichever project is selected, so an e2e run replaces a real login page in that folder.
 - The `dev` project reuses a running `nuxt dev`. One that was started before the version in `package.json` changed keeps the old version in the footer and fails `app-version.e2e.ts`; stop and start it.
 - E2E sign-ins are rate limited by Supabase: more than about 30 within 5 minutes makes sign-ins time out. Keep `--repeat-each` runs below that.
 - Test file naming matters: Vitest picks up `*.spec.ts`, Playwright `*.e2e.ts`.
@@ -100,7 +99,7 @@ An UPDATE event leaves out a large column the update didn't change (Postgres TOA
 
 ### Deployment
 
-Production is Netlify, serving the static output of `nuxt generate`; there is no server and no Netlify Function. `netlify.toml` is at the git root (`base = "app"`, publish `dist`). Netlify builds every push to `main` on its own, independently of CI.
+Production is Netlify, serving the static output of `nuxt generate`; there is no server and no Netlify Function. `netlify.toml` sets the build (`npm run generate`, publish `dist`) and no base directory; Netlify's own build settings must not name one either, and they can't be seen from the repository. Netlify builds every push to `main` on its own, independently of CI.
 
 - The fallback for client-side routes (`/join/<code>`) is `public/_redirects`, not `netlify.toml`: Nitro's Netlify preset writes its own catch-all into `_redirects` unless one is there, and that file wins.
 - Netlify's environment holds only `SUPABASE_URL` and `SUPABASE_KEY`, baked into the bundle at build time.
@@ -109,13 +108,13 @@ Production is Netlify, serving the static output of `nuxt generate`; there is no
 
 ### Releases
 
-Every push to `main` is a release. `.github/workflows/release.yml` runs semantic-release (`.releaserc.yaml` at the git root), which works out the next version from the Conventional Commits since the last `vX.Y.Z` tag: `fix` and `perf` give a patch, as does a revert whose message starts with `revert:` or `Revert` and keeps the line "This reverts commit `<hash>`.", `feat` a minor, `!` or a `BREAKING CHANGE:` footer a major, and a push with none of these releases nothing. It writes `app/CHANGELOG.md`, bumps `version` in `app/package.json` and `app/package-lock.json`, pushes both to `main` as a `chore(release): X.Y.Z` commit, tags that commit and creates the GitHub release. Don't edit `CHANGELOG.md` or the version by hand.
+Every push to `main` is a release. `.github/workflows/release.yml` runs semantic-release (`.releaserc.yaml` at the git root), which works out the next version from the Conventional Commits since the last `vX.Y.Z` tag: `fix` and `perf` give a patch, as does a revert whose message starts with `revert:` or `Revert` and keeps the line "This reverts commit `<hash>`.", `feat` a minor, `!` or a `BREAKING CHANGE:` footer a major, and a push with none of these releases nothing. It writes `CHANGELOG.md`, bumps `version` in `package.json` and `package-lock.json`, pushes both to `main` as a `chore(release): X.Y.Z` commit, tags that commit and creates the GitHub release. Don't edit `CHANGELOG.md` or the version by hand.
 
 - **The release commit is made on `main` by the workflow**, which then fast-forwards `develop` to it. Both local branches are one commit behind after a release; `git pull --ff-only` them before the next push. If `develop` moved on in the meantime, the fast-forward step fails and `develop` has to be rebased onto `main`. It also fails when `main` got a change under `.github/workflows/` that `develop` didn't have yet, because the workflow's token may not push workflow files; push `develop` before `main` (`git push origin develop main`), or repair it with `git push origin main:develop`.
 - The release does not wait for CI, and its commit starts no workflow run, because it is pushed with the workflow's own token. Netlify does build it, and has to: the footer shows `runtimeConfig.public.appVersion`, which `nuxt.config.ts` reads from `package.json` at build time. So the release commit's message must not contain `[skip ci]`.
 - The tooling is a package of its own in `.github/release`, with its own lockfile, so that neither the Netlify build nor the CI checks install it. Run its `npm` commands there. `conventional-changelog-conventionalcommits` stays on 9.x until `@semantic-release/release-notes-generator` ships `conventional-changelog-writer` 9; with 10.x the notes step fails with "Missing helper".
-- `app/CHANGELOG.md` is listed in `app/.prettierignore`: Prettier would reject the generated format, and `format:check` would fail on every release commit.
-- `--dry-run` skips the steps that write the changelog, the version and the commit. To try a change to the release config, run a real release in a scratch clone whose only remote is a scratch bare repository, with the GitHub plugin removed and no token set.
+- `CHANGELOG.md` is listed in `.prettierignore`: Prettier would reject the generated format, and `format:check` would fail on every release commit. The Markdown linter leaves it out too (`.markdownlint-cli2.jsonc`).
+- `--dry-run` skips the steps that write the changelog, the version and the commit. To try a change to the release config, run a real release in a scratch clone whose only remote is a scratch bare repository, with the GitHub plugin removed and no token set. Give the remote as a `file://` URL, because the notes step fails with "Invalid URL" on a plain path, and start semantic-release with `--no-ci`, because outside a CI system it otherwise falls back to a dry run.
 
 ### Database and security
 
@@ -129,9 +128,9 @@ Rules that came out of bugs:
 
 ### Migrations and types
 
-Migrations are `supabase/migrations/NNNN_name.sql`, applied to the cloud project; development and tests run against Supabase Cloud, not a local Supabase stack. When a migration is applied through the Supabase MCP server (`.mcp.json`), it records a timestamp version; the `supabase_migrations.schema_migrations` row is then renamed to the `NNNN` number so remote history matches the filenames. Ask the user before running that rename. Without the MCP server, `npx supabase db push --db-url "$DB_URL"` from `app/` (`--dry-run` first) applies pending migrations and records the `NNNN` version itself; ask the user before applying either way.
+Migrations are `supabase/migrations/NNNN_name.sql`, applied to the cloud project; development and tests run against Supabase Cloud, not a local Supabase stack. When a migration is applied through the Supabase MCP server (`.mcp.json`), it records a timestamp version; the `supabase_migrations.schema_migrations` row is then renamed to the `NNNN` number so remote history matches the filenames. Ask the user before running that rename. Without the MCP server, `npx supabase db push --db-url "$DB_URL"` (`--dry-run` first) applies pending migrations and records the `NNNN` version itself; ask the user before applying either way.
 
-`app/types/database.types.ts` is generated; don't edit it by hand. After a schema change, from `app/` (`DB_URL` is the project's Postgres connection string, built with `SUPABASE_DB_PASSWORD`):
+`app/types/database.types.ts` is generated; don't edit it by hand. After a schema change (`DB_URL` is the project's Postgres connection string, built with `SUPABASE_DB_PASSWORD`):
 
 ```bash
 npx supabase gen types typescript --db-url "$DB_URL" --schema public > app/types/database.types.ts
@@ -157,4 +156,4 @@ npx prettier --write app/types/database.types.ts
 - Supabase errors are plain objects, not `Error` instances; turn them into text with `errorMessage` (`utils/error-message.ts`).
 - Login is email OTP with a code typed into the app, not a magic link (a link would open the system browser instead of the installed PWA). UI text does not name a code length.
 - E2E helpers in `tests/support/` drive the real forms by label and button text, so renaming UI text breaks them. `supabase-fixtures.ts` creates and deletes the disposable users and households for both the RLS and e2e suites.
-- Prettier runs with its defaults; `.prettierrc.json` is empty on purpose. Don't add an option that only restates a default.
+- Prettier runs with its defaults; `.prettierrc.json` is empty on purpose. Don't add an option that only restates a default. It checks the whole repository, `docs/` included; `.prettierignore` leaves out the agent skills (`.agents`, `skills-lock.json`), which are another project's files.

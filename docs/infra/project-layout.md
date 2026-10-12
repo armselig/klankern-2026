@@ -6,6 +6,8 @@ Where the Nuxt project sits in the repository, oldest first. The current state i
 
 The Nuxt project is the folder `app/`, and Nuxt 4 keeps its source in a folder of the same name, so every source file is under `app/app/`. The user wants the contents of the outer `app/` at the git root. This section is the plan for that. The user approved it on 2026-10-12. Nothing of it is done yet: it is carried out later, in a workspace of its own, on its own branch.
 
+Carried out on 2026-10-12 as far as step 11; see "The move to the git root".
+
 ### What changes and what doesn't
 
 Everything under `app/` moves as one unit, so nothing inside it has to change: no source file, no test, no relative import, not the Vitest globs, not the Playwright paths, not `nuxt.config.ts` (`./app/utils/routes` and `./package.json` stay right). `scripts/generate-pwa-icons.mjs` writes to `public/` relative to where it is started, which becomes the root. The comments that say `app/assets/css/theme.css` (in `public/offline.html` and in that script) are right after the move as they are.
@@ -122,3 +124,24 @@ The 15 bold lines become real headings, one level below the section they stand i
 
 - **Renaming the outer folder**, to `web/` for example. It ends the doubled name with the same edits and without Prettier's wider reach, but it keeps every workaround listed above.
 - **Moving the source up instead**, with Nuxt's `srcDir`. It goes against Nuxt 4's layout and changes the relative imports of every test.
+
+## The move to the git root (built 2026-10-12, not on `main` yet)
+
+Steps 1 to 11 of the plan above are done, on the branch `chore/folder-structure` in a `git worktree`, as four commits: the formatting, the move with the edits of step 4, the Markdown linter with its fixes, and this documentation. Step 12 is left: nothing is pushed, and the user has not yet looked at Netlify's own build settings. "What a person has to do" still holds as written.
+
+### What was checked
+
+- The move commit holds 164 renames, 159 of them unchanged and five edited in the same commit (`package.json`, the three hooks, `.prettierignore`). The pre-commit hook went over all of them and changed none.
+- After `npm ci` at the root, `core.hooksPath` is `.husky/_`, and a commit with the message "no type" was rejected by commitlint.
+- `npm run lint`, `format:check`, `typecheck` and `npm test` (271 tests in 27 files) pass, and so does `npm run test:e2e` (31 tests, both projects). The `pwa` project built through `netlify.toml` without `base`.
+- The rehearsed release made 1.5.1 from a throwaway `fix:`. Its commit held exactly `CHANGELOG.md`, `package.json` and `package-lock.json`, the changelog continued under its one title, the tag was on that commit and on the scratch remote, and the message had no `[skip ci]`. So the three plugins' defaults are the right files.
+- Before the move, a search confirmed what the plan claims: nothing under the old `app/` reached out of it, and no tracked file outside the plan's list named it.
+
+### What turned out differently
+
+- **The scratch remote has to be a `file://` URL.** With a plain path as the remote, the release got as far as the notes and failed there with "TypeError: Invalid URL", because the notes generator builds its links from the repository's URL. The rule is in the root `CLAUDE.md` now ("Releases").
+- **The linter's `ignores` need a leading `**/`.** With `CHANGELOG.md`, `.agents` and `.claude` as the plan has them, a run over the repository left those files out, but lint-staged passes absolute paths, and then they were linted: tried by hand with two absolute paths. A changed skill file would have been rewritten on commit by `--fix`. With `**/CHANGELOG.md`, `**/.agents/**` and `**/.claude/**` they are left out both ways.
+- **Markdown has its own entry in lint-staged.** `*.md` was taken out of the entry it shared with JSON, YAML, CSS and HTML: lint-staged runs the entries a file matches at the same time, and the linter has to finish before Prettier starts. The linter runs with `--fix` there, as ESLint does.
+- **The worktree did what "Traps" says.** From the `npm ci` of step 5 on, the main checkout, still in the old layout, runs no hooks. It gets them back when it pulls the move and runs `npm ci`.
+
+The linter found the 21 things measured for the plan, and Prettier changed nine of the twelve files that failed it; the other three are the skill files that `.prettierignore` leaves out.
