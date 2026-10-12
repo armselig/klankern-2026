@@ -6,7 +6,7 @@ Which environments the app has and what each one talks to, oldest first. The cur
 
 Discussed with the user on 2026-10-12. Several decisions are made and four are open (see "Open decisions"). Nothing of it is done, and the plan as a whole is not approved yet. This section holds what was found out and decided, and the order of the work; the exact commands are worked out when it is carried out.
 
-Paths are written for the layout with the Nuxt project at the git root. That move is on `develop` and not on `main` yet (see "The move to the git root" in [`infra/project-layout.md`](project-layout.md)), and it touches files this plan changes too: `netlify.toml`, both workflows and the root `CLAUDE.md`.
+Paths are written for the layout with the Nuxt project at the git root. That move is on `develop` and not on `main` yet (see "The move to the git root" in [`infra/project-layout.md`](project-layout.md)), and it touches files this plan changes too: `netlify.toml`, both workflows and the root `CLAUDE.md`. On `main` since 2026-10-12.
 
 ### What is shared today
 

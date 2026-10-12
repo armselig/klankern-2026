@@ -66,3 +66,29 @@ Production hosting is **Netlify, as static files** (user decision, deviating fro
 - Settings: deploy previews and branch deploys are off in Netlify; the Supabase Auth "Site URL" is the deployed URL; the install step of the Netlify deploy log was looked at.
 
 **Checked by the user on the deployed site (2026-10-11):** the update notice. It was the last open item, so milestone 8 is done.
+
+## The move to the git root on `main`, and a broken deploy (2026-10-12)
+
+`main` got the move of the Nuxt project to the git root (see "The move to the git root" in [`infra/project-layout.md`](project-layout.md)). CI had passed on `develop` and passed on `main`, the release workflow released nothing (eight commits, none of them a `feat` or a `fix`), and Netlify's own build settings named no base directory. Netlify built and published, and the published site was broken: every page showed Nuxt's error page with "500 Internal Server Error" and "Cannot read properties of undefined (reading '\_s')". It was live for about 50 minutes.
+
+### How it showed and how it was found
+
+- **The first check after the deploy missed it.** It was done with `curl`: the status codes, the build's id and time, the version in the page's config, the fallback for `/join/<code>`, the headers. All of it was right. The app is a single-page app, and every address answers 200 with the shell, whether the app starts or not. The user found the error by opening the site.
+- **Reproduced** signed out, in headless Chrome through the project's own Playwright (`channel: 'chrome'`), on `/`, `/login` and `/join/<code>`.
+- **The message is Pinia's**: a store was used while no Pinia was active. The deployed bundle held two copies of Pinia. The entry chunk created one and installed it; the chunk with the stores carried a second one, whose "active instance" was never set. There was one Vue runtime, since Vite deduplicates Vue. In a clean local build the same chunk creates Pinia and looks it up.
+- **The cause is a `node_modules` folder inside `app/`.** The five stores import `defineStore` from `"pinia"` by name, and such an import resolves from the nearest `node_modules`. With one beside the source, that is another copy than the root's, which `@pinia/nuxt` installs. Tried locally: with a copy of `node_modules/pinia` at `app/node_modules/pinia`, `npm run generate` splits the bundle the same way, and the served build shows the same message.
+- **Where the folder came from on Netlify is inferred, not seen**; the build log was not read. Until this deploy the base directory was `app`, so Netlify's build cache held `app/node_modules`, and the first build in the new layout got it back, into what is now the source folder. A build with the cache cleared was right, which supports it.
+- **No check could catch it.** CI and a fresh checkout have no such leftover, and the `pwa` project builds from a clean tree. It is the trap that "Traps" in [`infra/project-layout.md`](project-layout.md) names for a checkout that pulls the move, met by Netlify's cache.
+
+### How it was repaired
+
+All of it through Netlify's API, each change with the user's go-ahead.
+
+1. The deploy before it, release 1.5.0, was published again, and the site was back. Publishing an older deploy this way did not lock auto-publishing.
+2. Auto-publishing was locked, and `main` was built with the cache cleared. A locked site builds without publishing, so the build could be looked at on its own deploy address first: one Pinia, in a chunk with the same hash as in a clean local build, and `/`, `/login`, `/join/<code>` and `/todos` rendered without errors in headless Chrome.
+3. That build was published and auto-publishing unlocked. Production was then checked the same way.
+
+### Left undone
+
+- **Nothing in the repository prevents it.** A `node_modules` folder under `app/` would split Pinia again, on Netlify or in a developer's checkout. Proposed and not tried: `resolve.dedupe` for `pinia` in the Vite config. The user decided on the record alone (2026-10-12).
+- Not checked after the repair: signing in on the deployed site, and the update notice in an installed app.

@@ -99,7 +99,7 @@ In a fresh clone (or worktree), on a new branch such as `build/project-root`. No
 ### What a person has to do
 
 - **Reminder for the user: look at Netlify's own build settings before the push to `main`.** Base directory, package directory and publish directory must not name `app`; `netlify.toml` no longer sets a base that would overrule them. This can't be seen from the repository. A build that fails is not published, and the last deploy stays live.
-- After the deploy: the footer shows the version, a `/join/<code>` link opens the app, and an installed app shows the update notice. The first build on Netlify and the first CI run start without their caches.
+- After the deploy: the footer shows the version, a `/join/<code>` link opens the app, and an installed app shows the update notice. The first build on Netlify and the first CI run start without their caches. Wrong for Netlify (2026-10-12): its cache brought `app/node_modules` back, and the first deploy was broken; see "The move to the git root on `main`, and a broken deploy" in [`infra/deploy-and-pwa.md`](deploy-and-pwa.md).
 - In every other checkout, before pulling the move: move `app/.env` out of the repository for a moment (and `app/supabase/.temp`, if the Supabase CLI's link to the project is in use), run `git clean -ndX app` to see what would go and `git clean -fdX app` to remove it, pull, put `.env` at the root, run `npm ci`, and check `core.hooksPath` as in step 5.
 
 ### A linter for the Markdown files
@@ -128,6 +128,8 @@ The 15 bold lines become real headings, one level below the section they stand i
 ## The move to the git root (built 2026-10-12, not on `main` yet)
 
 Steps 1 to 11 of the plan above are done, on the branch `chore/folder-structure` in a `git worktree`, as four commits: the formatting, the move with the edits of step 4, the Markdown linter with its fixes, and this documentation. Step 12 is left: nothing is pushed, and the user has not yet looked at Netlify's own build settings. "What a person has to do" still holds as written.
+
+On `main` since 2026-10-12, so step 12 is done. The first deploy in the new layout was broken; see "The move to the git root on `main`, and a broken deploy" in [`infra/deploy-and-pwa.md`](deploy-and-pwa.md).
 
 ### What was checked
 
