@@ -17,6 +17,9 @@ Start with `progress.md`, then read the topic files for what you are about to to
 - [`whiteboard.md`](./features/whiteboard.md): milestone 9, the shared whiteboard.
 - [`recipes.md`](./features/recipes.md): milestone 10, the shared recipes.
 - [`dashboard.md`](./features/dashboard.md): the dashboard with live tiles.
+- [`vacations.md`](./features/vacations.md): the vacation planner: its design, with tasks by phase, assignment that can be rejected and a meal plan. Planned, not built.
+- [`vacations-review.md`](./features/vacations-review.md): the two engineering reviews of that design, of the plan and of what the scope review added: what was decided, what was corrected and what is still open.
+- [`vacations-scope-review.md`](./features/vacations-scope-review.md): the scope review between them: the seven additions, among them "Tell them" and the return to a link after sign-in, and what was declined.
 - [`avatars.md`](./features/avatars.md): the members' avatars, rosette and Gravatar.
 - [`header.md`](./features/header.md): the header with the wordmark and the account menu.
 
