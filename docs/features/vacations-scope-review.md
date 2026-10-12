@@ -32,7 +32,7 @@ After the engineering review (see "Engineering review" in [`features/vacations-r
 
 ### Left open by the scope review
 
-- Where "Tell them" sits: in the task's row, or as the action on the notice that confirms an assignment. The row already holds a tick box, a title, "Edit", a person and up to three actions at 375 px.
+- Where "Tell them" sits: in the task's row, or as the action on the notice that confirms an assignment. The row already holds a tick box, a title, "Edit", a person and up to three actions at 375 px. (2026-10-12, by the user: this is decided in a design review of the screens, not on its own. The review comes before slice 1, so that the row is designed once before any of it is built. Whether it has run is in "Next steps" in [`progress.md`](../progress.md).)
 
 ### Debt named, not taken on
 
