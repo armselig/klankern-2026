@@ -6,24 +6,25 @@ The current state of the project against the milestones in [`plan.md`](./plan.md
 
 ## Status at a glance
 
-| Milestone | Status |
-|---|---|
-| 1. Scaffold + tooling + git hooks | ✅ Done |
-| 2. Schema + RLS + two-JWT test | ✅ Done — RLS test passing against Supabase Cloud |
-| 3. Auth + household join flow | ✅ Done — clicked through in a browser (OTP login, invite, join) |
-| 4. Shared to-do list CRUD | ✅ Done — clicked through in a browser (add, toggle, remove, reload, second member sees the list) |
-| 5. Realtime sync for to-dos | ✅ Done — proven by the Playwright e2e test (two browsers, incl. reconnect) |
-| 6. Shared shopping list | ✅ Done — CRUD + live sync, covered by unit tests and the Playwright e2e test |
-| 7. PWA installability pass | ✅ Done — installability, offline page, update notice and install button covered by the Playwright `pwa` project; the install button also checked by hand in Chrome. Installing on Android moves to milestone 8 (needs HTTPS) |
-| 8. Deploy (Netlify; containers deferred) | ✅ Done — deployed to Netlify from `main`; routing and response headers checked on the deployed URL, and login, join link, install, offline page, the Android install and the update notice checked there in a browser |
-| 9. Shared whiteboard | ✅ Built — drawing, eraser, undo, clear and live sync, covered by unit, RLS and Playwright e2e tests, and tried by hand on a phone and with a second member |
-| 10. Shared recipes | ✅ Built — write, read, edit and remove recipes with live sync, and put a recipe's ingredients on the shopping list; covered by unit, RLS and Playwright e2e tests, and clicked through in a browser by one member |
+| Milestone                                | Status                                                                                                                                                                                                                        |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Scaffold + tooling + git hooks        | ✅ Done                                                                                                                                                                                                                       |
+| 2. Schema + RLS + two-JWT test           | ✅ Done — RLS test passing against Supabase Cloud                                                                                                                                                                             |
+| 3. Auth + household join flow            | ✅ Done — clicked through in a browser (OTP login, invite, join)                                                                                                                                                              |
+| 4. Shared to-do list CRUD                | ✅ Done — clicked through in a browser (add, toggle, remove, reload, second member sees the list)                                                                                                                             |
+| 5. Realtime sync for to-dos              | ✅ Done — proven by the Playwright e2e test (two browsers, incl. reconnect)                                                                                                                                                   |
+| 6. Shared shopping list                  | ✅ Done — CRUD + live sync, covered by unit tests and the Playwright e2e test                                                                                                                                                 |
+| 7. PWA installability pass               | ✅ Done — installability, offline page, update notice and install button covered by the Playwright `pwa` project; the install button also checked by hand in Chrome. Installing on Android moves to milestone 8 (needs HTTPS) |
+| 8. Deploy (Netlify; containers deferred) | ✅ Done — deployed to Netlify from `main`; routing and response headers checked on the deployed URL, and login, join link, install, offline page, the Android install and the update notice checked there in a browser        |
+| 9. Shared whiteboard                     | ✅ Built — drawing, eraser, undo, clear and live sync, covered by unit, RLS and Playwright e2e tests, and tried by hand on a phone and with a second member                                                                   |
+| 10. Shared recipes                       | ✅ Built — write, read, edit and remove recipes with live sync, and put a recipe's ingredients on the shopping list; covered by unit, RLS and Playwright e2e tests, and clicked through in a browser by one member            |
 
 ## What's built
 
 **Stack as scaffolded**: Nuxt **4** (not 3 — 4 is what `nuxi init` installs now; API is compatible, folder convention differs: app code lives under `app/app/`, not `app/`), SPA mode (`ssr: false`), `nuxt-quasar-ui`, `@vite-pwa/nuxt`, `@nuxtjs/supabase`, Pinia. Backend is a Supabase Cloud project.
 
 **Project layout** (relative to `app/`, the Nuxt project root):
+
 ```
 app/app/
   types/            database.types.ts (generated), household.ts, synced-row.ts, list.ts, todo.ts,
@@ -66,9 +67,10 @@ netlify.toml                at the git root: build settings for Netlify
 
 **Design pattern used throughout**: business logic lives in plain `composables/*-actions.ts` functions that take a `SupabaseClient` as a parameter, unit-tested with a mocked client (no Nuxt runtime needed). Pinia stores are thin — they call `useSupabaseClient()`/`useSupabaseUser()` and delegate to those functions. State-transition logic that needs testing on its own (optimistic add/dedup, soft-delete, sort order) is further extracted into pure reducer functions in `utils/`. List logic that doesn't depend on the item type (dedup, soft delete, Realtime events, reconnect merge) is **generic** over `ListItem` (`types/list.ts`) in `utils/list-state.ts` and shared by every list; only the actions, store, components and list-specific ordering are per list. The whiteboard follows it too (see "Milestone 9" in [`features/whiteboard.md`](features/whiteboard.md)), and so do the recipes (see "Milestone 10" in [`features/recipes.md`](features/recipes.md)).
 
-**Testing**: Vitest, 271 tests in 27 files passing (including the RLS suite) (`npm test`, run 2026-10-12). Playwright e2e (`npm run test:e2e`, 31 tests in 12 files and two projects; see "Milestone 5" in [`features/lists-and-realtime.md`](features/lists-and-realtime.md), "Milestone 7" in [`infra/deploy-and-pwa.md`](infra/deploy-and-pwa.md) and "E2E gap review" in [`infra/testing.md`](infra/testing.md)) is separate and not in the pre-push hook; CI runs it on every push to `main` and `develop` (see "CI" in [`infra/ci.md`](infra/ci.md)). Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory *is* the repo root.
+**Testing**: Vitest, 271 tests in 27 files passing (including the RLS suite) (`npm test`, run 2026-10-12). Playwright e2e (`npm run test:e2e`, 31 tests in 12 files and two projects; see "Milestone 5" in [`features/lists-and-realtime.md`](features/lists-and-realtime.md), "Milestone 7" in [`infra/deploy-and-pwa.md`](infra/deploy-and-pwa.md) and "E2E gap review" in [`infra/testing.md`](infra/testing.md)) is separate and not in the pre-push hook; CI runs it on every push to `main` and `develop` (see "CI" in [`infra/ci.md`](infra/ci.md)). Husky pre-commit (lint-staged: eslint --fix + prettier) and pre-push (full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. Note the project lives one directory below the git root (`app/` inside `klankern-2026/`), which needed a non-default Husky setup (`prepare` script does `cd .. && husky app/.husky`, and `core.hooksPath` points at `app/.husky/_`) since Husky's own `.git` detection assumes the package.json directory _is_ the repo root.
 
 **Database types**: generated from the live schema via `supabase gen types typescript`, saved to `app/app/types/database.types.ts`, picked up automatically by `@nuxtjs/supabase`'s default `types` path. Re-run after any migration changes:
+
 ```
 npx supabase gen types typescript --db-url "$DB_URL" --schema public > app/types/database.types.ts
 npx prettier --write app/types/database.types.ts

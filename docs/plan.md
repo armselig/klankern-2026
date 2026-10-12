@@ -5,6 +5,7 @@
 The repo is completely empty — this is a greenfield build. The goal is a PWA that helps a family organize shared life together, starting with **shared to-do lists** and **shared shopping lists** (MVP priority), with **shared whiteboard** and **shared cooking recipes** as explicit later phases. The schema and auth model must not preclude those later features, but we are not building them now.
 
 Confirmed stack and decisions:
+
 - **Frontend**: Nuxt 3 + TypeScript, SPA mode (`ssr: false`), `nuxt-quasar-ui` for Quasar components, Pinia for state, `@vite-pwa/nuxt` for the PWA/service worker.
 - **Backend**: Supabase Cloud (Postgres + Auth + Realtime), via `@nuxtjs/supabase`.
 - **Auth**: Email OTP (6-digit code), not magic links — magic links open the system browser instead of the installed PWA and leave it logged out.
@@ -26,24 +27,34 @@ npm i -D @vite-pwa/nuxt eslint @nuxt/eslint-config prettier eslint-config-pretti
 ```
 
 `nuxt.config.ts` essentials:
+
 ```ts
 export default defineNuxtConfig({
   ssr: false,
-  modules: ['@pinia/nuxt', 'nuxt-quasar-ui', '@vite-pwa/nuxt', '@nuxtjs/supabase'],
+  modules: [
+    "@pinia/nuxt",
+    "nuxt-quasar-ui",
+    "@vite-pwa/nuxt",
+    "@nuxtjs/supabase",
+  ],
   supabase: {
     redirectOptions: {
-      login: '/login',
-      callback: '/confirm',
-      exclude: ['/join/**', '/login', '/confirm'], // invite redemption must be reachable pre-auth
+      login: "/login",
+      callback: "/confirm",
+      exclude: ["/join/**", "/login", "/confirm"], // invite redemption must be reachable pre-auth
     },
   },
-  quasar: { plugins: ['Notify', 'Dialog'], extras: { font: 'roboto-font', fontIcons: [] } },
-})
+  quasar: {
+    plugins: ["Notify", "Dialog"],
+    extras: { font: "roboto-font", fontIcons: [] },
+  },
+});
 ```
 
 Develop against a free **Supabase Cloud** project directly (matches the prod target; skip local Supabase-via-Docker entirely to avoid Podman/Docker CLI friction).
 
 ### Folder structure
+
 ```
 app/
   nuxt.config.ts
@@ -94,12 +105,14 @@ Core tables: `households`, `household_members` (`household_id`, `user_id`, `role
 `todo_lists`/`todo_items` and `shopping_lists`/`shopping_items` share one shape: each item row has `household_id` (denormalized, for simple RLS + Realtime filtering), `position numeric` (fractional, for O(1) reordering instead of reindexing every row), `deleted_at` (soft delete — turns deletes into UPDATEs, which reconcile cleanly under optimistic UI + Realtime), plus `done`/`checked` and `quantity` where relevant.
 
 **RLS pattern (applies to every table, present and future)**: a `SECURITY DEFINER` helper avoids RLS self-recursion:
+
 ```sql
 create function public.is_household_member(hid uuid) returns boolean
 language sql security definer stable set search_path = public as $$
   select exists(select 1 from household_members where household_id = hid and user_id = (select auth.uid()));
 $$;
 ```
+
 Every table's policy is `using (is_household_member(household_id)) with check (is_household_member(household_id))`. `household_invites` gets **no** `select` policy for regular users — codes must not be enumerable; all lookup happens inside the invite-redemption RPC (below).
 
 **Future extension** (not built now): `boards`/`board_strokes` and `recipes` tables follow the exact same `household_id` + `is_household_member()` policy — zero new auth design needed later.
@@ -141,6 +154,7 @@ Optimistic updates keyed by client-generated UUID: generate `crypto.randomUUID()
 **Development is test-driven**: for every unit of behavior (a Pinia store action, a composable, an RLS policy, a redemption RPC), write the failing test first, then implement against it. This applies throughout the milestones in §8 — each feature milestone starts with its test(s).
 
 **Test layers**:
+
 - **Unit/component — Vitest + @vue/test-utils + @nuxt/test-utils**: Pinia store logic (optimistic update + realtime reconciliation, e.g. `applyRealtimeEvent` dedup-by-id, soft-delete filtering, fractional `position` math), composables (`useHouseholdRealtime` channel wiring, mocking the Supabase client), and components with meaningful logic (not pure markup). Co-locate as `*.spec.ts` next to the file under test, or under `tests/unit/`.
 - **Database/RLS — scripted two-JWT checks**: a Node/Vitest script (or `pgTAP` if preferred) that authenticates as two distinct test users in two households and asserts cross-household row isolation on every table, and that `redeem_invite` rejects expired/exhausted codes. This is the test specified in milestone 2 of §8 — it must exist and pass before any UI is built on top of the schema.
 - **E2E (post-MVP, optional)**: Playwright against a running dev container for the full login → create household → invite → redeem → add/check/sync flow. Not required for MVP but the structure should accommodate adding it later (`tests/e2e/`).
@@ -148,24 +162,32 @@ Optimistic updates keyed by client-generated UUID: generate `crypto.randomUUID()
 **Linting & formatting**: ESLint (`@nuxt/eslint-config`) + Prettier (`eslint-config-prettier` to disable stylistic rules ESLint would otherwise fight Prettier on). `npm run lint` / `npm run format` scripts in `package.json`.
 
 **Git hooks via Husky + lint-staged**:
+
 ```bash
 npx husky init
 ```
+
 `.husky/pre-commit`:
+
 ```bash
 npx lint-staged
 ```
+
 `package.json`:
+
 ```json
 "lint-staged": {
   "*.{ts,vue}": ["eslint --fix", "prettier --write"],
   "*.{json,md,yml,yaml}": ["prettier --write"]
 }
 ```
+
 `.husky/pre-push`:
+
 ```bash
 npm run test
 ```
+
 Pre-commit only touches staged files (fast, via lint-staged) so it stays cheap on every commit; pre-push runs the full Vitest suite (including the RLS two-JWT checks against the dev Supabase project) so a broken build can't reach the remote. CI (if added later) should re-run both as a backstop, since hooks are local and bypassable with `--no-verify`.
 
 ## 8. Milestones
@@ -177,9 +199,9 @@ Pre-commit only touches staged files (fast, via lint-staged) so it stays cheap o
 5. Add Realtime to to-dos: test `applyRealtimeEvent` reconciliation logic in isolation (mocked channel payloads) first, then wire `useHouseholdRealtime` (publication, subscribe, reconnect-refetch); verify live sync across two sessions manually.
 6. Mirror steps 4–5 for the shared shopping list, reusing the same test patterns.
 7. PWA installability pass: manifest, icons (incl. maskable), Workbox caching rules, install-prompt button, Lighthouse PWA check.
-8. Containerize: dev Containerfile + compose, prod Containerfile + Quadlet units behind Caddy, one real deploy with HTTPS to confirm installability end-to-end. **→ MVP complete.** *(Changed 2026-10-10: the deploy goes to Netlify; containers are deferred, see section 6.)*
-9. *(Deferred)* Shared whiteboard: `boards`/`board_strokes`, same RLS pattern, canvas component, likely Realtime `broadcast` channel rather than `postgres_changes` given stroke volume. *(Changed 2026-10-10: built with one row per finished stroke over `postgres_changes` and an SVG surface instead; see [`features/whiteboard.md`](./features/whiteboard.md).)*
-10. *(Deferred)* Shared recipes: `recipes` table, same RLS pattern, CRUD UI, no Realtime strictly needed. *(Changed 2026-10-11: built with live sync, structured ingredients and a button that puts them on the shopping list; see [`features/recipes.md`](./features/recipes.md).)*
+8. Containerize: dev Containerfile + compose, prod Containerfile + Quadlet units behind Caddy, one real deploy with HTTPS to confirm installability end-to-end. **→ MVP complete.** _(Changed 2026-10-10: the deploy goes to Netlify; containers are deferred, see section 6.)_
+9. _(Deferred)_ Shared whiteboard: `boards`/`board_strokes`, same RLS pattern, canvas component, likely Realtime `broadcast` channel rather than `postgres_changes` given stroke volume. _(Changed 2026-10-10: built with one row per finished stroke over `postgres_changes` and an SVG surface instead; see [`features/whiteboard.md`](./features/whiteboard.md).)_
+10. _(Deferred)_ Shared recipes: `recipes` table, same RLS pattern, CRUD UI, no Realtime strictly needed. _(Changed 2026-10-11: built with live sync, structured ingredients and a button that puts them on the shopping list; see [`features/recipes.md`](./features/recipes.md).)_
 
 ## Verification
 

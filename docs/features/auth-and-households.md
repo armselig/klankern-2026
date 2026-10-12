@@ -27,6 +27,7 @@ Done in Chrome against the user's `nuxt dev` on `localhost:3000`. Every step wor
 **Bug found and fixed**: adding a to-do always failed with `not_authenticated`. In `@nuxtjs/supabase` v2, `useSupabaseUser()` holds the JWT **claims** (`Ref<JwtPayload | null>`, filled via `auth.getClaims()`), not a `User` — the user id is `.sub`, and `.id` is always `undefined`. The type check didn't catch it because `JwtPayload` allows arbitrary keys. **Rule going forward**: read the id as `useSupabaseUser().value?.sub`, or use `getCurrentUserId(client)` in `*-actions.ts`.
 
 Smaller issues found, all fixed afterwards:
+
 1. The cloud project sends **8-digit** codes, but the login and join pages said "6-digit code" → the text no longer names a length ("We sent a login code", "Code from the email").
 2. `redeem_invite` incremented `use_count` even when the caller was already a member → `0010_redeem_invite_count_new_members.sql` only counts a redemption that inserted a member (also switches the function to `search_path = ''`); covered by a new RLS test.
 3. The add-to-do input lost focus after each add → `TodoList` refocuses it on submit.

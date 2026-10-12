@@ -9,23 +9,23 @@ branches:
 preset: conventionalcommits
 
 plugins:
-  - '@semantic-release/commit-analyzer'
-  - '@semantic-release/release-notes-generator'
+  - "@semantic-release/commit-analyzer"
+  - "@semantic-release/release-notes-generator"
 
   # Order matters from here on: the changelog and the version have to be
   # written before the git plugin commits them.
-  - - '@semantic-release/changelog'
-    - changelogTitle: '# Changelog'
+  - - "@semantic-release/changelog"
+    - changelogTitle: "# Changelog"
       # Beside the package it describes; the default is the git root.
       changelogFile: app/CHANGELOG.md
 
   # Only bumps the version in app/package.json and app/package-lock.json. The
   # app is private and never published to npm.
-  - - '@semantic-release/npm'
+  - - "@semantic-release/npm"
     - pkgRoot: app
       npmPublish: false
 
-  - - '@semantic-release/git'
+  - - "@semantic-release/git"
     # Listed explicitly: the defaults are package.json and package-lock.json
     # at the git root, which don't exist here.
     - assets:
@@ -41,7 +41,7 @@ plugins:
   # Creates the GitHub release. Comments and labels on issues and pull
   # requests are off, and so is the issue it would open for a failed release,
   # so the workflow needs no permission beyond `contents: write`.
-  - - '@semantic-release/github'
+  - - "@semantic-release/github"
     - successComment: false
       failComment: false
       failTitle: false

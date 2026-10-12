@@ -11,7 +11,10 @@ sent; this is the corrected write-up so the same mistake isn't repeated.
 Inserts through supabase-js failed with:
 
 ```json
-{"code":"42501","message":"new row violates row-level security policy for table \"households\""}
+{
+  "code": "42501",
+  "message": "new row violates row-level security policy for table \"households\""
+}
 ```
 
 even though the row clearly satisfied the table's INSERT policy (`with check (true)`),
@@ -39,7 +42,7 @@ rollback;
 Where this hit us:
 
 - **`households`** — SELECT policy is `is_household_member(id)`, but the creator only
-  becomes a member in a *second* insert into `household_members`. At `RETURNING` time
+  becomes a member in a _second_ insert into `household_members`. At `RETURNING` time
   they aren't a member yet, so reading back the household they just created is denied.
 - **`household_invites`** — deliberately has no SELECT policy (codes must not be
   enumerable), so `.insert().select('code')` could never succeed.
@@ -54,7 +57,7 @@ Where this hit us:
 - **The `to public` vs `to authenticated` comparison** was a red herring; the role the
   policy targeted was never the variable that mattered.
 - **The RPC check** (`current_user` = `authenticated` inside the request) was correct,
-  and confirmed the role switch worked — which in hindsight pointed *away* from a
+  and confirmed the role switch worked — which in hindsight pointed _away_ from a
   PostgREST role bug.
 
 ## Fix
@@ -83,7 +86,7 @@ default privileges hadn't given it any (`0006_grants.sql` only covered
 ## Rule for future tables
 
 If client code does `.insert().select()` / `.update().select()` / `.upsert().select()`,
-the resulting row must be visible under the table's SELECT policy *at that moment*.
+the resulting row must be visible under the table's SELECT policy _at that moment_.
 If it can't be (visibility depends on a row inserted later, or the table has no SELECT
 policy by design), either drop the `.select()` or do the write in a `SECURITY DEFINER`
 RPC that returns what the client needs.

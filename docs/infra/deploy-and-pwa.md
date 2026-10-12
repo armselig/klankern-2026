@@ -5,24 +5,28 @@ The history of the installable app and its deployment to Netlify, oldest first. 
 ## Milestone 7: PWA installability (built 2026-10-09)
 
 Checking a production build (`nuxt build`) showed the milestone-1 PWA config was broken in ways `nuxt dev` never revealed (the service worker isn't generated in dev):
+
 - **No `<link rel="manifest">`** — `@vite-pwa/nuxt` only adds it via `<NuxtPwaManifest />`, now in `app.vue`. Without it the app wasn't installable at all.
-- **`navigateFallback: '/offline.html'`** registers a route that answers *every* page load with the fallback page, online or not. Replaced by a `NetworkOnly` runtime rule for navigations with `precacheFallback: { fallbackURL: 'offline.html' }`, and `navigateFallback: null`.
+- **`navigateFallback: '/offline.html'`** registers a route that answers _every_ page load with the fallback page, online or not. Replaced by a `NetworkOnly` runtime rule for navigations with `precacheFallback: { fallbackURL: 'offline.html' }`, and `navigateFallback: null`.
 - **Nearly empty precache**: `@vite-pwa/nuxt` appends its own glob patterns to an empty list, which drops Workbox's defaults. `globPatterns` is now explicit (`offline.html`, icons, favicon).
 - **`offline.html` precached as `offline`**: the module's default `manifestTransforms` strips `.html` (pretty URLs), but this server answers `/offline` with the app's own page. Overridden with `manifestTransforms: []`.
 - **Build-info JSON in the precache**: the module also appends `_nuxt/builds/**/*.json` to `globPatterns`; those files aren't needed offline and would be cached without a revision. The `integration.beforeBuildServiceWorker` hook removes that pattern right before the service worker is built. Until 2026-10-10 this was `globIgnores: ['_nuxt/builds/**']`, which left a pattern that matched nothing, so Workbox warned on every production build. The precache list is the same either way.
 
 Added:
+
 - `registerType: 'prompt'` (was `autoUpdate` + `skipWaiting`, i.e. silent reloads) with a persistent Quasar notice "A new version of Klankern is available." / Reload / Later (`composables/use-pwa-update-notice.ts`, called in the layout).
 - "Install app" header button, shown when `$pwa.showInstallPrompt && !$pwa.isPWAInstalled`. Use the global `$pwa` in templates: Vue reserves `$`-prefixed setup bindings.
 - `theme-color` meta and `apple-touch-icon` link (`app.head` in `nuxt.config.ts`).
 
 **Verification**: Lighthouse dropped its PWA category in v12, so the planned Lighthouse audit is replaced by the Playwright `pwa` project (`tests/e2e/pwa.e2e.ts`). It runs against a fresh production build served on port 3100 (`E2E_PRODUCTION_PORT`), built on every `npm run test:e2e`. It covers:
+
 - Chrome's own installability check (`Page.getInstallabilityErrors` is empty) and the manifest contents.
 - Offline page loads show `offline.html`; back online, the app loads again.
 
 Chrome never reports installability in an incognito-like context, which Playwright's default contexts are, so the installability test uses `chromium.launchPersistentContext` with a throwaway profile. `context.setOffline` works for HTTP page loads (unlike open websockets, see milestone 5).
 
 **Manual check (2026-10-09)**, on a production build (`npx nuxi build && PORT=3100 node .output/server/index.mjs`, so it doesn't clash with `nuxt dev` on :3000):
+
 - The "Install app" button appears in Chrome and installs the app. It only appears after Chrome's engagement heuristic (roughly one click plus ~30 s on the page). It never appears in `nuxt dev` (no service worker) or in Firefox (desktop Firefox doesn't support `beforeinstallprompt`).
 - The update notice could not be verified by hand. It is now covered by the `pwa` project instead (see "E2E gap review" in [`infra/testing.md`](testing.md)), so this is resolved. Since 2026-10-11 it has also been checked by the user on the deployed site (see "Milestone 8").
 - Installing on Android needs HTTPS on a real host, so it waits for milestone 8 (checked there on 2026-10-10, see "Milestone 8").
