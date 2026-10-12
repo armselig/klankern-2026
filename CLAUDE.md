@@ -7,7 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Klankern is a family-organizer PWA: shared to-do and shopping lists, a shared whiteboard and shared recipes per household, synced live. Nuxt 4 SPA (`ssr: false`) + Quasar (`nuxt-quasar-ui`) + Pinia + `@vite-pwa/nuxt`, backed by Supabase Cloud (Postgres, Auth via email OTP, Realtime) through `@nuxtjs/supabase`.
 
 - `docs/plan.md` is the original design and milestone list.
-- `docs/progress.md` is the current state, the decisions that deviate from the plan, and the bugs already found. Read it before larger work and update it when a milestone or notable fix lands.
+- `docs/progress.md` is the current state: what is built, the decisions that deviate from the plan, and the next steps. Read it before larger work.
+- The history of each feature, of the app's look and of the tooling (decisions, bugs already found, what was checked by hand) is in topic files under `docs/`. `docs/CLAUDE.md` lists them and holds the rules for writing documentation. When a milestone or notable fix lands, update its topic file and `docs/progress.md`.
 
 ## Layout
 

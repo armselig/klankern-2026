@@ -1,0 +1,61 @@
+# Theme and contrast
+
+The history of the colors of light and dark mode and the contrast of text on them, oldest first. The current state is in [`progress.md`](../progress.md); [`CLAUDE.md`](../CLAUDE.md) lists the other topic files.
+
+## Hover and focus contrast on the primary color (fixed 2026-10-11)
+
+The `a11y` scan of the dashboard failed with `color-contrast` on the "To-dos" button once the member row was there. The taller card had moved that button under the spot where the pointer rests after the click on "Verify", so the scan saw it hovered.
+
+- **Cause**: Quasar shows hover and keyboard focus with a veil in the control's text color, laid over the control (`.q-focus-helper`; 15 % for hover, 22 % for keyboard focus). White text on the primary color is 4.6:1 at rest (axe's figure). The white veil lightens the background and takes the text below 4.5:1.
+- It affected every filled primary button and the flat buttons in the header, and had been there from the start. The scan had only never happened to hover one.
+- **Fix** (user decision, over scanning pages only at rest): `assets/css/hover-contrast.css`, the app's first global stylesheet (`css` in `nuxt.config.ts`). It makes the veil black for a control that is `bg-primary` itself or sits on a `bg-primary` surface, so hover and focus darken these controls instead of lightening them.
+- **Tests** (`a11y.e2e.ts`): axe scans the dashboard with a filled button hovered and with one focused by keyboard, each after the highlight has faded in (`untilHighlightShown` waits for the control's transitions).
+- **axe can't judge anything in the header.** The elevated header's shadow layer (`.q-layout__shadow`) lies over it, so axe reports the background as undetermined ("incomplete"), which the spec doesn't count. For a header button the spec therefore checks that its highlight is the dark one. The header's email text and buttons at rest have the same colors as a filled button.
+- All three checks were seen to fail before the fix, and pass with it.
+- **Noticed, not changed**: "Cancel" in the whiteboard's "Clear" dialog is primary-colored text on white. Its veil is primary-colored and darkens the white behind it. By calculation, not measured, the hovered text is at about 3.8:1. The black veil doesn't apply there. Fixed with the theme (see "Theme: Catppuccin Latte and Mocha"): "Cancel" is no longer primary-colored.
+
+## Theme: Catppuccin Latte and Mocha (built 2026-10-11)
+
+The app had Quasar's default blue, light mode only, and colors written out in about ten places. It now has one palette per mode: **Catppuccin Latte** in light mode and **Catppuccin Mocha** in dark mode, with mauve as the primary color.
+
+Decided with the user: the device's setting alone picks the mode (no switch in the app); mauve rather than blue; the whiteboard and the avatars follow the theme instead of staying white paper.
+
+- **`assets/css/theme.css`** imports the colors from `@catppuccin/palette` and names them by role: `--theme-page`, `--theme-surface`, `--theme-text`, `--theme-text-muted`, `--theme-outline`, `--theme-placeholder`, `--theme-on-accent`, `--theme-veil`, Quasar's brand variables (`--q-primary` …) and the inks (`--ink-*`). Every token is one declaration, `light-dark(<Latte>, <Mocha>)`.
+- **`light-dark()` with `color-scheme: light dark` on the root, not `body.body--dark`**: the tokens hold before the app has started, so a dark device doesn't show a white page first. Quasar's `dark: 'auto'` (`nuxt.config.ts`) reads the same setting, so its dark components and the tokens agree. An in-app switch needs a rule in the stylesheet that sets `color-scheme` for a class or attribute of the root element, and Quasar's `Dark` set to match. Setting `color-scheme` from a script alone would work in `nuxt dev` and not in production, where the build's fallback only switches inside rules it compiled.
+- **`light-dark()`** is a user decision, over a `prefers-color-scheme` media block, which the first version had. It needs Chrome 123, Firefox 120 or Safari 17.5, but **the production build doesn't ask for it**: Vite's CSS minifier (Lightning CSS) rewrites every `light-dark(a, b)` into `var(--lightningcss-light, a) var(--lightningcss-dark, b)` and adds a `prefers-color-scheme` rule that switches the two. Seen in `dist/_nuxt/entry.*.css`, and the static build was looked at in both modes. Only `nuxt dev` and `public/offline.html`, which no build step touches, need a browser that knows the function; in an older one the offline page falls back to the browser's own light or dark colors.
+- **`light-dark()` takes colors only.** A number that differs by mode (the veil's strength) can't be a token of its own without a media query, so it is the alpha of the veil's color.
+- **Only what Quasar writes as plain black or white is replaced**: text, the surface of cards and menus, the tooltip, the text on filled controls. Its translucent greys (field labels, borders, separators) stay; they take on the surface beneath them in either mode.
+- **Light surfaces are the page's color.** Latte has nothing lighter than its base, and mauve text on mantle is 4.45:1, so a card stands out by its shadow. In Mocha a card is `surface0`, lighter than the page, because a shadow can't be seen there.
+- **Text on an accent is `--theme-on-accent`** (the flavor's base), not white: white on a Mocha accent is about 2:1. Quasar puts `text-white` on every filled control; `theme.css` overrides it for `bg-primary` and `bg-negative`, and the header, the footer, a checkbox's check mark and the update notice get the same color.
+- **The veil of `hover-contrast.css` is the theme's**: black in Latte, white in Mocha, so hover and focus always move an accent away from the text on it. The header's veils (`default.vue`, `AccountMenu.vue`) use it too.
+- **The veils are stronger than Quasar's, and as strong for hover as for focus** (user: "hover colours are too subtle, especially in dark mode"). "Step" below is the contrast between a control's resting and its hovered background.
+  - **On an accent color** (`--theme-veil`; filled buttons, everything in the header): black at 30% in Latte, white at 65% in Mocha. Quasar's 15% gave a step of 1.28 in Latte and 1.12 in Mocha, where white over a pale accent hardly shows; now 1.65 and 1.61. The text on the hovered button is at 7.90 and 13.00. A black veil would show more in Mocha per percent (22%: step 1.62), but takes the text on a red button to 4.43, and moves towards the text.
+  - **On the page or a surface** (`--theme-veil-on-surface`; flat buttons without a color of their own: the account menu's entries, "Undo", "Clear board", "Remove"): the text's color at 25% in Latte and 18% in Mocha. Quasar's 15% gave 1.25 and 1.46; now 1.47 and 1.58. This veil moves towards the text, so it is as strong as the text allows: 4.81 in Latte, 5.52 in Mocha on a card.
+  - `hover-contrast.css` shows both veils at opacity 1 and hides Quasar's two overlays on them. The header's own 30% rule in `default.vue` is gone, and the account button's pill is half the veil at rest and the whole veil while the menu is open.
+  - **No flat button has a color of its own any more.** "Cancel" in the "Clear" dialog was the only one, mauve because Quasar's dialog plugin gives its buttons the dialog's color (primary, or amber in dark mode). Mauve text on a surface is at 4.79 in Latte and takes no darkening at all: 3.87 hovered and 3.49 focused with Quasar's veil. It is now a plain flat button in the text's color (`cancel: { …, color: undefined }` in `SharedWhiteboard.vue`), like "Close" in the invite dialog: 7.06 at rest and 4.81 highlighted in Latte, 8.69 and 5.52 in Mocha.
+- **Contrast figures** (calculated with the WCAG formula from the package's values): Latte base on mauve 4.79, mauve on base 4.79, text on base 7.06, subtext1 on base 5.53, red on base 4.80; Mocha base on mauve 8.07, text on base 11.34, subtext0 on base 7.37. Latte's subtext0 on base (4.37) and blue on base (4.34) fail, which is why muted text is subtext1 and the primary color is not blue.
+- **Inks** (`utils/ink.ts`): a stroke keeps the `#rrggbb` it is stored with, as an attribute, and a style on top draws it in `--ink-<name>`. `PEN_COLORS` and `AVATAR_INKS` take their values from `INK_VALUES`; the order of `AVATAR_INKS` is unchanged, so nobody's rosette changed its shape or ink. A stored color that is none of the inks (the database accepts any) is drawn as stored.
+- `theme-color` is two meta tags with `media`. They have no `key`: with one, Nuxt's head manager doesn't recognise the tags of the generated page and adds them a second time. The manifest holds one `theme_color` and one `background_color`; they are Latte's.
+- `public/offline.html` has the six values it needs written out, since it has to work without the app's stylesheet. It is now page-colored with a mauve heading.
+- **The app icons are the K on Latte mauve** (`public/pwa-*.png`), regenerated with `node scripts/generate-pwa-icons.mjs` from `app/`. The script takes both colors from `@catppuccin/palette`; the glyph is unchanged. It now writes `favicon.ico` too (32px, a PNG inside the `.ico`), which had been Nuxt's default green logo until then (approved by the user). An icon file holds one set of colors, so the icons are Latte's in dark mode as well.
+
+Tests:
+
+- `a11y.e2e.ts` runs every scan in light and in dark mode (`test.use({ colorScheme })`) and checks the body's mode class first, so a dark scan can't pass on the light palette. The veil it expects on a header button is the mode's, with its strength. It also scans the "Clear" dialog at rest and with "Cancel" focused and hovered; verified to fail in both modes with the mauve "Cancel".
+- `ink.spec.ts` checks `inkPaint` and that `theme.css` gives every ink an `--ink-*` color that is a `light-dark()` of a Latte and a Mocha color, and a `text-ink-*` name for every pen.
+- Looked at in screenshots at 375px in both modes: login, dashboard with a hovered button, the account menu, a to-do list, the whiteboard with all four pens, the "Clear" dialog with "Cancel" at rest and hovered, the offline page.
+
+Noticed, not changed:
+
+- **The pen named "Black" draws in a light color in dark mode.** Accepted (user decision); the name stays.
+- Latte's green on the board is 2.96:1, its blue 4.34:1. Fine for a drawing, but below what text would need.
+- Only primary and negative carry text. `--q-secondary`, `--q-accent`, `--q-positive`, `--q-info` and `--q-warning` are mapped to Catppuccin colors but unused; a filled control in one of them needs its contrast calculated first.
+- Not looked at: the update notice, tooltips, the join page and the keyboard focus outlines in dark mode, and either mode on a real phone.
+
+## Success notices readable in both modes (fixed 2026-10-11)
+
+Found in the click-through of milestone 10: the notice "1 item added to the shopping list" was hard to read in dark mode. It used Quasar's `positive` color, on which Quasar writes white. Measured with the palette's values, white on the theme's green is at 3.34:1 in light mode and at 1.49:1 in dark mode, so it failed the 4.5:1 of WCAG 1.4.3 in both. "Invite link copied" was built the same way.
+
+- **A text color alone doesn't fix it.** The theme's text for an accent (`--theme-on-accent`) is at 11.03:1 on Mocha's green but at 2.96:1 on Latte's, and no text color of the theme reaches 4.5:1 there (the comment at the top of `theme.css` says as much for every Latte accent but mauve and red).
+- **Both notices now use the primary color with `textColor: "on-accent"`**, as the update notice already did: 4.79:1 in light mode and 8.07:1 in dark mode. There is no `positive` notice left. A notice without a color (the "This recipe was removed." of the recipe form) is Quasar's dark grey with white text in both modes, at 12.82:1.
+- **A notice was never scanned**: it is gone after a few seconds, and `a11y.e2e.ts` only scanned pages at rest. It now adds a recipe's ingredients to the shopping list and scans while the notice shows, in both modes. Verified to fail on the notice's text before the fix, in both modes. "Invite link copied" is not scanned (it needs the clipboard); it is the same two options.

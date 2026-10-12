@@ -126,7 +126,7 @@ Optimistic updates keyed by client-generated UUID: generate `crypto.randomUUID()
 
 ## 6. Containerization (Podman)
 
-> **Changed 2026-10-10**: production is hosted on Netlify as static files instead (see "Milestone 8" in [`progress.md`](./progress.md)). The dev container was dropped; the production container setup below is deferred, not built.
+> **Changed 2026-10-10**: production is hosted on Netlify as static files instead (see "Milestone 8" in [`infra/deploy-and-pwa.md`](./infra/deploy-and-pwa.md)). The dev container was dropped; the production container setup below is deferred, not built.
 
 **`Containerfile.dev`**: `node:22-slim`, `npm ci`, `CMD npx nuxi dev --host 0.0.0.0`. Run with a bind mount for source **and a separate named volume for `node_modules`** (otherwise the host mount shadows installed deps); `--userns=keep-id` and `:Z` SELinux relabeling on mounts. Set `server.watch.usePolling = true` in `nuxt.config.ts` — inotify doesn't reliably cross Podman bind mounts.
 
@@ -178,8 +178,8 @@ Pre-commit only touches staged files (fast, via lint-staged) so it stays cheap o
 6. Mirror steps 4–5 for the shared shopping list, reusing the same test patterns.
 7. PWA installability pass: manifest, icons (incl. maskable), Workbox caching rules, install-prompt button, Lighthouse PWA check.
 8. Containerize: dev Containerfile + compose, prod Containerfile + Quadlet units behind Caddy, one real deploy with HTTPS to confirm installability end-to-end. **→ MVP complete.** *(Changed 2026-10-10: the deploy goes to Netlify; containers are deferred, see section 6.)*
-9. *(Deferred)* Shared whiteboard: `boards`/`board_strokes`, same RLS pattern, canvas component, likely Realtime `broadcast` channel rather than `postgres_changes` given stroke volume. *(Changed 2026-10-10: built with one row per finished stroke over `postgres_changes` and an SVG surface instead; see `progress.md`.)*
-10. *(Deferred)* Shared recipes: `recipes` table, same RLS pattern, CRUD UI, no Realtime strictly needed. *(Changed 2026-10-11: built with live sync, structured ingredients and a button that puts them on the shopping list; see `progress.md`.)*
+9. *(Deferred)* Shared whiteboard: `boards`/`board_strokes`, same RLS pattern, canvas component, likely Realtime `broadcast` channel rather than `postgres_changes` given stroke volume. *(Changed 2026-10-10: built with one row per finished stroke over `postgres_changes` and an SVG surface instead; see [`features/whiteboard.md`](./features/whiteboard.md).)*
+10. *(Deferred)* Shared recipes: `recipes` table, same RLS pattern, CRUD UI, no Realtime strictly needed. *(Changed 2026-10-11: built with live sync, structured ingredients and a button that puts them on the shopping list; see [`features/recipes.md`](./features/recipes.md).)*
 
 ## Verification
 
