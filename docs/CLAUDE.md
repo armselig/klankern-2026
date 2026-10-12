@@ -32,6 +32,7 @@ Start with `progress.md`, then read the topic files for what you are about to to
 - [`deploy-and-pwa.md`](./infra/deploy-and-pwa.md): milestones 7 and 8, the installable app and its deployment to Netlify.
 - [`releases.md`](./infra/releases.md): the automated releases, each release so far, the changelog.
 - [`project-layout.md`](./infra/project-layout.md): where the Nuxt project sits in the repository: the plan to move it from `app/` to the git root, how the move went, and the Markdown linter that came with it.
+- [`environments.md`](./infra/environments.md): which environments the app has; the plan to separate development from production, with a dev Supabase project and a staging site.
 
 ## Writing documentation
 
