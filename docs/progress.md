@@ -93,4 +93,5 @@ Every milestone of the plan is built. The four checks that were listed here are 
 
 1. Try milestone 10 by hand where the click-through didn't reach: on a phone by touch, with a second member, in light mode and on the deployed site.
 2. Try the dashboard on a phone by touch, and with a second member changing things.
-3. Optional, later: the Podman production setup (`Containerfile.prod`, Quadlet units, Caddy).
+3. Move the Nuxt project from `app/` to the git root, in a workspace and on a branch of its own. The plan is approved (2026-10-12) and written out step by step, with the Markdown linter that follows the move, in "Plan: the Nuxt project moves to the git root" in [`infra/project-layout.md`](infra/project-layout.md). The user checks Netlify's own build settings before the push to `main`.
+4. Optional, later: the Podman production setup (`Containerfile.prod`, Quadlet units, Caddy).
