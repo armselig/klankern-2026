@@ -74,6 +74,8 @@ What a member sees. The states the wireframe named already (the form, a failed t
 | Dashboard tile  | As the other tiles              | "No vacation planned."                                                                                  | "Couldn't load the vacations."                                                                                                                                     | Title, stage line, "N open"                                                                                                                     |
 | "Who has what"  | With the page                   | Nobody has an open task: "Nothing open."                                                                | none of its own                                                                                                                                                    | A person without open tasks is listed with 0; a removed person is not listed                                                                    |
 
+(Two of these texts changed on 2026-10-12: the tile reports a failed load with the tile component's own text, and the list's upper group has no heading, see "Engineering review of the design review's changes" in [`features/vacations-design-eng-review.md`](./vacations-design-eng-review.md).)
+
 ### Access rules
 
 - **Size**: every control is at least 44 px in both directions, including "More" and the control that folds a phase.
@@ -92,7 +94,7 @@ The focus rules are asserted in the three browser journeys.
 - Slice 2 gains a second sentence and a second kind of link, and the link of "Tell them" carries a task through the sign-in step.
 - Editing a vacation has its screen: in place, not a page.
 
-An engineering review of these changes had not been done when this was written.
+An engineering review of these changes had not been done when this was written. (Done the same day, see "Engineering review of the design review's changes" in [`features/vacations-design-eng-review.md`](./vacations-design-eng-review.md).)
 
 ### Not verified
 
