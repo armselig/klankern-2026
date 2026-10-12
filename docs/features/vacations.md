@@ -53,6 +53,8 @@ All rows are small, so an UPDATE event carries the whole row and the reducers ca
 | Rejected | null          | set           | Who said no and the reason, "I'll take it", "Give to…"                  |
 | Done     | any           | any           | Struck through, at the end of its phase                                 |
 
+(What a row shows was redrawn on 2026-10-12, without the heavier border, see "Design review" in [`features/vacations-design-review.md`](./vacations-design-review.md).)
+
 - **Assigning** sets `assignee_id` and clears the rejection. Only the latest rejection is kept.
 - **Rejecting** is one conditional update: it sets the rejection and clears the assignee where the task is still assigned to the rejecting person. If someone reassigned it in the meantime, the update matches no row and the dialog closes with "This task isn't yours any more". To know that it matched none, the update has to return the row or a count; returning it is safe here, because the row is visible to the member.
 - **Removing a person** from a vacation makes their open tasks nobody's. (How was decided on 2026-10-12, see "Engineering review" in [`features/vacations-review.md`](./vacations-review.md).)
@@ -65,7 +67,7 @@ All rows are small, so an UPDATE event carries the whole row and the reducers ca
 
 ### Screens
 
-Drawn as a rough wireframe at 375 px and approved by the user on 2026-10-12; the wireframe is not in the repository.
+Drawn as a rough wireframe at 375 px and approved by the user on 2026-10-12; the wireframe is not in the repository. (Overtaken on 2026-10-12 in the task's row, the page's order, how a vacation is edited, the reject dialog and the tile's slice, see "Design review" in [`features/vacations-design-review.md`](./vacations-design-review.md).)
 
 - **`/vacations`**: upcoming vacations first, past ones below, and "Add vacation".
 - **`/vacations/new`**: title, kind of stay, from and until as native date fields, and who is coming (members ticked, a field to add a name). (The named people of the last vacation are listed too since 2026-10-12, see "Scope review" in [`features/vacations-scope-review.md`](./vacations-scope-review.md).)
@@ -82,7 +84,7 @@ A meal is a pick from the household's recipes. "Put N ingredients on the shoppin
 Three slices, each one migration and one `feat` commit, and so one release. Each works without the next.
 
 1. **A trip checklist from a template** (migration 0015): `vacations` and `vacation_tasks` without the assignment columns, the templates, the three pages, add, edit, tick and remove, live sync.
-2. **Fair share** (0016): `vacation_people`, the assignment columns, assign, reject, "Who has what", the dashboard tile.
+2. **Fair share** (0016): `vacation_people`, the assignment columns, assign, reject, "Who has what", the dashboard tile. (The tile moved into slice 1 on 2026-10-12, see "Design review" in [`features/vacations-design-review.md`](./vacations-design-review.md).)
 3. **The house plans its shopping** (0017): `vacation_meals`, the unique constraint on `recipes`, the meal picker and the shopping action.
 
 Within a slice: the migration and the RLS tests first, then the actions with the fake client, the reducers, the store, the pages, and an e2e test with two browsers. Development and production share one Supabase project, so every migration has to be additive. The new store gets its listeners in `subscribeToHouseholdChanges`, its `resync()` on every `SUBSCRIBED` and its reset in `useResetStoresOnUserChange`. (Corrected 2026-10-12: it is wired in five places, see "Engineering review" in [`features/vacations-review.md`](./vacations-review.md).)

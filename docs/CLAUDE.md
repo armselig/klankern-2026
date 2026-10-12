@@ -20,6 +20,7 @@ Start with `progress.md`, then read the topic files for what you are about to to
 - [`vacations.md`](./features/vacations.md): the vacation planner: its design, with tasks by phase, assignment that can be rejected and a meal plan. Planned, not built.
 - [`vacations-review.md`](./features/vacations-review.md): the two engineering reviews of that design, of the plan and of what the scope review added: what was decided, what was corrected and what is still open.
 - [`vacations-scope-review.md`](./features/vacations-scope-review.md): the scope review between them: the seven additions, among them "Tell them" and the return to a link after sign-in, and what was declined.
+- [`vacations-design-review.md`](./features/vacations-design-review.md): the design review of its screens: the task's row, where "Tell them" sits, the states of every screen, the access rules, and what changed against the wireframe.
 - [`avatars.md`](./features/avatars.md): the members' avatars, rosette and Gravatar.
 - [`header.md`](./features/header.md): the header with the wordmark and the account menu.
 
