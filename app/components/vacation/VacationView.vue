@@ -51,8 +51,12 @@ const chosenFilter = ref<TaskFilter | null>(null);
 
 /** Whose open tasks each phase lists alone, or null for all tasks. Worked
  * out from the people of the trip, so a person who is renamed is named
- * anew, and one who is taken off takes the filter along. */
+ * anew, and one who is taken off takes the filter along. And only while
+ * "Who has what" shows its lines: once the last open task is ticked it
+ * says "Nothing open.", and a filter left on would hide the fields for a
+ * new task with nothing to press to get them back. */
 const taskFilter = computed<TaskFilter | null>(() => {
+  if (shareView(shares.value) !== "lines") return null;
   const chosen = chosenFilter.value?.person;
   if (!chosenFilter.value || !chosen) return chosenFilter.value;
   const person = people.value.find((other) => other.id === chosen.id);

@@ -32,10 +32,7 @@ const emit = defineEmits<{
 
 const changeButton = useTemplateRef<{ $el: HTMLElement }>("changeButton");
 
-const nothingOpen = computed(() =>
-  props.shares.every((share) => share.open === 0),
-);
-const hasPeople = computed(() => props.shares.some((share) => share.person));
+const view = computed(() => shareView(props.shares));
 
 function isShown(share: TaskShare): boolean {
   return !!props.shown && props.shown.person?.id === share.person?.id;
@@ -68,11 +65,13 @@ defineExpose({
       />
     </h3>
 
-    <p v-if="!hasPeople" class="text-muted q-my-none">
+    <p v-if="view === 'no-people'" class="text-muted q-my-none">
       Nobody is on this trip yet. Add the people who are coming, and tasks can
       be given to them.
     </p>
-    <p v-else-if="nothingOpen" class="text-muted q-my-none">Nothing open.</p>
+    <p v-else-if="view === 'nothing-open'" class="text-muted q-my-none">
+      Nothing open.
+    </p>
 
     <template v-else>
       <!-- role="list" because Safari stops announcing a list once its

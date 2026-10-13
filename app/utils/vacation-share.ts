@@ -106,6 +106,19 @@ export function taskShares(
   return shares;
 }
 
+/**
+ * What "Who has what" shows: a sentence when the trip has no people or no
+ * open task, and otherwise its lines. One function for the component and
+ * the page: a line that isn't shown can't be pressed again, so the page
+ * may only filter by one while the lines are there.
+ */
+export function shareView(
+  shares: readonly TaskShare[],
+): "no-people" | "nothing-open" | "lines" {
+  if (!shares.some((share) => share.person)) return "no-people";
+  return shares.some((share) => share.open > 0) ? "lines" : "nothing-open";
+}
+
 /** The tasks a pressed line of "Who has what" leaves: the open ones of
  * that person, or the open ones nobody has. Done ones go too, so the
  * filtered view is what is left to do. */

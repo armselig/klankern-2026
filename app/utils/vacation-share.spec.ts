@@ -12,6 +12,7 @@ import {
   personOfUser,
   phaseSummaryIn,
   rejecterOf,
+  shareView,
   taskFilterHint,
   taskShares,
 } from "./vacation-share";
@@ -151,6 +152,30 @@ describe("taskShares", () => {
 
   it("has only the line for nobody on a trip without people", () => {
     expect(taskShares(tasks, [], {})).toEqual([{ person: null, open: 5 }]);
+  });
+});
+
+describe("shareView", () => {
+  it("shows the lines while a trip with people has an open task", () => {
+    expect(
+      shareView([
+        { person: alex, open: 0 },
+        { person: null, open: 1 },
+      ]),
+    ).toBe("lines");
+  });
+
+  it("says that nothing is open instead of lines of zeros", () => {
+    expect(
+      shareView([
+        { person: alex, open: 0 },
+        { person: null, open: 0 },
+      ]),
+    ).toBe("nothing-open");
+  });
+
+  it("says that nobody is on the trip, open tasks or not", () => {
+    expect(shareView([{ person: null, open: 3 }])).toBe("no-people");
   });
 });
 
