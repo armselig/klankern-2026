@@ -62,7 +62,7 @@ Rolling back is publishing the previous deploy. The database stays as it is: the
 
 ### After a deploy
 
-Nothing of this slice was tried on the deployed site or on a phone when this was written. To check there:
+Nothing of this slice was tried on the deployed site or on a phone when this was written. (Released as 1.6.0 on 2026-10-13; the user went through this list on the deployed site the same day and reported all of it tested, without a finding.) To check there:
 
 - A vacation is added on one phone and appears on another member's dashboard without a reload.
 - The date fields open the phone's own date picker, and an end before the start is refused. Safari on an iPhone is the browser the app's own message was written for.
