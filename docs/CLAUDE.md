@@ -17,12 +17,14 @@ Start with `progress.md`, then read the topic files for what you are about to to
 - [`whiteboard.md`](./features/whiteboard.md): milestone 9, the shared whiteboard.
 - [`recipes.md`](./features/recipes.md): milestone 10, the shared recipes.
 - [`dashboard.md`](./features/dashboard.md): the dashboard with live tiles.
-- [`vacations.md`](./features/vacations.md): the vacation planner: its design, with tasks by phase, assignment that can be rejected and a meal plan. Planned, not built.
+- [`vacations.md`](./features/vacations.md): the vacation planner: its design, with tasks by phase, assignment that can be rejected and a meal plan. Slice 1 is built.
+- [`vacations-design-decisions.md`](./features/vacations-design-decisions.md): the rest of that design: its open decisions and how each was answered, what counts as done, and what was considered and not chosen.
 - [`vacations-review.md`](./features/vacations-review.md): the two engineering reviews of that design, of the plan and of what the scope review added: what was decided, what was corrected and what is still open.
 - [`vacations-scope-review.md`](./features/vacations-scope-review.md): the scope review between them: the seven additions, among them "Tell them" and the return to a link after sign-in, and what was declined.
 - [`vacations-design-review.md`](./features/vacations-design-review.md): the design review of its screens: the task's row, where "Tell them" sits, the states of every screen, the access rules, and what changed against the wireframe.
 - [`vacations-design-eng-review.md`](./features/vacations-design-eng-review.md): the engineering review of what the design review changed: four decisions, the rules for a link's parameters, and what was not confirmed.
-- [`vacations-templates.md`](./features/vacations-templates.md): what its house and hotel templates hold: the list the user handed over, how its entries are worded, and the tasks added for the two later phases. Decided, not built.
+- [`vacations-templates.md`](./features/vacations-templates.md): what its house and hotel templates hold: the list the user handed over, how its entries are worded, and the tasks added for the two later phases.
+- [`vacations-slice-1.md`](./features/vacations-slice-1.md): how slice 1 was built, the trip checklist from a template: migration 0015, what was decided and found during the build, its tests, "When it breaks" and "After a deploy".
 - [`avatars.md`](./features/avatars.md): the members' avatars, rosette and Gravatar.
 - [`header.md`](./features/header.md): the header with the wordmark and the account menu.
 

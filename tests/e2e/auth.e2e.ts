@@ -27,6 +27,9 @@ const PROTECTED_ROUTES = [
   ROUTES.recipeNew,
   ROUTES.recipe("some-id"),
   ROUTES.recipeEdit("some-id"),
+  ROUTES.vacations,
+  ROUTES.vacationNew,
+  ROUTES.vacation("some-id"),
 ];
 
 test.describe("auth", () => {

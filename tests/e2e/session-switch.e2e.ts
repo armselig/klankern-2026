@@ -1,14 +1,18 @@
 import { expect, test } from "@playwright/test";
+import { addDays, localDateOf } from "../../app/utils/local-date";
 import {
   accountButton,
   addShoppingItem,
   addTodo,
+  addVacation,
   dashboardTile,
   EMPTY_LIST_TEXT,
   enterLoginCode,
   listItem,
   memberAvatar,
+  NO_VACATIONS_TEXT,
   openList,
+  openVacations,
   signIn,
   signOut,
   untilSaved,
@@ -62,7 +66,7 @@ test.describe("switching users in the same tab", () => {
       }),
     );
 
-    await test.step("A adds items to both lists", async () => {
+    await test.step("A adds items to both lists, and a vacation", async () => {
       await signIn(page, userA);
       await openList(page, "To-dos");
       // Left open: the dashboard previews only what is still to do.
@@ -80,6 +84,18 @@ test.describe("switching users in the same tab", () => {
         await addShoppingItem(page, "Only for A too");
         await listItem(page, "Only for A too").click();
       });
+      await page.getByRole("link", { name: "Klankern" }).click();
+      await openVacations(page);
+      const today = localDateOf(new Date());
+      await addVacation(page, {
+        title: "Only A's trip",
+        from: addDays(today, 10),
+        until: addDays(today, 17),
+      });
+      await page.getByRole("link", { name: "Klankern" }).click();
+      await expect(dashboardTile(page, "Vacations")).toContainText(
+        "Only A's trip",
+      );
     });
 
     await test.step("A signs out; B signs in on the same page, without a page load", async () => {
@@ -98,6 +114,10 @@ test.describe("switching users in the same tab", () => {
         "Nothing to do.",
       );
       await expect(page.getByText("Still open for A")).toHaveCount(0);
+      await expect(dashboardTile(page, "Vacations")).toContainText(
+        "No vacation planned.",
+      );
+      await expect(page.getByText("Only A's trip")).toHaveCount(0);
     });
 
     for (const list of ["To-dos", "Shopping"] as const) {
@@ -109,6 +129,14 @@ test.describe("switching users in the same tab", () => {
         await expect(page.locator(".text-negative")).toHaveCount(0);
       });
     }
+
+    await test.step("B's vacations are B's own", async () => {
+      await page.getByRole("link", { name: "Klankern" }).click();
+      await openVacations(page);
+      await expect(page.getByText(NO_VACATIONS_TEXT)).toBeVisible();
+      await expect(page.getByText("Only A's trip")).toHaveCount(0);
+      await expect(page.locator(".text-negative")).toHaveCount(0);
+    });
 
     await test.step("B's session never joined A's household channel", async () => {
       expect(joinedChannels).toContain(`household:${householdBId}`);

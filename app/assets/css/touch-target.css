@@ -1,0 +1,10 @@
+/*
+ * 44px is the smallest comfortable target for a thumb, and what the app
+ * gives every control of a page that is used one-handed. Quasar's button is
+ * 36px high and its checkbox 40px, so a control that should be larger says
+ * so with this class.
+ */
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+}

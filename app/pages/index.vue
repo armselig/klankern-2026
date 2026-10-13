@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  mdiBagSuitcaseOutline,
   mdiCartOutline,
   mdiChefHat,
   mdiDraw,
@@ -11,6 +12,7 @@ const todoStore = useTodoStore();
 const shoppingStore = useShoppingStore();
 const whiteboardStore = useWhiteboardStore();
 const recipeStore = useRecipeStore();
+const vacationStore = useVacationStore();
 
 const inviteOpen = ref(false);
 
@@ -30,6 +32,7 @@ watch(
     void shoppingStore.load(householdId);
     void whiteboardStore.load(householdId);
     void recipeStore.load(householdId);
+    void vacationStore.load(householdId);
   },
   { immediate: true },
 );
@@ -37,6 +40,17 @@ watch(
 const todoPreview = computed(() => previewOfList(todoStore.open));
 const shoppingPreview = computed(() => previewOfList(shoppingStore.toBuy));
 const recipePreview = computed(() => previewOfList(recipeStore.visible));
+
+/** The day the dashboard was opened on; it decides which vacations are
+ * current and where the first of them stands. */
+const today = localDateOf(new Date());
+const vacationPreview = computed(() =>
+  vacationTilePreview(
+    vacationStore.vacationsById,
+    vacationStore.tasksById,
+    today,
+  ),
+);
 
 // A store's error can also be that of a single write on its own page. A
 // tile only says that it has nothing to show: the store was never loaded.
@@ -49,6 +63,9 @@ const whiteboardFailed = computed(
 );
 const recipesFailed = computed(
   () => !recipeStore.householdId && !!recipeStore.error,
+);
+const vacationsFailed = computed(
+  () => !vacationStore.householdId && !!vacationStore.error,
 );
 </script>
 
@@ -74,7 +91,7 @@ const recipesFailed = computed(
       <!-- A list of links, as a navigation is; a plain ul, because a q-list
            would hold no q-items. role="list" because Safari stops
            announcing a list once its bullets are styled away. -->
-      <nav aria-label="Lists, whiteboard and recipes">
+      <nav aria-label="Lists, whiteboard, recipes and vacations">
         <ul role="list" class="dashboard__tiles">
           <li>
             <dashboard-tile
@@ -134,6 +151,23 @@ const recipesFailed = computed(
                 count-label="saved"
                 empty-text="None saved yet."
               />
+            </dashboard-tile>
+          </li>
+          <li>
+            <dashboard-tile
+              title="Vacations"
+              :to="ROUTES.vacations"
+              :icon="mdiBagSuitcaseOutline"
+              :loading="vacationStore.loading"
+              :failed="vacationsFailed"
+            >
+              <tile-list-preview
+                v-if="vacationPreview"
+                :preview="vacationPreview"
+                count-label="open"
+                empty-text="No vacation planned."
+              />
+              <p v-else class="text-muted q-my-none">No vacation planned.</p>
             </dashboard-tile>
           </li>
         </ul>

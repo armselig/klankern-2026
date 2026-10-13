@@ -22,7 +22,11 @@ export default defineNuxtConfig({
   // Loaded on every page: the color palette for light and dark mode, and the
   // correction of a contrast problem of Quasar's hover and focus highlight
   // that no single component could fix for itself.
-  css: ["~/assets/css/theme.css", "~/assets/css/hover-contrast.css"],
+  css: [
+    "~/assets/css/theme.css",
+    "~/assets/css/hover-contrast.css",
+    "~/assets/css/touch-target.css",
+  ],
   runtimeConfig: {
     public: {
       // Shown in the footer. semantic-release writes the version into

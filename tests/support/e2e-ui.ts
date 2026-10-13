@@ -108,7 +108,7 @@ export function memberAvatar(page: Page, email: string) {
 
 /** The names of the dashboard's tiles, which are their links' names. */
 export type DashboardTileName =
-  "To-dos" | "Shopping" | "Whiteboard" | "Recipes";
+  "To-dos" | "Shopping" | "Whiteboard" | "Recipes" | "Vacations";
 
 /**
  * A tile of the dashboard, with everything it shows. Found by its link: the
@@ -117,7 +117,9 @@ export type DashboardTileName =
  */
 export function dashboardTile(page: Page, name: DashboardTileName) {
   return page
-    .getByRole("navigation", { name: "Lists, whiteboard and recipes" })
+    .getByRole("navigation", {
+      name: "Lists, whiteboard, recipes and vacations",
+    })
     .getByRole("listitem")
     .filter({ has: page.getByRole("link", { name, exact: true }) });
 }
@@ -327,4 +329,104 @@ export async function fillRecipeForm(page: Page, entry: RecipeFormEntry) {
 export async function saveRecipeForm(page: Page) {
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page).toHaveURL(new RegExp(`${ROUTES.recipes}/[0-9a-f-]{36}$`));
+}
+
+/** The text the list of vacations shows when the household has none. */
+export const NO_VACATIONS_TEXT =
+  "No vacations yet. Add your next trip, and the app fills in the tasks.";
+
+/** A vacation's link in the list of vacations. */
+export function vacationLink(page: Page, title: string) {
+  return page
+    .getByRole("main")
+    .getByRole("listitem")
+    .getByRole("link", { name: title });
+}
+
+/** Opens the vacations from the dashboard and waits until they have loaded:
+ * the button for a new one shows only then. */
+export async function openVacations(page: Page) {
+  await page.getByRole("link", { name: "Vacations", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`${ROUTES.vacations}$`));
+  await expect(page.getByRole("link", { name: "Add vacation" })).toBeVisible();
+}
+
+/** What a test types into the form for a new vacation. The dates are
+ * calendar days as "YYYY-MM-DD", the form a date field takes. */
+export interface VacationFormEntry {
+  title: string;
+  kind?: "House, we cook ourselves" | "Hotel";
+  from: string;
+  until: string;
+}
+
+/** Adds a vacation from the list of vacations and waits for its own page,
+ * which the app shows only once the server has it with its tasks. */
+export async function addVacation(page: Page, entry: VacationFormEntry) {
+  await page.getByRole("link", { name: "Add vacation" }).click();
+  await page.getByLabel("Title").fill(entry.title);
+  if (entry.kind) await page.getByRole("radio", { name: entry.kind }).click();
+  await page.getByLabel("From").fill(entry.from);
+  await page.getByLabel("Until").fill(entry.until);
+  await page.getByRole("button", { name: "Add vacation" }).click();
+  await expect(page).toHaveURL(
+    new RegExp(`${ROUTES.vacations}/[0-9a-f-]{36}$`),
+  );
+}
+
+/** The button in a phase's heading that folds and unfolds it. */
+export function phaseButton(
+  page: Page,
+  name: "Before" | "During" | "Afterwards",
+) {
+  return page.getByRole("button", { name, exact: true });
+}
+
+/** A phase of a vacation's page with its heading, its tasks and its field
+ * for a new one. */
+export function vacationPhase(
+  page: Page,
+  name: "Before" | "During" | "Afterwards",
+) {
+  return page
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { name, level: 3 }) });
+}
+
+/** A task is a checkbox labelled with its title, as a list's item is. */
+export function vacationTask(page: Page, title: string) {
+  return page.getByRole("checkbox", { name: title, exact: true });
+}
+
+/** The button that opens a task's menu. Its name carries the task. */
+export function taskMoreButton(page: Page, title: string) {
+  return page.getByRole("button", { name: `More: ${title}`, exact: true });
+}
+
+/** Opens a task's menu and presses one of its entries. */
+export async function chooseFromTaskMenu(
+  page: Page,
+  title: string,
+  entry: "Edit" | "Remove",
+) {
+  await taskMoreButton(page, title).click();
+  await page
+    .getByRole("group", { name: `More: ${title}`, exact: true })
+    .getByRole("button", { name: entry, exact: true })
+    .click();
+}
+
+/**
+ * Changes a task and waits for the server to confirm the update, as
+ * untilSaved does for a list item: the page updates optimistically, and a
+ * reload cancels a write still in flight.
+ */
+export async function untilTaskSaved(page: Page, action: () => Promise<void>) {
+  const saved = page.waitForResponse(
+    (response) =>
+      /\/rest\/v1\/vacation_tasks/.test(response.url()) &&
+      response.request().method() === "PATCH",
+  );
+  await action();
+  expect((await saved).ok()).toBe(true);
 }

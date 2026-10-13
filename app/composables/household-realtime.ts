@@ -6,6 +6,12 @@ import type { ShoppingItem } from "~/types/shopping";
 import type { RowRealtimeEvent } from "~/types/synced-row";
 import type { TodoItem } from "~/types/todo";
 import type {
+  Vacation,
+  VacationRealtimeEvent,
+  VacationTask,
+  VacationTaskRealtimeEvent,
+} from "~/types/vacation";
+import type {
   BoardStrokeChange,
   BoardStrokeRealtimeEvent,
 } from "~/types/whiteboard";
@@ -35,6 +41,8 @@ export interface HouseholdChangeListeners {
   onShoppingItemChange: (event: ListRealtimeEvent<ShoppingItem>) => void;
   onBoardStrokeChange: (event: BoardStrokeRealtimeEvent) => void;
   onRecipeChange: (event: RecipeRealtimeEvent) => void;
+  onVacationChange: (event: VacationRealtimeEvent) => void;
+  onVacationTaskChange: (event: VacationTaskRealtimeEvent) => void;
   /** Fires on the first subscribe and on every automatic rejoin after a
    * dropped connection; postgres_changes has no replay, so this is the cue
    * to refetch. */
@@ -70,6 +78,12 @@ export function subscribeToHouseholdChanges(
     filter,
   } as const;
   const recipes = { schema: "public", table: "recipes", filter } as const;
+  const vacations = { schema: "public", table: "vacations", filter } as const;
+  const vacationTasks = {
+    schema: "public",
+    table: "vacation_tasks",
+    filter,
+  } as const;
 
   const channel = client
     .channel(`household:${householdId}`)
@@ -112,6 +126,26 @@ export function subscribeToHouseholdChanges(
       "postgres_changes",
       { ...recipes, event: "UPDATE" },
       (payload) => listeners.onRecipeChange(toRowRealtimeEvent(payload)),
+    )
+    .on<Vacation>(
+      "postgres_changes",
+      { ...vacations, event: "INSERT" },
+      (payload) => listeners.onVacationChange(toRowRealtimeEvent(payload)),
+    )
+    .on<Vacation>(
+      "postgres_changes",
+      { ...vacations, event: "UPDATE" },
+      (payload) => listeners.onVacationChange(toRowRealtimeEvent(payload)),
+    )
+    .on<VacationTask>(
+      "postgres_changes",
+      { ...vacationTasks, event: "INSERT" },
+      (payload) => listeners.onVacationTaskChange(toRowRealtimeEvent(payload)),
+    )
+    .on<VacationTask>(
+      "postgres_changes",
+      { ...vacationTasks, event: "UPDATE" },
+      (payload) => listeners.onVacationTaskChange(toRowRealtimeEvent(payload)),
     )
     .subscribe((status) => {
       if (status === "SUBSCRIBED") listeners.onSubscribed();

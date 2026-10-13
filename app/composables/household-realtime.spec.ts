@@ -4,6 +4,7 @@ import type { Database } from "~/types/database.types";
 import type { Recipe } from "~/types/recipe";
 import type { ShoppingItem } from "~/types/shopping";
 import type { TodoItem } from "~/types/todo";
+import type { Vacation, VacationTask } from "~/types/vacation";
 import type { BoardStroke } from "~/types/whiteboard";
 import { subscribeToHouseholdChanges } from "./household-realtime";
 
@@ -103,12 +104,39 @@ const recipeRow: Recipe = {
   deleted_at: null,
 };
 
+const vacationRow: Vacation = {
+  id: "vacation-1",
+  household_id: "house-1",
+  title: "Winter week by the sea",
+  kind: "house",
+  starts_on: "2026-12-05",
+  ends_on: "2026-12-12",
+  created_by: "user-1",
+  created_at: "2026-01-01T00:00:00Z",
+  deleted_at: null,
+};
+
+const vacationTaskRow: VacationTask = {
+  id: "task-1",
+  vacation_id: "vacation-1",
+  household_id: "house-1",
+  phase: "before",
+  title: "Clothes",
+  done: false,
+  position: 1,
+  created_by: "user-1",
+  created_at: "2026-01-01T00:00:00Z",
+  deleted_at: null,
+};
+
 function listeners() {
   return {
     onTodoItemChange: vi.fn(),
     onShoppingItemChange: vi.fn(),
     onBoardStrokeChange: vi.fn(),
     onRecipeChange: vi.fn(),
+    onVacationChange: vi.fn(),
+    onVacationTaskChange: vi.fn(),
     onSubscribed: vi.fn(),
   };
 }
@@ -129,6 +157,8 @@ describe("subscribeToHouseholdChanges", () => {
       "shopping_items",
       "board_strokes",
       "recipes",
+      "vacations",
+      "vacation_tasks",
     ].flatMap((table) =>
       ["INSERT", "UPDATE"].map((event) => [
         "postgres_changes",
@@ -287,6 +317,62 @@ describe("subscribeToHouseholdChanges", () => {
     expect(l.onTodoItemChange).not.toHaveBeenCalled();
     expect(l.onShoppingItemChange).not.toHaveBeenCalled();
     expect(l.onBoardStrokeChange).not.toHaveBeenCalled();
+  });
+
+  it("passes vacations and their tasks on to their own listeners", () => {
+    const fake = fakeRealtimeClient();
+    const l = listeners();
+    subscribeToHouseholdChanges(fake.client, "house-1", l);
+    const renamed = { ...vacationRow, title: "Week by the sea" };
+    const ticked = { ...vacationTaskRow, done: true };
+
+    callbackFor(
+      fake,
+      "vacations",
+      "INSERT",
+    )({ eventType: "INSERT", new: vacationRow, commit_timestamp: committedAt });
+    callbackFor(
+      fake,
+      "vacations",
+      "UPDATE",
+    )({ eventType: "UPDATE", new: renamed, commit_timestamp: committedLater });
+    callbackFor(
+      fake,
+      "vacation_tasks",
+      "INSERT",
+    )({
+      eventType: "INSERT",
+      new: vacationTaskRow,
+      commit_timestamp: committedAt,
+    });
+    callbackFor(
+      fake,
+      "vacation_tasks",
+      "UPDATE",
+    )({ eventType: "UPDATE", new: ticked, commit_timestamp: committedLater });
+
+    expect(l.onVacationChange).toHaveBeenNthCalledWith(1, {
+      eventType: "INSERT",
+      new: vacationRow,
+      commitTimestamp: committedAt,
+    });
+    expect(l.onVacationChange).toHaveBeenNthCalledWith(2, {
+      eventType: "UPDATE",
+      new: renamed,
+      commitTimestamp: committedLater,
+    });
+    expect(l.onVacationTaskChange).toHaveBeenNthCalledWith(1, {
+      eventType: "INSERT",
+      new: vacationTaskRow,
+      commitTimestamp: committedAt,
+    });
+    expect(l.onVacationTaskChange).toHaveBeenNthCalledWith(2, {
+      eventType: "UPDATE",
+      new: ticked,
+      commitTimestamp: committedLater,
+    });
+    expect(l.onTodoItemChange).not.toHaveBeenCalled();
+    expect(l.onRecipeChange).not.toHaveBeenCalled();
   });
 
   it("asks for a resync on every SUBSCRIBED, including reconnects, and on nothing else", () => {

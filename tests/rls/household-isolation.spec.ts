@@ -4,6 +4,7 @@
 // `window`), since supabase-js refuses to use a secret key whenever it
 // detects a browser-like global scope -- happy-dom's `window` would trip
 // that guard and raise "Forbidden use of secret API key in browser".
+import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
@@ -90,6 +91,51 @@ function recipeRow(user: TestUser, householdId: string) {
   };
 }
 
+/** A vacation as the app hands it to create_vacation; tests override the field under test. */
+function vacationJson(householdId: string) {
+  return {
+    id: randomUUID(),
+    household_id: householdId,
+    title: "Denmark",
+    kind: "house",
+    starts_on: "2026-12-05",
+    ends_on: "2026-12-12",
+  };
+}
+
+/** A template task as the app hands it to create_vacation. */
+function taskJson(position: number, title: string, phase = "before") {
+  return { id: randomUUID(), phase, title, position };
+}
+
+/** A vacation row for a direct insert, which the app doesn't do but a member could. */
+function vacationRow(user: TestUser, householdId: string) {
+  return {
+    household_id: householdId,
+    title: "Denmark",
+    kind: "house",
+    starts_on: "2026-12-05",
+    ends_on: "2026-12-12",
+    created_by: user.userId,
+  };
+}
+
+/** A task row as the app inserts it when a member adds one. */
+function vacationTaskRow(
+  user: TestUser,
+  vacationId: string,
+  householdId: string,
+) {
+  return {
+    vacation_id: vacationId,
+    household_id: householdId,
+    phase: "before",
+    title: "Clothes",
+    position: 1,
+    created_by: user.userId,
+  };
+}
+
 describe("household RLS isolation", () => {
   let userA: TestUser;
   let userB: TestUser;
@@ -100,6 +146,10 @@ describe("household RLS isolation", () => {
   let boardBId: string;
   let strokeAId: string;
   let recipeAId: string;
+  let householdCId: string | undefined;
+  let vacationAId: string;
+  let vacationBId: string;
+  let taskAId: string;
 
   beforeAll(async () => {
     [userA, userB, userC] = await Promise.all([
@@ -132,10 +182,35 @@ describe("household RLS isolation", () => {
     if (recipeError || !recipe)
       throw recipeError ?? new Error("recipe insert failed");
     recipeAId = recipe.id as string;
+
+    const vacationA = vacationJson(householdAId);
+    const tasksA = [
+      taskJson(1, "Clothes"),
+      taskJson(1, "Return the key", "during"),
+    ];
+    const vacationB = vacationJson(householdBId);
+    const [createdA, createdB] = await Promise.all([
+      userA.client.rpc("create_vacation", {
+        p_vacation: vacationA,
+        p_tasks: tasksA,
+      }),
+      userB.client.rpc("create_vacation", {
+        p_vacation: vacationB,
+        p_tasks: [],
+      }),
+    ]);
+    if (createdA.error) throw createdA.error;
+    if (createdB.error) throw createdB.error;
+    vacationAId = vacationA.id;
+    vacationBId = vacationB.id;
+    taskAId = tasksA[0]!.id;
   });
 
   afterAll(async () => {
-    await deleteTestData([householdAId, householdBId], [userA, userB, userC]);
+    await deleteTestData(
+      [householdAId, householdBId, householdCId],
+      [userA, userB, userC],
+    );
   });
 
   it("lets a member read their own household", async () => {
@@ -570,5 +645,336 @@ describe("household RLS isolation", () => {
       created_by: userB.userId,
     });
     expect(error).toBeNull();
+  });
+
+  it("returns zero of household A's vacations and their tasks to a member of household B", async () => {
+    const vacations = await userB.client
+      .from("vacations")
+      .select("id")
+      .eq("household_id", householdAId);
+    expect(vacations.error).toBeNull();
+    expect(vacations.data).toHaveLength(0);
+
+    const tasks = await userB.client
+      .from("vacation_tasks")
+      .select("id")
+      .eq("vacation_id", vacationAId);
+    expect(tasks.error).toBeNull();
+    expect(tasks.data).toHaveLength(0);
+  });
+
+  it("create_vacation writes the vacation and its tasks as the caller", async () => {
+    const vacations = await userA.client
+      .from("vacations")
+      .select("id, title, kind, starts_on, ends_on, created_by, deleted_at")
+      .eq("household_id", householdAId);
+    expect(vacations.error).toBeNull();
+    expect(vacations.data).toEqual([
+      {
+        id: vacationAId,
+        title: "Denmark",
+        kind: "house",
+        starts_on: "2026-12-05",
+        ends_on: "2026-12-12",
+        created_by: userA.userId,
+        deleted_at: null,
+      },
+    ]);
+
+    const tasks = await userA.client
+      .from("vacation_tasks")
+      .select("household_id, phase, title, done, position, created_by")
+      .eq("vacation_id", vacationAId)
+      .order("phase");
+    expect(tasks.error).toBeNull();
+    expect(tasks.data).toEqual([
+      {
+        household_id: householdAId,
+        phase: "before",
+        title: "Clothes",
+        done: false,
+        position: 1,
+        created_by: userA.userId,
+      },
+      {
+        household_id: householdAId,
+        phase: "during",
+        title: "Return the key",
+        done: false,
+        position: 1,
+        created_by: userA.userId,
+      },
+    ]);
+  });
+
+  it("create_vacation returns the rows it wrote", async () => {
+    const vacation = vacationJson(householdBId);
+    const task = taskJson(1.5, "Unpack the car", "after");
+    const { data, error } = await userB.client.rpc("create_vacation", {
+      p_vacation: vacation,
+      p_tasks: [task],
+    });
+    expect(error).toBeNull();
+    expect(data.vacation).toMatchObject({
+      ...vacation,
+      created_by: userB.userId,
+      deleted_at: null,
+    });
+    expect(data.tasks).toHaveLength(1);
+    expect(data.tasks[0]).toMatchObject({
+      ...task,
+      vacation_id: vacation.id,
+      household_id: householdBId,
+      done: false,
+      created_by: userB.userId,
+      deleted_at: null,
+    });
+  });
+
+  it("does not let vacations or their tasks be read without signing in", async () => {
+    const vacations = await signedOut.from("vacations").select("id");
+    expect(vacations.data).toBeNull();
+    expect(vacations.error).not.toBeNull();
+
+    const tasks = await signedOut.from("vacation_tasks").select("id");
+    expect(tasks.data).toBeNull();
+    expect(tasks.error).not.toBeNull();
+  });
+
+  it("create_vacation cannot be called without signing in", async () => {
+    const vacation = vacationJson(householdAId);
+    const { data, error } = await signedOut.rpc("create_vacation", {
+      p_vacation: vacation,
+      p_tasks: [],
+    });
+    expect(data).toBeNull();
+    expect(error).not.toBeNull();
+
+    const { data: rows } = await admin
+      .from("vacations")
+      .select("id")
+      .eq("id", vacation.id);
+    expect(rows).toHaveLength(0);
+  });
+
+  it("create_vacation refuses a vacation in another household", async () => {
+    const vacation = vacationJson(householdAId);
+    const { error } = await userB.client.rpc("create_vacation", {
+      p_vacation: vacation,
+      p_tasks: [taskJson(1, "Clothes")],
+    });
+    expect(error).not.toBeNull();
+
+    const { data: rows } = await admin
+      .from("vacations")
+      .select("id")
+      .eq("id", vacation.id);
+    expect(rows).toHaveLength(0);
+  });
+
+  it("create_vacation writes nothing when one of its tasks is refused", async () => {
+    const vacation = vacationJson(householdBId);
+    const tasks = [taskJson(1, "Clothes"), taskJson(2, "Books", "sometime")];
+    const { error } = await userB.client.rpc("create_vacation", {
+      p_vacation: vacation,
+      p_tasks: tasks,
+    });
+    expect(error).not.toBeNull();
+
+    const { data: vacations } = await admin
+      .from("vacations")
+      .select("id")
+      .eq("id", vacation.id);
+    expect(vacations).toHaveLength(0);
+    const { data: written } = await admin
+      .from("vacation_tasks")
+      .select("id")
+      .in(
+        "id",
+        tasks.map((task) => task.id),
+      );
+    expect(written).toHaveLength(0);
+  });
+
+  it("blocks adding a vacation or a task to another household", async () => {
+    const vacation = await userB.client
+      .from("vacations")
+      .insert(vacationRow(userB, householdAId));
+    expect(vacation.error).not.toBeNull();
+
+    const task = await userB.client
+      .from("vacation_tasks")
+      .insert(vacationTaskRow(userB, vacationAId, householdAId));
+    expect(task.error).not.toBeNull();
+  });
+
+  it("blocks a task that names the member's own household but another household's vacation", async () => {
+    // The policy alone would pass this row (household B is the caller's);
+    // the composite foreign key ties the task to its vacation's household.
+    const { error } = await userB.client
+      .from("vacation_tasks")
+      .insert(vacationTaskRow(userB, vacationAId, householdBId));
+    expect(error).not.toBeNull();
+  });
+
+  it("leaves another household's vacation and task untouched by an edit or a removal (RLS filters, not an error)", async () => {
+    const removedAt = new Date().toISOString();
+    const vacation = await userB.client
+      .from("vacations")
+      .update({ title: "Taken over", deleted_at: removedAt })
+      .eq("id", vacationAId);
+    expect(vacation.error).toBeNull();
+    const task = await userB.client
+      .from("vacation_tasks")
+      .update({ title: "Taken over", done: true, deleted_at: removedAt })
+      .eq("id", taskAId);
+    expect(task.error).toBeNull();
+
+    const { data: vacationRowNow } = await admin
+      .from("vacations")
+      .select("title, deleted_at")
+      .eq("id", vacationAId)
+      .single();
+    expect(vacationRowNow).toEqual({ title: "Denmark", deleted_at: null });
+    const { data: taskRowNow } = await admin
+      .from("vacation_tasks")
+      .select("title, done, deleted_at")
+      .eq("id", taskAId)
+      .single();
+    expect(taskRowNow).toEqual({
+      title: "Clothes",
+      done: false,
+      deleted_at: null,
+    });
+  });
+
+  it("blocks moving a vacation or a task into another household", async () => {
+    const vacation = await userA.client
+      .from("vacations")
+      .update({ household_id: householdBId })
+      .eq("id", vacationAId);
+    expect(vacation.error).not.toBeNull();
+
+    const task = await userA.client
+      .from("vacation_tasks")
+      .update({ household_id: householdBId })
+      .eq("id", taskAId);
+    expect(task.error).not.toBeNull();
+  });
+
+  it("lets a member tick, rename and soft-delete a task of their household", async () => {
+    const { data: added, error: addError } = await userB.client
+      .from("vacation_tasks")
+      .insert(vacationTaskRow(userB, vacationBId, householdBId))
+      .select("id")
+      .single();
+    expect(addError).toBeNull();
+
+    const { data, error } = await userB.client
+      .from("vacation_tasks")
+      .update({
+        done: true,
+        title: "Warm clothes",
+        deleted_at: new Date().toISOString(),
+      })
+      .eq("id", added!.id)
+      .select("done, title");
+    expect(error).toBeNull();
+    expect(data).toEqual([{ done: true, title: "Warm clothes" }]);
+  });
+
+  it("does not let a member hard-delete a vacation or a task, only soft-delete it", async () => {
+    const task = await userA.client
+      .from("vacation_tasks")
+      .delete()
+      .eq("id", taskAId);
+    expect(task.error).not.toBeNull();
+    const vacation = await userA.client
+      .from("vacations")
+      .delete()
+      .eq("id", vacationAId);
+    expect(vacation.error).not.toBeNull();
+
+    const { data: vacations } = await admin
+      .from("vacations")
+      .select("id")
+      .eq("id", vacationAId);
+    expect(vacations).toEqual([{ id: vacationAId }]);
+    const { data: tasks } = await admin
+      .from("vacation_tasks")
+      .select("id")
+      .eq("id", taskAId);
+    expect(tasks).toEqual([{ id: taskAId }]);
+  });
+
+  it.each([
+    ["a blank title", { title: "  " }],
+    ["a title that is too long", { title: "a".repeat(201) }],
+    ["a kind the app doesn't know", { kind: "tent" }],
+    ["an end before its start", { ends_on: "2026-12-04" }],
+    ["no start", { starts_on: null }],
+  ])("rejects a vacation with %s", async (_name, override) => {
+    const { error } = await userB.client
+      .from("vacations")
+      .insert({ ...vacationRow(userB, householdBId), ...override });
+    expect(error).not.toBeNull();
+  });
+
+  it.each([
+    ["a blank title", { title: " " }],
+    ["a title that is too long", { title: "a".repeat(201) }],
+    ["a phase the app doesn't know", { phase: "sometime" }],
+  ])("rejects a vacation task with %s", async (_name, override) => {
+    const { error } = await userB.client.from("vacation_tasks").insert({
+      ...vacationTaskRow(userB, vacationBId, householdBId),
+      ...override,
+    });
+    expect(error).not.toBeNull();
+  });
+
+  it("accepts a vacation of one day and titles of the largest allowed size", async () => {
+    // Four bytes per character, the size the task row's byte budget counts with.
+    const longest = "\u{1F9F3}".repeat(200);
+    const vacation = await userB.client.from("vacations").insert({
+      ...vacationRow(userB, householdBId),
+      title: longest,
+      ends_on: "2026-12-05",
+    });
+    expect(vacation.error).toBeNull();
+
+    const task = await userB.client.from("vacation_tasks").insert({
+      ...vacationTaskRow(userB, vacationBId, householdBId),
+      title: longest,
+    });
+    expect(task.error).toBeNull();
+  });
+
+  it("removes a household's vacations and their tasks with the household", async () => {
+    householdCId = await createHousehold(userC.client, `Household C ${runId}`);
+    const vacation = vacationJson(householdCId);
+    const { error } = await userC.client.rpc("create_vacation", {
+      p_vacation: vacation,
+      p_tasks: [taskJson(1, "Clothes"), taskJson(2, "Books")],
+    });
+    expect(error).toBeNull();
+
+    // What the tests' cleanup does. A foreign key that blocked the cascade
+    // would leave test rows in the database that production uses.
+    const removal = await admin
+      .from("households")
+      .delete()
+      .eq("id", householdCId);
+    expect(removal.error).toBeNull();
+
+    const { data: vacations } = await admin
+      .from("vacations")
+      .select("id")
+      .eq("id", vacation.id);
+    expect(vacations).toHaveLength(0);
+    const { data: tasks } = await admin
+      .from("vacation_tasks")
+      .select("id")
+      .eq("vacation_id", vacation.id);
+    expect(tasks).toHaveLength(0);
   });
 });

@@ -1,8 +1,10 @@
 import { expect, test } from "@playwright/test";
+import { addDays, localDateOf } from "../../app/utils/local-date";
 import { ROUTES } from "../../app/utils/routes";
 import {
   addShoppingItem,
   addTodo,
+  addVacation,
   dashboardTile,
   dragOnWhiteboard,
   expectStrokeCount,
@@ -10,6 +12,7 @@ import {
   listItem,
   openList,
   openRecipes,
+  openVacations,
   openWhiteboard,
   saveRecipeForm,
   signIn,
@@ -70,6 +73,9 @@ test.describe("the dashboard's tiles", () => {
       await expect(dashboardTile(pageA, "Recipes")).toContainText(
         "None saved yet.",
       );
+      await expect(dashboardTile(pageA, "Vacations")).toContainText(
+        "No vacation planned.",
+      );
     });
 
     await test.step("a to-do added by B is counted and named, and gone once done", async () => {
@@ -128,6 +134,38 @@ test.describe("the dashboard's tiles", () => {
       await expect(recipes.getByRole("listitem")).toHaveText(["Pancakes"]);
     });
 
+    await test.step("a vacation added by B is named with where it stands and its open tasks", async () => {
+      const today = localDateOf(new Date());
+      await pageB.getByRole("link", { name: "Klankern" }).click();
+      await openVacations(pageB);
+      await addVacation(pageB, {
+        title: "Easter at grandma's",
+        kind: "Hotel",
+        from: addDays(today, 20),
+        until: addDays(today, 24),
+      });
+      const vacations = dashboardTile(pageA, "Vacations");
+      // The hotel template's tasks, all open.
+      await expect(vacations).toContainText("25 open");
+      await expect(vacations.getByRole("listitem")).toHaveText([
+        "Easter at grandma's",
+        "in 20 days",
+      ]);
+    });
+
+    await test.step("a second vacation that starts later is only counted", async () => {
+      const today = localDateOf(new Date());
+      await pageB.getByRole("link", { name: "All vacations" }).click();
+      await addVacation(pageB, {
+        title: "Summer at the lake",
+        from: addDays(today, 200),
+        until: addDays(today, 214),
+      });
+      await expect(
+        dashboardTile(pageA, "Vacations").getByRole("listitem"),
+      ).toHaveText(["Easter at grandma's", "in 20 days", "and 1 more"]);
+    });
+
     await test.step("B's own dashboard shows the same without a page load", async () => {
       await pageB.getByRole("link", { name: "Klankern" }).click();
       await expect(dashboardTile(pageB, "To-dos")).toContainText(
@@ -136,6 +174,7 @@ test.describe("the dashboard's tiles", () => {
       await expect(dashboardTile(pageB, "Shopping")).toContainText("5 to buy");
       await expect(whiteboardPreview(pageB)).toBeVisible();
       await expect(dashboardTile(pageB, "Recipes")).toContainText("1 saved");
+      await expect(dashboardTile(pageB, "Vacations")).toContainText("25 open");
     });
 
     await test.step("the roster's button opens the invite dialog and gets the focus back", async () => {

@@ -33,5 +33,5 @@ The changes add 21 paths, none tested yet because none is built: eleven in unit 
 ### Not verified
 
 - Whether the focus stays on a tick box when its row moves to the end of its phase. A browser may drop the focus of an element that is moved; the assertion planned in journey 1 will show, and the focus is then set again after the move.
-- The earlier figure of 18 places where the browser suite signs in was not counted again. A listing of the call lines gives 21, which is another measure: one line is in a helper several tests use, one in a loop. It is counted properly when journey 1 is written.
+- The earlier figure of 18 places where the browser suite signs in was not counted again. A listing of the call lines gives 21, which is another measure: one line is in a helper several tests use, one in a loop. It is counted properly when journey 1 is written. (Counted on 2026-10-13: 30 sign-ins in a run, see "Tests" under "Slice 1: a trip checklist from a template" in [`features/vacations-slice-1.md`](./vacations-slice-1.md).)
 - No second reviewer read this pass.

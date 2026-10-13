@@ -393,6 +393,99 @@ export type Database = {
           },
         ];
       };
+      vacation_tasks: {
+        Row: {
+          created_at: string;
+          created_by: string;
+          deleted_at: string | null;
+          done: boolean;
+          household_id: string;
+          id: string;
+          phase: string;
+          position: number;
+          title: string;
+          vacation_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by: string;
+          deleted_at?: string | null;
+          done?: boolean;
+          household_id: string;
+          id?: string;
+          phase: string;
+          position?: number;
+          title: string;
+          vacation_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string;
+          deleted_at?: string | null;
+          done?: boolean;
+          household_id?: string;
+          id?: string;
+          phase?: string;
+          position?: number;
+          title?: string;
+          vacation_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "vacation_tasks_vacation_fkey";
+            columns: ["vacation_id", "household_id"];
+            isOneToOne: false;
+            referencedRelation: "vacations";
+            referencedColumns: ["id", "household_id"];
+          },
+        ];
+      };
+      vacations: {
+        Row: {
+          created_at: string;
+          created_by: string;
+          deleted_at: string | null;
+          ends_on: string;
+          household_id: string;
+          id: string;
+          kind: string;
+          starts_on: string;
+          title: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by: string;
+          deleted_at?: string | null;
+          ends_on: string;
+          household_id: string;
+          id?: string;
+          kind: string;
+          starts_on: string;
+          title: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string;
+          deleted_at?: string | null;
+          ends_on?: string;
+          household_id?: string;
+          id?: string;
+          kind?: string;
+          starts_on?: string;
+          title?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "vacations_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -413,6 +506,10 @@ export type Database = {
         };
       };
       create_invite: { Args: { p_household_id: string }; Returns: string };
+      create_vacation: {
+        Args: { p_tasks: Json; p_vacation: Json };
+        Returns: Json;
+      };
       is_household_member: { Args: { hid: string }; Returns: boolean };
       list_household_members: {
         Args: { p_household_id: string };

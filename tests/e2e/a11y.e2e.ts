@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { addDays, localDateOf } from "../../app/utils/local-date";
 import { ROUTES } from "../../app/utils/routes";
 import {
   accountButton,
@@ -12,14 +13,20 @@ import {
   listItem,
   memberAvatar,
   NO_RECIPES_TEXT,
+  NO_VACATIONS_TEXT,
   openAccountMenu,
   openList,
   openRecipes,
+  openVacations,
   openWhiteboard,
+  phaseButton,
   recipeLink,
   saveRecipeForm,
   signIn,
+  taskMoreButton,
   untilSaved,
+  vacationLink,
+  vacationTask,
   whiteboardPreview,
 } from "../support/e2e-ui";
 import {
@@ -180,6 +187,9 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       );
       await expect(dashboardTile(page, "Recipes")).toContainText(
         "None saved yet.",
+      );
+      await expect(dashboardTile(page, "Vacations")).toContainText(
+        "No vacation planned.",
       );
       await expectNoBlockingViolations(page, "the dashboard");
 
@@ -381,6 +391,72 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       await page.getByRole("link", { name: "All recipes" }).click();
       await expect(recipeLink(page, "Pancakes")).toBeVisible();
       await expectNoBlockingViolations(page, "the recipe list");
+
+      await page.getByRole("link", { name: "Klankern" }).click();
+      await openVacations(page);
+      await expect(page).toHaveTitle("Vacations · Klankern");
+      await expect(page.getByText(NO_VACATIONS_TEXT)).toBeVisible();
+      await expectNoBlockingViolations(page, "the empty list of vacations");
+
+      const today = localDateOf(new Date());
+      await page.getByRole("link", { name: "Add vacation" }).click();
+      await expect(page).toHaveTitle("New vacation · Klankern");
+      // Saved with a title of spaces first, to scan the form with its error.
+      await page.getByLabel("Title").fill(" ");
+      await page.getByLabel("From").fill(addDays(today, 10));
+      await page.getByLabel("Until").fill(addDays(today, 17));
+      await page.getByRole("button", { name: "Add vacation" }).click();
+      await expect(page.getByText("Give the vacation a title.")).toBeVisible();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "the vacation form with an error");
+
+      await page.getByLabel("Title").fill("Winter week by the sea");
+      await page.getByRole("button", { name: "Add vacation" }).click();
+      await expect(page).toHaveTitle("Winter week by the sea · Klankern");
+      // With a done task among the open ones, and a folded phase opened.
+      await vacationTask(page, "Clothes").click();
+      await expect(vacationTask(page, "Clothes")).toBeChecked();
+      await phaseButton(page, "During").click();
+      await expect(vacationTask(page, "Return the key")).toBeVisible();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "a vacation");
+
+      await taskMoreButton(page, "Toothbrushes").click();
+      const taskMenu = page.getByRole("group", { name: "More: Toothbrushes" });
+      await expect(taskMenu).toBeVisible();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "a task's menu");
+
+      await taskMenu.getByRole("button", { name: "Edit" }).click();
+      await expect(page.getByLabel("Task", { exact: true })).toBeFocused();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "a task being renamed");
+      await page.keyboard.press("Escape");
+
+      await page.getByRole("button", { name: "Edit", exact: true }).click();
+      await expect(page.getByLabel("Title")).toBeFocused();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "a vacation being edited");
+
+      await page.getByRole("button", { name: "Remove vacation" }).click();
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(
+        page,
+        "the dialog that removes a vacation",
+      );
+      await page.getByRole("button", { name: "Cancel" }).last().click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+
+      await page.getByRole("link", { name: "All vacations" }).click();
+      await expect(vacationLink(page, "Winter week by the sea")).toBeVisible();
+      await expectNoBlockingViolations(page, "the list of vacations");
+
+      await page.getByRole("link", { name: "Klankern" }).click();
+      await expect(dashboardTile(page, "Vacations")).toContainText(
+        "Winter week by the sea",
+      );
+      await expectNoBlockingViolations(page, "the dashboard with a vacation");
     });
   });
 }
