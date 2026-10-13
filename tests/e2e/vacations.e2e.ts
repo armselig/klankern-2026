@@ -500,6 +500,18 @@ test.describe("a vacation's tasks, shared between its people", () => {
         .getByRole("button", { name: "Mia" })
         .click();
       await expect(whoHasWhat(pageA).nth(2)).toHaveText(/Mia.*1$/);
+      // The closed menu gives the focus back to the row's button late: only
+      // once the button's tooltip has gone too. Going on before that, the
+      // focus arrives there afterwards and is taken from "Change people"
+      // below, which failed on a slow runner. The focus is on a span inside
+      // the button, so the button itself never counts as focused.
+      await expect
+        .poll(() =>
+          pageA
+            .getByRole("button", { name: "Mia: iPad" })
+            .evaluate((button) => button.contains(document.activeElement)),
+        )
+        .toBe(true);
 
       await pageA.getByRole("button", { name: "Change people" }).click();
       // Only the name of a person without an account is a field.

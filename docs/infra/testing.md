@@ -58,3 +58,16 @@ With the vacation planner's first journey the `dev` project signed in through th
 The whole suite passed afterwards, 32 tests. What it no longer does 23 times is type a code into the form; the form's own tests are unchanged.
 
 Not verified: that the limit is the one for verified codes. It fits what was seen, a suite that passed with 30 form sign-ins beside some 25 password sign-ins, but Supabase's settings were not read.
+
+## The focus taken from "Change people" in journey 2 (2026-10-13)
+
+After the release of 1.7.0, CI on `main` failed three times in a row, twice in journey 2 of `vacations.e2e.ts`: after "Done" in "Change people" the button "Change people" did not have the focus. The run on `develop` for the same code passed, and so had the test on this machine every time. The same failure was in a run from before that day's work, so the day's changes were not its cause.
+
+Reproduced with a script that gives a task from the menu and opens and closes "Change people" right away: "Change people" gets the focus, and a moment later it is on the task's person button. Quasar's menu gives the focus back to its button when it closes, and holds that back while any popup is still opening or closing; here that is the button's tooltip. So the focus arrives late, and takes itself from wherever it has gone in between. The test went on to "Change people" before it had arrived.
+
+Fixed in the test: after giving the task it waits until the focus is inside the task's button. With that the script kept the focus on "Change people" in 12 of 12 tries, at normal speed and with the processor slowed 4 and 8 times. Waiting for the menu to be gone was tried first and was not enough.
+
+- The focus is on a span inside a Quasar button, so `toBeFocused()` on the button fails; the test asks whether the button contains the focused element.
+- In the app this can take the focus from a control that is reached within a moment of choosing from a task's menu. Not changed: it needs a person to be faster than the tooltip's fading.
+
+The other three failures of those runs were a to-do list, a shopping list and the recipes not shown within 15 seconds after a reload. Not explained. Browser tests were run from this machine against the same cloud project during all three runs, which the queueing of CI runs is meant to prevent; whether that was the cause is not known.
