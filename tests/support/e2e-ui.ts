@@ -1,6 +1,10 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { ROUTES } from "../../app/utils/routes";
-import { generateLoginCode, type TestUser } from "./supabase-fixtures";
+import {
+  generateLoginCode,
+  sessionCookies,
+  type TestUser,
+} from "./supabase-fixtures";
 
 // UI steps shared by the e2e specs. They drive the app through its real
 // forms, so a renamed label or button breaks the tests like it would a user.
@@ -65,6 +69,24 @@ export async function signIn(page: Page, user: TestUser) {
   await expect(page).toHaveURL(ROUTES.home);
   await expect(accountButton(page, user.email)).toBeVisible();
   await waitForSessionCookie(page);
+}
+
+/**
+ * Opens the dashboard signed in, without the login form: the browser gets a
+ * session of the user's as the app would have stored it. For every test
+ * that needs a signed-in member and is not about signing in. Supabase
+ * limits how many emailed codes are verified in five minutes, and the suite
+ * as a whole went past that with a form sign-in in every test (see
+ * sessionCookies). Returns as signIn does: on the dashboard, with the
+ * header showing the user.
+ */
+export async function openSignedIn(page: Page, user: TestUser) {
+  const appUrl = test.info().project.use.baseURL;
+  if (!appUrl) throw new Error("the project has no baseURL");
+  await page.context().addCookies(await sessionCookies(user, appUrl));
+  await page.goto(ROUTES.home);
+  await expect(page).toHaveURL(ROUTES.home);
+  await expect(accountButton(page, user.email)).toBeVisible();
 }
 
 /**

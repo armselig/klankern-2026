@@ -45,3 +45,16 @@ The `pwa` project had failed twice on a blank page (see "Found on the way" under
 Written test first. With the leftover planted and no hook, the build shipped the planted file as `dist/login/index.html` and the test failed; with the hook all five pass and the leftover is still in place. Also checked by hand, comparing whole builds apart from the build id and timestamps: a Netlify build without any `.output`, as on Netlify, has the same files with the same contents with and without the hook, so what gets deployed is unchanged, and the same again as a build with the leftover present. A plain `nuxt generate` still renders its nine pages, with matching build ids.
 
 Worth knowing: the hook relies on how Nitro builds its prerenderer, which no documentation promises. If the fifth test fails after an upgrade, read `prerender()` in Nitro's source again.
+
+## Signing in without the form (2026-10-13)
+
+With the vacation planner's first journey the `dev` project signed in through the login form 30 times in a run of five minutes, which is Supabase's limit for verified codes, and the journeys of the next two slices would have gone past it (see "Tests" under "Slice 1: a trip checklist from a template" in [`features/vacations-slice-1.md`](../features/vacations-slice-1.md)). The user chose to take the form out of the tests that are not about it.
+
+- `openSignedIn` gives the browser a session of the test user as the app stores one, in its cookie, and opens the dashboard. The session comes from a sign-in with the user's password, which the limit does not count: every test user has always been signed in that way once, for its API client, and the suite created some 25 of them per run without trouble.
+- Each call makes a session of its own. A sign-out ends all sessions of a user, and several tests share one user.
+- The form is still used where it is the subject: `auth.e2e.ts`, the invite flows of `household.e2e.ts` and the second user of `session-switch.e2e.ts`. That is 7 form sign-ins in a run.
+- `session-switch.e2e.ts` now answers the request for a code itself before its second user signs in; the form sign-in of its first user used to do that.
+
+The whole suite passed afterwards, 32 tests. What it no longer does 23 times is type a code into the form; the form's own tests are unchanged.
+
+Not verified: that the limit is the one for verified codes. It fits what was seen, a suite that passed with 30 form sign-ins beside some 25 password sign-ins, but Supabase's settings were not read.

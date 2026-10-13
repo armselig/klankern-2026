@@ -10,7 +10,7 @@ import {
   openRecipes,
   recipeLink,
   saveRecipeForm,
-  signIn,
+  openSignedIn,
 } from "../support/e2e-ui";
 import {
   createHousehold,
@@ -94,7 +94,7 @@ test.describe("shared recipes", () => {
       [pageA, userA],
       [pageB, userB],
     ] as const) {
-      await signIn(page, user);
+      await openSignedIn(page, user);
       await openRecipes(page);
       await expect(page.getByText(NO_RECIPES_TEXT)).toBeVisible();
     }
@@ -207,7 +207,7 @@ test.describe("shared recipes", () => {
   test("another household's recipe and an unknown one are not found", async ({
     page,
   }) => {
-    await signIn(page, userB);
+    await openSignedIn(page, userB);
 
     for (const id of [otherRecipeId, randomUUID()]) {
       await page.goto(ROUTES.recipe(id));

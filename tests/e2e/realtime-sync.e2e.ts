@@ -7,7 +7,7 @@ import {
   listItem,
   openList,
   removeListItem,
-  signIn,
+  openSignedIn,
   signOut,
   untilSaved,
 } from "../support/e2e-ui";
@@ -33,7 +33,7 @@ async function openListForBoth(
   linkName: "To-dos" | "Shopping",
 ) {
   for (const [index, page] of pages.entries()) {
-    await signIn(page, users[index]!);
+    await openSignedIn(page, users[index]!);
     await openList(page, linkName);
     await expect(page.getByText(EMPTY_LIST_TEXT)).toBeVisible();
   }
@@ -171,7 +171,7 @@ test.describe("realtime sync between two members", () => {
     const page = await context.newPage();
     const title = `Resync race ${runId}`;
 
-    await signIn(page, userA);
+    await openSignedIn(page, userA);
     await openList(page, "Shopping");
     const added = page.waitForResponse(
       (response) =>
@@ -257,7 +257,7 @@ test.describe("realtime sync between two members", () => {
     const isEventForItem = (frame: string, eventType: "INSERT" | "UPDATE") =>
       frame.includes(`"${eventType}"`) && frame.includes(title);
 
-    await signIn(page, userA);
+    await openSignedIn(page, userA);
     await openList(page, "Shopping");
     await expect
       .poll(() =>

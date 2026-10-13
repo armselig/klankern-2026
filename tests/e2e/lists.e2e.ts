@@ -7,7 +7,7 @@ import {
   listItem,
   openList,
   removeListItem,
-  signIn,
+  openSignedIn,
   untilSaved,
 } from "../support/e2e-ui";
 import {
@@ -39,7 +39,7 @@ test.describe("lists for a single member", () => {
   test("to-dos: add, check and remove are saved across a reload", async ({
     page,
   }) => {
-    await signIn(page, user);
+    await openSignedIn(page, user);
     await openList(page, "To-dos");
     await expect(page.getByText(EMPTY_LIST_TEXT)).toBeVisible();
     const input = page.getByLabel("Add a to-do");
@@ -90,7 +90,7 @@ test.describe("lists for a single member", () => {
   test("shopping: add with and without quantity, check and remove are saved", async ({
     page,
   }) => {
-    await signIn(page, user);
+    await openSignedIn(page, user);
     await openList(page, "Shopping");
     await expect(page.getByText(EMPTY_LIST_TEXT)).toBeVisible();
     const input = page.getByLabel("Item", { exact: true });
@@ -169,7 +169,7 @@ test.describe("lists for a single member", () => {
     }) => {
       const checkedTitle = `Checked early ${runId}`;
       const removedTitle = `Removed early ${runId}`;
-      await signIn(page, user);
+      await openSignedIn(page, user);
       await openList(page, list.name);
       await delayItemInserts(page, 1_500);
 

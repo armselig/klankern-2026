@@ -15,7 +15,7 @@ import {
   openVacations,
   openWhiteboard,
   saveRecipeForm,
-  signIn,
+  openSignedIn,
   untilSaved,
   whiteboardPreview,
 } from "../support/e2e-ui";
@@ -57,8 +57,8 @@ test.describe("the dashboard's tiles", () => {
     // A stays on the dashboard and only watches; B makes the changes.
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
-    await signIn(pageA, userA);
-    await signIn(pageB, userB);
+    await openSignedIn(pageA, userA);
+    await openSignedIn(pageB, userB);
 
     await test.step("a new household's tiles say that there is nothing yet", async () => {
       await expect(dashboardTile(pageA, "To-dos")).toContainText(

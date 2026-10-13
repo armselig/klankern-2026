@@ -22,7 +22,7 @@ import {
   phaseButton,
   recipeLink,
   saveRecipeForm,
-  signIn,
+  openSignedIn,
   taskMoreButton,
   untilSaved,
   vacationLink,
@@ -170,7 +170,7 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
     test("signed-in pages have no serious accessibility violations", async ({
       page,
     }) => {
-      await signIn(page, user);
+      await openSignedIn(page, user);
       await expect(page.getByText(`E2E a11y ${runId}`)).toBeVisible();
       await expect(page).toHaveTitle("Klankern");
       // The members and the tiles' content arrive after the household; the

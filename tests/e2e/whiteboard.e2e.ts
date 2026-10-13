@@ -3,7 +3,7 @@ import {
   dragOnWhiteboard,
   expectStrokeCount,
   openWhiteboard,
-  signIn,
+  openSignedIn,
   whiteboardStrokes,
   type BoardFraction,
 } from "../support/e2e-ui";
@@ -79,7 +79,7 @@ test.describe("shared whiteboard", () => {
       [pageA, userA],
       [pageB, userB],
     ] as const) {
-      await signIn(page, user);
+      await openSignedIn(page, user);
       await openWhiteboard(page);
       await expectStrokeCount(page, 0);
       await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();

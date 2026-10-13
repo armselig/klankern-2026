@@ -40,6 +40,8 @@ export const signedOut = createClient(url, publishableKey, {
 export interface TestUser {
   userId: string;
   email: string;
+  /** For a session of its own in a browser (see sessionCookies). */
+  password: string;
   /** Client scoped to the user's session, so RLS applies as them. */
   client: SupabaseClient;
 }
@@ -74,7 +76,61 @@ export async function createTestUser(label: string): Promise<TestUser> {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  return { userId: created.user.id, email, client: scoped };
+  return { userId: created.user.id, email, password, client: scoped };
+}
+
+/** A browser cookie, as Playwright's `context.addCookies` takes it. */
+export interface SessionCookie {
+  name: string;
+  value: string;
+  url: string;
+}
+
+/** The longest cookie value @supabase/ssr writes before it starts another
+ * chunk. */
+const COOKIE_CHUNK_SIZE = 3180;
+
+/**
+ * The cookies of a fresh session of the user, as the app's Supabase client
+ * stores one, for a browser that should start signed in without the login
+ * form. Signing in through the form verifies an emailed code, and Supabase
+ * allows about 30 of those in five minutes; the whole suite did more. A
+ * sign-in with the password is not counted there.
+ *
+ * A session of its own for every call: a sign-out in one test ends the
+ * sessions the user had, and a later test of the same user must not start
+ * with one of them.
+ *
+ * The format is @supabase/ssr's: the session as JSON, base64url-encoded
+ * behind a prefix, under the project's storage key, cut into numbered
+ * chunks when it is long. If that ever changes, every test that uses this
+ * fails at once, on a page that asks to sign in.
+ */
+export async function sessionCookies(
+  user: TestUser,
+  appUrl: string,
+): Promise<SessionCookie[]> {
+  const anon = createClient(url!, publishableKey!, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data, error } = await anon.auth.signInWithPassword({
+    email: user.email,
+    password: user.password,
+  });
+  if (error || !data.session) throw error ?? new Error("sign-in failed");
+
+  const name = `sb-${new URL(url!).hostname.split(".")[0]}-auth-token`;
+  const value = `base64-${Buffer.from(JSON.stringify(data.session)).toString("base64url")}`;
+  if (value.length <= COOKIE_CHUNK_SIZE) return [{ name, value, url: appUrl }];
+  const chunks: SessionCookie[] = [];
+  for (let start = 0; start < value.length; start += COOKIE_CHUNK_SIZE) {
+    chunks.push({
+      name: `${name}.${chunks.length}`,
+      value: value.slice(start, start + COOKIE_CHUNK_SIZE),
+      url: appUrl,
+    });
+  }
+  return chunks;
 }
 
 export async function createHousehold(

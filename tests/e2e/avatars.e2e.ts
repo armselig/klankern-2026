@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { memberAvatar, memberRoster, signIn } from "../support/e2e-ui";
+import { memberAvatar, memberRoster, openSignedIn } from "../support/e2e-ui";
 import {
   createHousehold,
   createTestUser,
@@ -85,7 +85,7 @@ test.describe("avatars", () => {
 
     await test.step("without a Gravatar, everyone gets the drawing", async () => {
       const requested = await answerGravatarFor(page, []);
-      await signIn(page, owner);
+      await openSignedIn(page, owner);
 
       await expectDrawing(headerAvatar);
       await expectDrawing(memberAvatar(page, owner.email));

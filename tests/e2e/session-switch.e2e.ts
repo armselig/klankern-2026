@@ -13,8 +13,9 @@ import {
   NO_VACATIONS_TEXT,
   openList,
   openVacations,
-  signIn,
+  openSignedIn,
   signOut,
+  stubOtpRequest,
   untilSaved,
   waitForSessionCookie,
 } from "../support/e2e-ui";
@@ -67,7 +68,7 @@ test.describe("switching users in the same tab", () => {
     );
 
     await test.step("A adds items to both lists, and a vacation", async () => {
-      await signIn(page, userA);
+      await openSignedIn(page, userA);
       await openList(page, "To-dos");
       // Left open: the dashboard previews only what is still to do.
       await addTodo(page, "Still open for A");
@@ -101,6 +102,9 @@ test.describe("switching users in the same tab", () => {
     await test.step("A signs out; B signs in on the same page, without a page load", async () => {
       await signOut(page);
       joinedChannels.length = 0;
+      // A started with a session, not through the form, so the request for
+      // a code is answered here for the first time.
+      await stubOtpRequest(page);
       await enterLoginCode(page, userB.email, "Verify");
       await expect(accountButton(page, userB.email)).toBeVisible();
       await waitForSessionCookie(page);

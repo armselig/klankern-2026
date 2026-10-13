@@ -8,7 +8,7 @@ import {
   NO_VACATIONS_TEXT,
   openVacations,
   phaseButton,
-  signIn,
+  openSignedIn,
   taskMoreButton,
   untilTaskSaved,
   vacationLink,
@@ -53,8 +53,8 @@ test.describe("a vacation's checklist, for two members", () => {
     const socketA = await controlRealtimeSocket(contextA);
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
-    await signIn(pageA, userA);
-    await signIn(pageB, userB);
+    await openSignedIn(pageA, userA);
+    await openSignedIn(pageB, userB);
 
     // Ten days ahead, so the trip is "before" whatever day the test runs on.
     const today = localDateOf(new Date());
