@@ -108,3 +108,14 @@ Only the list changed (`VacationPeople.vue`). The store's `renamePerson` and the
 Tests: journey 2 of `vacations.e2e.ts` checks that "Mia" has a field and the other member has none.
 
 Not verified: whether any member was renamed on a real trip before the change.
+
+## A frame around “Who has what” (2026-10-13)
+
+At the user's request "Who has what" has a frame around its heading, "Change people" and the lines, with 4 px and 8 px of padding. It is the frame of the lists of tasks below it: Quasar's line of a bordered list, square, as the new token `--theme-separator` (12% black in light mode, 28% white in dark mode). The first version had the frame of the list of "Change people" (`--theme-outline`, 4 px corners); the user asked for the lists' one the same day. It costs 10 px: the first phase's heading begins at 341 px of a 375x667 screen instead of 331 px.
+
+- **The frame of a pressed line is 3 px narrower on each side than the line.** The lines reach as far as the box's border, so that the first avatar stands under the heading, and a frame of the line's own width lay on the border.
+- **Not chosen:** 12 px of padding at the sides in place of the narrower frame. It takes 8 px from the lines, and on the trip it was tried with (two members with long names, a child, "Nobody yet") the lines then needed three rows instead of two, 44 px more.
+
+Checked in light and dark mode at 375x667, with a line pressed and with "Change people" open.
+
+Not verified: the e2e journeys and the accessibility scans were not run after the change, and hover and keyboard focus on a pressed line were not looked at.

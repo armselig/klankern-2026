@@ -53,7 +53,7 @@ defineExpose({
 </script>
 
 <template>
-  <section>
+  <section class="fair-share-box">
     <h3 class="fair-share__heading">
       <span>Who has what</span>
       <q-btn
@@ -114,13 +114,20 @@ defineExpose({
 </template>
 
 <style scoped>
+/* The same frame as the lists of tasks below it have. */
+.fair-share-box {
+  margin-top: 16px;
+  padding: 4px 8px;
+  border: 1px solid var(--theme-separator);
+}
+
 /* Quasar styles a bare h3 as a 3rem display line. */
 .fair-share__heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin: 16px 0 4px;
+  margin: 0 0 4px;
   font-size: 1rem;
   font-weight: 500;
   line-height: 1.5rem;
@@ -128,7 +135,7 @@ defineExpose({
 }
 
 /* A line's own padding is the space between two of them, and the list
-   reaches that far out of the page's column, so the first avatar stands
+   reaches that far out of the box's column, so the first avatar stands
    under the heading. */
 .fair-share {
   display: flex;
@@ -154,9 +161,17 @@ defineExpose({
 }
 
 /* The pressed line is told by a frame and not by a fill, so it does not
-   depend on a color alone and its text keeps its contrast. */
-.fair-share__line--shown {
+   depend on a color alone and its text keeps its contrast. The frame is
+   narrower than the line: the lines reach as far as the box's border, and
+   a frame of the line's own width would lie on it. Wider padding in the
+   box instead would cost the names a row. */
+.fair-share__line--shown::after {
+  position: absolute;
+  inset: 0 3px;
+  border-radius: inherit;
   box-shadow: inset 0 0 0 2px currentColor;
+  content: "";
+  pointer-events: none;
 }
 
 .fair-share__name {

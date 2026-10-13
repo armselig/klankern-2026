@@ -39,6 +39,9 @@
     var(--ctp-latte-overlay2),
     var(--ctp-mocha-overlay2)
   );
+  /* Quasar's line around a bordered list and between its rows, for a box
+     of the app's own that stands beside such a list. */
+  --theme-separator: light-dark(rgb(0 0 0 / 12%), rgb(255 255 255 / 28%));
   /* Stands in for a picture that is still on its way. */
   --theme-placeholder: light-dark(
     var(--ctp-latte-surface1),
