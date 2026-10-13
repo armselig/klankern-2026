@@ -76,3 +76,11 @@ Tests: the helpers `openTasksIn`, `phaseSummaryIn` and `taskFilterHint` replace 
 Not chosen: keeping the checkbox beside the buttons (two controls for one thing, and a longer page).
 
 Not verified: whether a member finds out that a name can be pressed, since nothing but the line under a pressed one says so; a screen reader was not used; and the button's name does not say that the number counts open tasks.
+
+## “Edit” beside the title (2026-10-13)
+
+At the user's request the "Edit" button of a vacation's page moved from a row of its own under the dates to the right of the title and the dates. It keeps its icon, its label and its 44 px; the title and the line under it wrap beside it. That frees 48 px: the first phase's heading begins at 331 px of a 375x667 screen, and five tasks are on it without scrolling. With the two changes to "Who has what" the tasks start 250 px higher than on the morning of the same day (581 px).
+
+"Ready to go" stands under the dates as before, beside the button. Checked in light and dark mode at 375x667; the two vacation journeys and the accessibility scans pass.
+
+Not verified: a long title, which now wraps after about 250 px instead of the page's width.

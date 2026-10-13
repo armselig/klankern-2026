@@ -62,23 +62,27 @@ function submit() {
 
 <template>
   <header>
-    <template v-if="!editing">
-      <h2 class="text-h6 vacation-header__title">{{ vacation.title }}</h2>
-      <p class="text-muted q-my-none">
-        {{ VACATION_KIND_LABELS[vacation.kind] }} ·
-        {{ vacationDates(vacation, today) }} ·
-        {{ stageLine(vacation, today) }}
-      </p>
-      <p v-if="readyToGo" class="vacation-header__ready">Ready to go</p>
+    <!-- "Edit" stands beside the title and the dates, not under them: a row
+         of its own cost 48px above the tasks. -->
+    <div v-if="!editing" class="vacation-header__head">
+      <div class="vacation-header__text">
+        <h2 class="text-h6 vacation-header__title">{{ vacation.title }}</h2>
+        <p class="text-muted q-my-none">
+          {{ VACATION_KIND_LABELS[vacation.kind] }} ·
+          {{ vacationDates(vacation, today) }} ·
+          {{ stageLine(vacation, today) }}
+        </p>
+        <p v-if="readyToGo" class="vacation-header__ready">Ready to go</p>
+      </div>
       <q-btn
         ref="editButton"
         flat
         :icon="mdiPencilOutline"
         label="Edit"
-        class="touch-target q-mt-xs"
+        class="touch-target vacation-header__edit"
         @click="startEditing"
       />
-    </template>
+    </div>
 
     <q-form v-else class="q-gutter-y-sm" @submit.prevent="submit">
       <q-input
@@ -154,6 +158,22 @@ function submit() {
 </template>
 
 <style scoped>
+.vacation-header__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* The text gives way to the button and wraps; the button keeps its size. */
+.vacation-header__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.vacation-header__edit {
+  flex: none;
+}
+
 /* A title is one long word at worst; it wraps rather than widening the
    page. */
 .vacation-header__title {
