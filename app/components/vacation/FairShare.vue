@@ -87,7 +87,11 @@ defineExpose({
             @click="toggleShown(share)"
           >
             <template v-if="share.person">
-              <person-avatar :email="emailOf(share.person)" :size="24" />
+              <person-avatar
+                :email="emailOf(share.person)"
+                :person="share.person"
+                :size="24"
+              />
               <span class="fair-share__name">{{ share.person.name }}</span>
               <!-- Beside the name, not in it: a long name is cut short, and
                    "(you)" has to stay. -->

@@ -69,7 +69,11 @@ function addName() {
           class="touch-target"
           @update:model-value="emit('remove', person.id)"
         />
-        <person-avatar :email="emailOf(person.user_id)" :size="24" />
+        <person-avatar
+          :email="emailOf(person.user_id)"
+          :person="person"
+          :size="24"
+        />
         <q-input
           :model-value="person.name"
           :aria-label="`Name of ${person.name}`"

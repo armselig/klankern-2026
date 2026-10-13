@@ -178,6 +178,7 @@ defineExpose({
             <person-avatar
               v-if="state.assignee"
               :email="emailOf(state.assignee)"
+              :person="state.assignee"
               :size="28"
             />
             <span v-else class="vacation-task__nobody" aria-hidden="true">
@@ -204,7 +205,7 @@ defineExpose({
                   class="touch-target"
                   @click="emit('give', task.id, me.id)"
                 >
-                  <person-avatar :email="emailOf(me)" :size="24" />
+                  <person-avatar :email="emailOf(me)" :person="me" :size="24" />
                   <span class="q-ml-sm">Me</span>
                 </q-btn>
                 <q-btn
@@ -216,7 +217,11 @@ defineExpose({
                   class="touch-target"
                   @click="emit('give', task.id, person.id)"
                 >
-                  <person-avatar :email="emailOf(person)" :size="24" />
+                  <person-avatar
+                    :email="emailOf(person)"
+                    :person="person"
+                    :size="24"
+                  />
                   <span class="q-ml-sm">{{ person.name }}</span>
                   <span v-if="!person.user_id" class="q-ml-sm text-muted"
                     >no account</span
