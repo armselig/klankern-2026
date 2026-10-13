@@ -4,8 +4,11 @@ import type { NewVacationPerson, VacationPerson } from "~/types/vacation";
 
 /**
  * "Who is coming", on a vacation that exists: "Who has what" turns into
- * the list of names. Each name can be changed, a tick takes a person off,
- * and members who are not on the trip and new names can be added.
+ * the list of names. A tick takes a person off, and members who are not
+ * on the trip and new names can be added. The name of a person without an
+ * account can be changed: it was typed here. A member's name is text: it
+ * comes from the member's address, and the app has nowhere a member sets
+ * a name of their own.
  */
 const props = defineProps<{
   /** The people on the trip. */
@@ -74,7 +77,11 @@ function addName() {
           :person="person"
           :size="24"
         />
+        <span v-if="person.user_id" class="col vacation-people__member">{{
+          person.name
+        }}</span>
         <q-input
+          v-else
           :model-value="person.name"
           :aria-label="`Name of ${person.name}`"
           dense
@@ -156,6 +163,7 @@ function addName() {
   min-height: 56px;
 }
 
+.vacation-people__member,
 .vacation-people__absent {
   overflow: hidden;
   text-overflow: ellipsis;

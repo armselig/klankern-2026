@@ -98,3 +98,13 @@ Such a person now has the first two letters of the name on a disc in one of the 
 Tests: seven unit tests for the letters and the ink (499 unit and isolation tests in all). The two vacation journeys and the accessibility scans pass; the scans see a person without an account in "Who has what" and in a task's menu. Checked in light and dark mode at 375x667 with five such people.
 
 Not verified: a name in a script without upper case, or one that starts with an emoji, on a real page. Two people whose names start with the same two letters and who get the same ink still look alike; nothing handles that.
+
+## A member's name is not a field (2026-10-13)
+
+In "Change people" every name was a field, a member's too. The user asked for a member's name to be text: the app has no feature for a member to carry a name of their own, and the name on a trip comes from the member's address. The name of a person without an account stays a field, since it was typed there and may need correcting.
+
+Only the list changed (`VacationPeople.vue`). The store's `renamePerson` and the table accept a new name for any person as before; nothing in the app offers it for a member any more. A member renamed on a trip before this keeps that name, and it can no longer be changed there.
+
+Tests: journey 2 of `vacations.e2e.ts` checks that "Mia" has a field and the other member has none.
+
+Not verified: whether any member was renamed on a real trip before the change.

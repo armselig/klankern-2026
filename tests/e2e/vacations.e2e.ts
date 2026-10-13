@@ -502,6 +502,13 @@ test.describe("a vacation's tasks, shared between its people", () => {
       await expect(whoHasWhat(pageA).nth(2)).toHaveText(/Mia.*1$/);
 
       await pageA.getByRole("button", { name: "Change people" }).click();
+      // Only the name of a person without an account is a field.
+      await expect(
+        pageA.getByRole("textbox", { name: "Name of Mia" }),
+      ).toHaveValue("Mia");
+      await expect(
+        pageA.getByRole("textbox", { name: `Name of ${nameB}` }),
+      ).toHaveCount(0);
       await pageA.getByRole("checkbox", { name: "Mia is coming" }).click();
       await pageA.getByRole("button", { name: "Done" }).click();
       await expect(
