@@ -6,7 +6,7 @@ The history of the vacation planner, oldest first. The current state is in [`pro
 
 A member adds a vacation to the household. The app fills in tasks for before, during and after the trip from a template that fits the kind of stay: a house where the household cooks, or a hotel. Members add, edit and remove tasks freely. A task can be given to a person on the trip, and that person can reject it with a reason ("I'm already busy enough washing all the clothes").
 
-Designed with the user on 2026-10-12. The first real use is a stay in a house, about two months after that date, so the house template is written first. The feature may be offered to other households later, so nothing in it may be specific to one.
+Designed with the user on 2026-10-12. The first real use is a stay in a house, about two months after that date, so the house template is written first. The feature may be offered to other households later, so nothing in it may be specific to one. (One exception since 2026-10-13, entries of the house template, see "The house and hotel templates" in [`features/vacations-templates.md`](./vacations-templates.md).)
 
 ### What it is for
 
@@ -63,7 +63,7 @@ All rows are small, so an UPDATE event carries the whole row and the reducers ca
 
 ### Templates
 
-`utils/vacation-templates.ts` holds plain data: for each kind, a list of tasks with a phase and a title. The hotel list is the shared tasks; the house list adds what cooking and a house bring (plan meals, shop for the first evening, bring what a rented kitchen lacks, clean before leaving, return the key). No table and no migration.
+`utils/vacation-templates.ts` holds plain data: for each kind, a list of tasks with a phase and a title. The hotel list is the shared tasks; the house list adds what cooking and a house bring (plan meals, shop for the first evening, bring what a rented kitchen lacks, clean before leaving, return the key). No table and no migration. (What both lists hold was decided on 2026-10-13, see "The house and hotel templates" in [`features/vacations-templates.md`](./vacations-templates.md).)
 
 ### Screens
 
@@ -101,7 +101,7 @@ Within a slice: the migration and the RLS tests first, then the actions with the
 
 ### What a person has to do
 
-Before any code, the user writes the "before" list of the household's last trip from memory, with the other adult on the trip, and notes beside each task who did it. The list is the first draft of the house template, and the names are a first "Who has what".
+Before any code, the user writes the "before" list of the household's last trip from memory, with the other adult on the trip, and notes beside each task who did it. The list is the first draft of the house template, and the names are a first "Who has what". (Handed over on 2026-10-13 without the names, see "The house and hotel templates" in [`features/vacations-templates.md`](./vacations-templates.md).)
 
 ### Done when
 
