@@ -140,7 +140,7 @@ export type DashboardTileName =
 export function dashboardTile(page: Page, name: DashboardTileName) {
   return page
     .getByRole("navigation", {
-      name: "Lists, whiteboard, recipes and vacations",
+      name: "Lists, recipes, vacations and whiteboard",
     })
     .getByRole("listitem")
     .filter({ has: page.getByRole("link", { name, exact: true }) });

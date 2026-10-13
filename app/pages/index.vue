@@ -98,7 +98,9 @@ const vacationsFailed = computed(
       <!-- A list of links, as a navigation is; a plain ul, because a q-list
            would hold no q-items. role="list" because Safari stops
            announcing a list once its bullets are styled away. -->
-      <nav aria-label="Lists, whiteboard, recipes and vacations">
+      <!-- The whiteboard is last and stays last when a tile is added: the
+           other four are what a household looks up, and they come first. -->
+      <nav aria-label="Lists, recipes, vacations and whiteboard">
         <ul role="list" class="dashboard__tiles">
           <li>
             <dashboard-tile
@@ -132,21 +134,6 @@ const vacationsFailed = computed(
           </li>
           <li>
             <dashboard-tile
-              title="Whiteboard"
-              :to="ROUTES.whiteboard"
-              :icon="mdiDraw"
-              :loading="whiteboardStore.loading"
-              :failed="whiteboardFailed"
-            >
-              <whiteboard-preview
-                v-if="whiteboardStore.visible.length > 0"
-                :strokes="whiteboardStore.visible"
-              />
-              <p v-else class="text-muted q-my-none">Nothing drawn yet.</p>
-            </dashboard-tile>
-          </li>
-          <li>
-            <dashboard-tile
               title="Recipes"
               :to="ROUTES.recipes"
               :icon="mdiChefHat"
@@ -174,6 +161,21 @@ const vacationsFailed = computed(
                 :all-to="ROUTES.vacations"
               />
               <p v-else class="text-muted q-my-none">No vacation planned.</p>
+            </dashboard-tile>
+          </li>
+          <li>
+            <dashboard-tile
+              title="Whiteboard"
+              :to="ROUTES.whiteboard"
+              :icon="mdiDraw"
+              :loading="whiteboardStore.loading"
+              :failed="whiteboardFailed"
+            >
+              <whiteboard-preview
+                v-if="whiteboardStore.visible.length > 0"
+                :strokes="whiteboardStore.visible"
+              />
+              <p v-else class="text-muted q-my-none">Nothing drawn yet.</p>
             </dashboard-tile>
           </li>
         </ul>

@@ -57,3 +57,9 @@ With the button the tile is 222 px high at 375 px, 34 px more than the other fou
 Tests: a new step in `dashboard.e2e.ts` presses the line about the tasks and lands on the trip, then "See all" and lands on the list. The accessibility scan of the dashboard with a vacation covers the link and the button in both modes.
 
 Not verified: with a keyboard or a screen reader by hand; the order is heading, trip, "See all".
+
+## The whiteboard's tile is last (2026-10-13)
+
+At the user's request the tiles stand in the order To-dos, Shopping, Recipes, Vacations, Whiteboard, where the whiteboard had been third. The whiteboard is to stay last when a tile is added. The navigation is named "Lists, recipes, vacations and whiteboard" to match, which is also how the browser tests find the tiles.
+
+At 375 px the vacations' tile now shares a row with the recipes' tile, which grows to its 222 px; the whiteboard's tile stands alone in the last row.
