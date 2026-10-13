@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.7.0](https://github.com/armselig/klankern-2026/compare/v1.6.0...v1.7.0) (2026-10-13)
+
+### Features
+
+* **dashboard:** open the next vacation from its tile ([176359f](https://github.com/armselig/klankern-2026/commit/176359f8e201a77b707be06e1efc9f529ef4b246))
+* **dashboard:** put the whiteboard's tile last ([5525fca](https://github.com/armselig/klankern-2026/commit/5525fcaf6e80269f5d97ca2ffaa24a9bd5ce7a53))
+* **vacations:** filter the tasks by a person from "Who has what" ([8ad55a7](https://github.com/armselig/klankern-2026/commit/8ad55a73cb677fe9c4a2a33afde4a45b636b1190))
+* **vacations:** give a person without an account a picture of their own ([1ad8076](https://github.com/armselig/klankern-2026/commit/1ad807647d6336e39e23a4b29c3d21f5641aaa5f))
+* **vacations:** share a trip's tasks between its people ([59e4f88](https://github.com/armselig/klankern-2026/commit/59e4f883175beebd3f7d31515cda33cfcfae32cb))
+
+### Bug Fixes
+
+* **dashboard:** name the next vacation before its open tasks ([9c85ff2](https://github.com/armselig/klankern-2026/commit/9c85ff2e202e99f97bc35b2b19e0b6c167ee1df8))
+* **vacations:** release the task filter when "Who has what" has no lines ([4d0a7c2](https://github.com/armselig/klankern-2026/commit/4d0a7c294e03e8b2cb9a15e17cb46b7ab6e45139))
+
 ## [1.6.0](https://github.com/armselig/klankern-2026/compare/v1.5.0...v1.6.0) (2026-10-13)
 
 ### Features
