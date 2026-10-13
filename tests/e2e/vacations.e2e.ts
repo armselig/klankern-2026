@@ -107,10 +107,10 @@ test.describe("a vacation's checklist, for two members", () => {
 
     await test.step("B sees it on the tile without reloading, and opens it", async () => {
       const tile = dashboardTile(pageB, "Vacations");
-      await expect(tile).toContainText("33 open");
       await expect(tile.getByRole("listitem")).toHaveText([
         title,
         "in 10 days",
+        "33 tasks open",
       ]);
       await openVacations(pageB);
       await expect(vacationLink(pageB, title)).toContainText(

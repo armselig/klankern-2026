@@ -11,8 +11,7 @@ defineProps<{
 </script>
 
 <template>
-  <!-- Nothing to name, which for a list is the same as a count of zero. A
-       vacation whose tasks are all done is still named, with its 0. -->
+  <!-- Nothing to name, which for a list is the same as a count of zero. -->
   <p v-if="preview.shown.length === 0" class="text-muted q-my-none">
     {{ emptyText }}
   </p>
@@ -24,11 +23,7 @@ defineProps<{
     <!-- role="list" because Safari stops announcing a list once its bullets
          are styled away. -->
     <ul role="list" class="tile-list-preview__entries">
-      <li
-        v-for="entry in preview.shown"
-        :key="entry.id"
-        :class="entry.muted ? 'text-muted' : 'ellipsis'"
-      >
+      <li v-for="entry in preview.shown" :key="entry.id" class="ellipsis">
         {{ entry.title }}
       </li>
       <li v-if="preview.more > 0" class="text-muted">

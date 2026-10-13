@@ -168,12 +168,7 @@ const vacationsFailed = computed(
               :loading="vacationStore.loading"
               :failed="vacationsFailed"
             >
-              <tile-list-preview
-                v-if="vacationPreview"
-                :preview="vacationPreview"
-                count-label="open"
-                empty-text="No vacation planned."
-              />
+              <vacation-tile v-if="vacationPreview" :lines="vacationPreview" />
               <p v-else class="text-muted q-my-none">No vacation planned.</p>
             </dashboard-tile>
           </li>

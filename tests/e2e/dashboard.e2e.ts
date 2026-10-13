@@ -145,11 +145,11 @@ test.describe("the dashboard's tiles", () => {
         until: addDays(today, 24),
       });
       const vacations = dashboardTile(pageA, "Vacations");
-      // The hotel template's tasks, all open.
-      await expect(vacations).toContainText("25 open");
+      // The hotel template's tasks, all open, after the trip and its day.
       await expect(vacations.getByRole("listitem")).toHaveText([
         "Easter at grandma's",
         "in 20 days",
+        "25 tasks open",
       ]);
     });
 
@@ -163,7 +163,12 @@ test.describe("the dashboard's tiles", () => {
       });
       await expect(
         dashboardTile(pageA, "Vacations").getByRole("listitem"),
-      ).toHaveText(["Easter at grandma's", "in 20 days", "and 1 more"]);
+      ).toHaveText([
+        "Easter at grandma's",
+        "in 20 days",
+        "25 tasks open",
+        "and 1 more vacation",
+      ]);
     });
 
     await test.step("B's own dashboard shows the same without a page load", async () => {
@@ -174,7 +179,9 @@ test.describe("the dashboard's tiles", () => {
       await expect(dashboardTile(pageB, "Shopping")).toContainText("5 to buy");
       await expect(whiteboardPreview(pageB)).toBeVisible();
       await expect(dashboardTile(pageB, "Recipes")).toContainText("1 saved");
-      await expect(dashboardTile(pageB, "Vacations")).toContainText("25 open");
+      await expect(dashboardTile(pageB, "Vacations")).toContainText(
+        "25 tasks open",
+      );
     });
 
     await test.step("the roster's button opens the invite dialog and gets the focus back", async () => {

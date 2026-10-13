@@ -28,3 +28,17 @@ The dashboard was one card in the middle of the screen: the household's name, th
 
 - A layout for wide screens: the dashboard stays one column of 480px.
 - Nobody has used it on a phone by touch yet.
+
+## The vacations' tile names the trip first (2026-10-13)
+
+The user reported that the tile got the priorities wrong: it led with a large number and "open", as the list tiles do, and the number stood before the trip it counted tasks of. "25 open" under the heading "Vacations" can be read as 25 open vacations. What the user wants to see at a glance is which vacation is next, then when it is, then how many tasks are open.
+
+The tile now has lines of its own (`components/dashboard/VacationTile.vue`, `VacationTileLines`): the vacation's title in medium weight on up to two lines, where the trip stands ("in 10 days"), "33 tasks open", what is the member's and what came back when there is any, and "and 1 more vacation" when another one is current. The number says what it counts: "1 task open", "No tasks open". "and 1 more" became "and 1 more vacation", since it now follows a line about tasks.
+
+The list tiles' preview lost what it had gained for this tile in slice 1: an entry can no longer be a muted line, and the preview's number is again only the number of a list's entries.
+
+Tests: the unit tests of `vacationTilePreview` are rewritten for the lines, with one for the wording of the number (492 unit and isolation tests in all); `dashboard.e2e.ts` and journey 1 of `vacations.e2e.ts` read the tile's lines in their order. Checked in light and dark mode at 375 px, where the tile keeps the height of the others.
+
+Not chosen: only rewording "N open" to "N tasks open" under the large number, which the user named as the alternative; the number would still come before the trip.
+
+Not verified: the tile with a title longer than two lines, and during and after a trip ("day 2 of 8", "back since 30 Oct").

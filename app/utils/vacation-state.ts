@@ -1,4 +1,4 @@
-import type { ListPreview, TitledEntry } from "~/types/dashboard";
+import type { VacationTileLines } from "~/types/dashboard";
 import type { ItemsById } from "~/types/list";
 import type { RowRealtimeEvent, SyncedRow } from "~/types/synced-row";
 import type {
@@ -302,10 +302,17 @@ export function groupVacations(
   return groups;
 }
 
+/** A number of open tasks in words, for where nothing around the number
+ * says what it counts. */
+export function openTasksLine(open: number): string {
+  if (open === 0) return "No tasks open";
+  return open === 1 ? "1 task open" : `${open} tasks open`;
+}
+
 /**
- * What the dashboard's tile says: the first of the current vacations with
- * where it stands today, its open tasks as the tile's number, and how many
- * more are current. Null when none is: the tile then says so itself.
+ * What the dashboard's tile says: the first of the current vacations, where
+ * it stands today, its open tasks, and how many more are current. Null when
+ * none is: the tile then says so itself.
  */
 export function vacationTilePreview(
   vacationsById: ItemsById<Vacation>,
@@ -315,29 +322,25 @@ export function vacationTilePreview(
    * this id: how many open tasks are theirs and how many came back
    * rejected (see myShareOf). The tile stands in for notifications. */
   shareOf?: (vacationId: string) => { mine: number; rejected: number },
-): ListPreview<TitledEntry> | null {
+): VacationTileLines | null {
   const { current } = groupVacations(vacationsById, tasksById, today);
   const first = current[0];
   if (!first) return null;
-  const shown: TitledEntry[] = [
-    { id: first.id, title: first.title },
-    { id: `${first.id}-stage`, title: stageLine(first, today), muted: true },
-  ];
   const share = shareOf?.(first.id);
   const parts = [
     share?.mine ? `${share.mine} yours` : "",
     share?.rejected ? `${share.rejected} came back` : "",
   ].filter(Boolean);
-  if (parts.length > 0)
-    shown.push({
-      id: `${first.id}-share`,
-      title: parts.join(" · "),
-      muted: true,
-    });
+  const more = current.length - 1;
   return {
-    count: openTaskCount(tasksOfVacation(tasksById, first.id)),
-    shown,
-    more: current.length - 1,
+    title: first.title,
+    when: stageLine(first, today),
+    tasks: openTasksLine(openTaskCount(tasksOfVacation(tasksById, first.id))),
+    share: parts.length > 0 ? parts.join(" · ") : null,
+    more:
+      more === 0
+        ? null
+        : `and ${more} more ${more === 1 ? "vacation" : "vacations"}`,
   };
 }
 

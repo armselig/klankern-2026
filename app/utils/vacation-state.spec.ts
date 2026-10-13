@@ -20,6 +20,7 @@ import {
   vacationDates,
   vacationDetailsProblem,
   vacationTilePreview,
+  openTasksLine,
 } from "./vacation-state";
 
 const HOUSEHOLD = "house-1";
@@ -547,19 +548,32 @@ describe("vacationTilePreview", () => {
   it("names the vacation, where it stands, and its open tasks", () => {
     const list = tasks(["before", false], ["before", true], ["after", false]);
     expect(vacationTilePreview(byId(next), byId(...list), today)).toEqual({
-      count: 2,
-      shown: [
-        { id: "vacation-1", title: "Winter week by the sea" },
-        { id: "vacation-1-stage", title: "in 54 days", muted: true },
-      ],
-      more: 0,
+      title: "Winter week by the sea",
+      when: "in 54 days",
+      tasks: "2 tasks open",
+      share: null,
+      more: null,
     });
   });
 
   it("names the one that starts first and counts the others", () => {
-    const preview = vacationTilePreview(byId(later, next), {}, today);
-    expect(preview?.shown[0]?.title).toBe("Winter week by the sea");
-    expect(preview?.more).toBe(1);
+    const further = vacation({
+      id: "vacation-3",
+      starts_on: "2027-07-01",
+      ends_on: "2027-07-08",
+    });
+    const two = vacationTilePreview(byId(later, next), {}, today);
+    expect(two?.title).toBe("Winter week by the sea");
+    expect(two?.more).toBe("and 1 more vacation");
+    expect(
+      vacationTilePreview(byId(later, next, further), {}, today)?.more,
+    ).toBe("and 2 more vacations");
+  });
+
+  it("says what the number counts, down to none", () => {
+    expect(openTasksLine(2)).toBe("2 tasks open");
+    expect(openTasksLine(1)).toBe("1 task open");
+    expect(openTasksLine(0)).toBe("No tasks open");
   });
 
   it("still names a vacation whose tasks are all done", () => {
@@ -568,8 +582,8 @@ describe("vacationTilePreview", () => {
       byId(...tasks(["before", true])),
       today,
     );
-    expect(preview?.count).toBe(0);
-    expect(preview?.shown).toHaveLength(2);
+    expect(preview?.title).toBe("Winter week by the sea");
+    expect(preview?.tasks).toBe("No tasks open");
   });
 
   it("adds what is the member's and what came back, when there is any", () => {
@@ -578,22 +592,17 @@ describe("vacationTilePreview", () => {
       rejected,
     });
     const line = (mine: number, rejected: number) =>
-      vacationTilePreview(byId(next), {}, today, share(mine, rejected))
-        ?.shown[2];
-    expect(line(2, 1)).toEqual({
-      id: "vacation-1-share",
-      title: "2 yours · 1 came back",
-      muted: true,
-    });
-    expect(line(2, 0)?.title).toBe("2 yours");
-    expect(line(0, 1)?.title).toBe("1 came back");
-    expect(line(0, 0)).toBeUndefined();
+      vacationTilePreview(byId(next), {}, today, share(mine, rejected))?.share;
+    expect(line(2, 1)).toBe("2 yours · 1 came back");
+    expect(line(2, 0)).toBe("2 yours");
+    expect(line(0, 1)).toBe("1 came back");
+    expect(line(0, 0)).toBeNull();
   });
 
   it("does not count another vacation's tasks", () => {
     const foreign = task({ id: "task-9", vacation_id: "vacation-2" });
-    expect(vacationTilePreview(byId(next), byId(foreign), today)?.count).toBe(
-      0,
+    expect(vacationTilePreview(byId(next), byId(foreign), today)?.tasks).toBe(
+      "No tasks open",
     );
   });
 });
