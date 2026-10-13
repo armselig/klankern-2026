@@ -97,7 +97,7 @@ Within a slice: the migration and the RLS tests first, then the actions with the
 4. **What does a person without an email address look like?** `<user-avatar>` takes an email address and draws the rosette from its hash. A named person needs another seed, such as the person's id. (Decided 2026-10-12 by the user: a person without an email address gets a generic SVG picture instead of a rosette, so no other seed is needed. It is one icon from the Material Design Icons the app uses, the same for every such person. Which icon it is, is chosen in slice 2.)
 5. **Does the dashboard load every vacation there ever was?** With a few trips a year and some forty tasks each this stays small for years.
 6. **Is the latest rejection enough?** A task that three people rejected shows only the third reason. (Decided 2026-10-12 by the user: it is enough. A task keeps only its latest rejection, as "Task states" describes, and there is no table of past rejections.)
-7. **What does the hotel template leave out?** Decided when the house template is written.
+7. **What does the hotel template leave out?** Decided when the house template is written. (Decided 2026-10-13 by the user, with the list of the last trip's "before" tasks: of that list the hotel template leaves out two entries, the cooking and kitchen utensils and the coffee pot with the espresso powder. Every other entry is in both templates.)
 
 ### What a person has to do
 
