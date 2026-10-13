@@ -15,7 +15,7 @@ import type {
  *
  * The entries before the trip are one household's own list, in its order;
  * the rest was drafted for it. Some name things only that household has.
- * See "The house and hotel templates" in docs/features/vacations-templates.md
+ * See "The house and hotel templates" in docs/features/vacations/templates.md
  * for what was decided and what is to change when other households use the
  * app.
  */

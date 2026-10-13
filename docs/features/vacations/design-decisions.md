@@ -1,22 +1,22 @@
 # Vacation planner: the design's open decisions
 
-The second half of the vacation planner's design: what it left open, what a person had to do before the build, what counts as done, and what was considered and not chosen. The first half is "Design: a vacation planner" in [`features/vacations.md`](./vacations.md), from which this was split on 2026-10-13 without a change to its text. The current state is in [`progress.md`](../progress.md); [`CLAUDE.md`](../CLAUDE.md) lists the other topic files.
+The second half of the vacation planner's design: what it left open, what a person had to do before the build, what counts as done, and what was considered and not chosen. The first half is "Design: a vacation planner" in [`features/vacations/design.md`](./design.md), from which this was split on 2026-10-13 without a change to its text. The current state is in [`progress.md`](../../progress.md); [`CLAUDE.md`](../../CLAUDE.md) lists the other topic files.
 
 ## Design: open decisions and what was not chosen (2026-10-12)
 
 ### Open decisions
 
-1. **Is adding a vacation all-or-nothing?** Three inserts from the client (vacation, people, tasks) can leave a vacation without tasks if the last fails. A function that takes the rows as JSON and runs as the caller would make it one transaction under RLS. Recommended, not decided. (Decided 2026-10-12: one function, see "Engineering review" in [`features/vacations-review.md`](./vacations-review.md).)
-2. **One store or several?** The stores so far sync one kind of row each. This one has up to four, each needing the three pieces of bookkeeping. (Answered 2026-10-12: one store, see "Engineering review" in [`features/vacations-review.md`](./vacations-review.md).)
-3. **Which reducers carry over?** `upsertListItem`, `confirmListItem`, `softDeleteListItem` and `mergeListResync` are typed over `SyncedRow` and fit. `applyListRealtimeEvent` and `visibleListItems` are typed over `ListItem` and read `list_id`, which a vacation task doesn't have. (Corrected and answered 2026-10-12, see "Engineering review" in [`features/vacations-review.md`](./vacations-review.md).)
+1. **Is adding a vacation all-or-nothing?** Three inserts from the client (vacation, people, tasks) can leave a vacation without tasks if the last fails. A function that takes the rows as JSON and runs as the caller would make it one transaction under RLS. Recommended, not decided. (Decided 2026-10-12: one function, see "Engineering review" in [`features/vacations/review.md`](./review.md).)
+2. **One store or several?** The stores so far sync one kind of row each. This one has up to four, each needing the three pieces of bookkeeping. (Answered 2026-10-12: one store, see "Engineering review" in [`features/vacations/review.md`](./review.md).)
+3. **Which reducers carry over?** `upsertListItem`, `confirmListItem`, `softDeleteListItem` and `mergeListResync` are typed over `SyncedRow` and fit. `applyListRealtimeEvent` and `visibleListItems` are typed over `ListItem` and read `list_id`, which a vacation task doesn't have. (Corrected and answered 2026-10-12, see "Engineering review" in [`features/vacations/review.md`](./review.md).)
 4. **What does a person without an email address look like?** `<user-avatar>` takes an email address and draws the rosette from its hash. A named person needs another seed, such as the person's id. (Decided 2026-10-12 by the user: a person without an email address gets a generic SVG picture instead of a rosette, so no other seed is needed. It is one icon from the Material Design Icons the app uses, the same for every such person. Which icon it is, is chosen in slice 2.)
 5. **Does the dashboard load every vacation there ever was?** With a few trips a year and some forty tasks each this stays small for years.
-6. **Is the latest rejection enough?** A task that three people rejected shows only the third reason. (Decided 2026-10-12 by the user: it is enough. A task keeps only its latest rejection, as "Task states" in [`features/vacations.md`](./vacations.md) describes, and there is no table of past rejections.)
+6. **Is the latest rejection enough?** A task that three people rejected shows only the third reason. (Decided 2026-10-12 by the user: it is enough. A task keeps only its latest rejection, as "Task states" in [`features/vacations/design.md`](./design.md) describes, and there is no table of past rejections.)
 7. **What does the hotel template leave out?** Decided when the house template is written. (Decided 2026-10-13 by the user, with the list of the last trip's "before" tasks: of that list the hotel template leaves out two entries, the cooking and kitchen utensils and the coffee pot with the espresso powder. Every other entry is in both templates.)
 
 ### What a person has to do
 
-Before any code, the user writes the "before" list of the household's last trip from memory, with the other adult on the trip, and notes beside each task who did it. The list is the first draft of the house template, and the names are a first "Who has what". (Handed over on 2026-10-13 without the names, see "The house and hotel templates" in [`features/vacations-templates.md`](./vacations-templates.md).)
+Before any code, the user writes the "before" list of the household's last trip from memory, with the other adult on the trip, and notes beside each task who did it. The list is the first draft of the house template, and the names are a first "Who has what". (Handed over on 2026-10-13 without the names, see "The house and hotel templates" in [`features/vacations/templates.md`](./templates.md).)
 
 ### Done when
 

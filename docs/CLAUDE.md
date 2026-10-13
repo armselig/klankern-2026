@@ -17,17 +17,7 @@ Start with `progress.md`, then read the topic files for what you are about to to
 - [`whiteboard.md`](./features/whiteboard.md): milestone 9, the shared whiteboard.
 - [`recipes.md`](./features/recipes.md): milestone 10, the shared recipes.
 - [`dashboard.md`](./features/dashboard.md): the dashboard with live tiles.
-- [`vacations.md`](./features/vacations.md): the vacation planner: its design, with tasks by phase, assignment that can be rejected and a meal plan. Slices 1 and 2 are built.
-- [`vacations-design-decisions.md`](./features/vacations-design-decisions.md): the rest of that design: its open decisions and how each was answered, what counts as done, and what was considered and not chosen.
-- [`vacations-review.md`](./features/vacations-review.md): the two engineering reviews of that design, of the plan and of what the scope review added: what was decided, what was corrected and what is still open.
-- [`vacations-scope-review.md`](./features/vacations-scope-review.md): the scope review between them: the seven additions, among them "Tell them" and the return to a link after sign-in, and what was declined.
-- [`vacations-design-review.md`](./features/vacations-design-review.md): the design review of its screens: the task's row, where "Tell them" sits, the states of every screen, the access rules, and what changed against the wireframe.
-- [`vacations-screens.md`](./features/vacations-screens.md): the screens of the reviewed design as rendered and approved, and what the rendering showed for the build.
-- [`vacations-design-eng-review.md`](./features/vacations-design-eng-review.md): the engineering review of what the design review changed: four decisions, the rules for a link's parameters, and what was not confirmed.
-- [`vacations-templates.md`](./features/vacations-templates.md): what its house and hotel templates hold: the list the user handed over, how its entries are worded, and the tasks added for the two later phases.
-- [`vacations-slice-1.md`](./features/vacations-slice-1.md): how slice 1 was built, the trip checklist from a template: migration 0015, what was decided and found during the build, its tests, "When it breaks" and "After a deploy".
-- [`vacations-slice-2.md`](./features/vacations-slice-2.md): how slice 2 was built, fair share: migration 0016, people and assignment, the gap in the live sync that was narrowed for every feature, its tests, "When it breaks" and "After a deploy".
-- [`vacations-slice-2-after-trying.md`](./features/vacations-slice-2-after-trying.md): what the user changed in slice 2 after trying it, before its release: the task's row back on one line, "Tell them" removed, "Who has what" as a strip of names, those names as buttons that filter the tasks in place of "Only my tasks", "Edit" beside the title, a picture of two letters for a person without an account, and a member's name as text in "Change people".
+- [`vacations/`](./features/vacations/CLAUDE.md): the vacation planner, in a folder of its own with eleven files: its design, the reviews of the design, and how each slice was built and changed. Its `CLAUDE.md` lists them, in the order to read them, and says where new material goes. Slices 1 and 2 are built and released.
 - [`avatars.md`](./features/avatars.md): the members' avatars, rosette and Gravatar.
 - [`header.md`](./features/header.md): the header with the wordmark and the account menu.
 
@@ -50,7 +40,7 @@ Start with `progress.md`, then read the topic files for what you are about to to
 
 - **`progress.md` is the present, and it is overwritten.** When something changes, replace the old statement; don't keep it beside the new one. It holds no history: how something came about belongs in a topic file. When a milestone, a feature or a notable fix lands, update what it touches there: the status table, the layout listing, the test counts, the last release and the next steps.
 - **A topic file is history, and it grows.** Its sections are dated and stand oldest first; a new one goes at the end. A section is not rewritten later. When a later change overtakes a statement, add a dated remark at that place that names where the newer state is ("Fixed 2026-10-11, see …").
-- **Where new material goes.** A new feature gets a file of its own in `features/`. A fix, a later decision or a check by hand goes into the file of the thing it concerns. What touches several files is written once, where its cause is, and referred to from the others.
+- **Where new material goes.** A new feature gets a file of its own in `features/`. A feature whose history needs several files gets a folder there with a `CLAUDE.md` of its own, as the vacation planner has; that file lists the folder's files, and the list above has one line for the folder. A fix, a later decision or a check by hand goes into the file of the thing it concerns. What touches several files is written once, where its cause is, and referred to from the others.
 - **Split a file that has grown.** A topic file past about 2,500 words is split the next time it is touched, along its sections, so that each file covers one thing. If `progress.md` grows past about 2,000 words, it has collected history; move that out.
 - **The list above is part of the change.** A new, renamed or split file gets its line there in the same commit, and the references to the old place are corrected (search `docs/` and the root `CLAUDE.md` for the file's and the sections' names).
 - **A section's heading says what it is and when**: `## Dashboard with live tiles (built 2026-10-11)`. Dates are `YYYY-MM-DD`, without a time.

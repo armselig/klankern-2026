@@ -1,6 +1,6 @@
 # Vacation planner: engineering reviews
 
-The engineering reviews of the vacation planner's plan, oldest first. The scope review between them is "Scope review" in [`features/vacations-scope-review.md`](./vacations-scope-review.md). The design is "Design: a vacation planner" in [`features/vacations.md`](./vacations.md). The current state is in [`progress.md`](../progress.md); [`CLAUDE.md`](../CLAUDE.md) lists the other topic files.
+The engineering reviews of the vacation planner's plan, oldest first. The scope review between them is "Scope review" in [`features/vacations/scope-review.md`](./scope-review.md). The design is "Design: a vacation planner" in [`features/vacations/design.md`](./design.md). The current state is in [`progress.md`](../../progress.md); [`CLAUDE.md`](../../CLAUDE.md) lists the other topic files.
 
 ## Engineering review (2026-10-12)
 
@@ -10,8 +10,8 @@ The design was checked against the code before anything was built: its architect
 
 1. **Adding a vacation is all or nothing.** A function `create_vacation` that runs as the caller takes the vacation and its rows as JSON and inserts them in one transaction, so row-level security applies as it does to a direct write. Not chosen: inserts from the client with a button that repairs a vacation whose tasks failed (a half-made vacation exists meanwhile, and every member sees it), and the three inserts of the design (nothing fills an empty vacation afterwards).
 2. **A removed person's tasks are worked out, not rewritten.** A task whose assignee is not a live person of its vacation is shown and counted as "Nobody yet", by one function in `utils/vacation-state.ts` that the task's row, "Who has what" and the dashboard tile all use. Removing a person is one write. The store loads removed people too, so "sam said no" keeps its name. Not chosen: a trigger that clears the tasks (the schema's first, and it misses an assignment that arrives after the removal), and one update per task from the client (not one step).
-3. **A vacation's title and dates can be edited, its kind can't.** The edit shows at once and sends only the changed fields, as a recipe's does. Any member can remove a vacation after a confirmation; it is a soft delete of the vacation, and its tasks, people and meals leave the view with it. Not chosen: no editing at all (a moved booking would cost every tick and assignment), and an editable kind (the old kind's tasks would stay and none would be added). (Edited in place on the vacation's page, decided 2026-10-12, see "Design review" in [`features/vacations-design-review.md`](./vacations-design-review.md).)
-4. **Three browser tests, one journey per slice**, in `tests/e2e/vacations.e2e.ts`. Slice 1, two browsers: add a vacation from the house template, the other member sees it; add, edit, tick and remove a task; rename the vacation; reload. Slice 2, two browsers: give a task, the assignee rejects it with a reason, the first member sees it; a named person's task has no "Reject" and is ticked by a member; "Who has what" follows. Slice 3, one browser: pick recipes, put the ingredients on the shopping list, press again. `a11y.e2e.ts`, `dashboard.e2e.ts` and `session-switch.e2e.ts` are extended. Not chosen: one test per behavior, about ten (some 16 more sign-ins, on top of the 18 places where the suite signs in today, against the limit of about 30 in five minutes), and no browser tests (nothing would prove live sync for the new tables). (Journey 1 gained a step and `auth.e2e.ts` a case on 2026-10-12, see "Scope review" in [`features/vacations-scope-review.md`](./vacations-scope-review.md); that makes 24 places where the suite signs in, see "Engineering review of the scope additions".)
+3. **A vacation's title and dates can be edited, its kind can't.** The edit shows at once and sends only the changed fields, as a recipe's does. Any member can remove a vacation after a confirmation; it is a soft delete of the vacation, and its tasks, people and meals leave the view with it. Not chosen: no editing at all (a moved booking would cost every tick and assignment), and an editable kind (the old kind's tasks would stay and none would be added). (Edited in place on the vacation's page, decided 2026-10-12, see "Design review" in [`features/vacations/design-review.md`](./design-review.md).)
+4. **Three browser tests, one journey per slice**, in `tests/e2e/vacations.e2e.ts`. Slice 1, two browsers: add a vacation from the house template, the other member sees it; add, edit, tick and remove a task; rename the vacation; reload. Slice 2, two browsers: give a task, the assignee rejects it with a reason, the first member sees it; a named person's task has no "Reject" and is ticked by a member; "Who has what" follows. Slice 3, one browser: pick recipes, put the ingredients on the shopping list, press again. `a11y.e2e.ts`, `dashboard.e2e.ts` and `session-switch.e2e.ts` are extended. Not chosen: one test per behavior, about ten (some 16 more sign-ins, on top of the 18 places where the suite signs in today, against the limit of about 30 in five minutes), and no browser tests (nothing would prove live sync for the new tables). (Journey 1 gained a step and `auth.e2e.ts` a case on 2026-10-12, see "Scope review" in [`features/vacations/scope-review.md`](./scope-review.md); that makes 24 places where the suite signs in, see "Engineering review of the scope additions".)
 
 ### Corrections to the design
 
@@ -26,7 +26,7 @@ The design was checked against the code before anything was built: its architect
 - **A person's `user_id` references `household_members (household_id, user_id)`**, so a person tied to an account is a member of that household.
 - **The rejection's reason must contain a character that isn't a space**, as a recipe's title must.
 - **The size of a task's row is an estimate.** With a title and a reason of 200 four-byte characters each it is about 1,760 bytes, some 270 below the size at which Postgres stores large values out of line, and an UPDATE event then leaves them out. The migration's comment says so: another text column on `vacation_tasks` has to count again.
-- **Upcoming and past are decided by a helper of their own** that compares local dates as `YYYY-MM-DD`. `new Date("2026-12-05")` is midnight UTC, not local midnight, and a comparison of timestamps is a day off around midnight. (Since 2026-10-12 a vacation also stays current while "Afterwards" has open tasks, see "Design review" in [`features/vacations-design-review.md`](./vacations-design-review.md).)
+- **Upcoming and past are decided by a helper of their own** that compares local dates as `YYYY-MM-DD`. `new Date("2026-12-05")` is midnight UTC, not local midnight, and a comparison of timestamps is a day off around midnight. (Since 2026-10-12 a vacation also stays current while "Afterwards" has open tasks, see "Design review" in [`features/vacations/design-review.md`](./design-review.md).)
 - **The feature writes its own event reducer and sort** in `utils/vacation-state.ts`, guarded by the household as the recipes' is. `utils/list-state.ts` is not touched: the feature only adds.
 - **Meals go on the shopping list one after another.** `addAll()` returns how many items were saved, so only a call per meal tells whether that meal is complete. The first failure stops the run and names the meal; a meal saved in part is not stamped, and trying again adds it once more, as pressing a recipe's button twice does.
 - **Each table gets an index on its live rows by household**, as `recipes_live_idx` is, and one on each foreign-key column.
@@ -43,9 +43,9 @@ Every rule of the tables gets a test in the RLS suite: another household reads a
 
 ### Still open
 
-- What a person without an email address looks like (open decision 4 of the design), before slice 2. (Decided 2026-10-12, see "Open decisions" in [`features/vacations-design-decisions.md`](./vacations-design-decisions.md).)
-- Whether only the latest rejection is kept (open decision 6 of the design), before slice 2. (Decided 2026-10-12, see "Open decisions" in [`features/vacations-design-decisions.md`](./vacations-design-decisions.md).)
-- What the hotel template leaves out (open decision 7 of the design), before slice 1. (Decided 2026-10-13, see "Open decisions" in [`features/vacations-design-decisions.md`](./vacations-design-decisions.md).)
+- What a person without an email address looks like (open decision 4 of the design), before slice 2. (Decided 2026-10-12, see "Open decisions" in [`features/vacations/design-decisions.md`](./design-decisions.md).)
+- Whether only the latest rejection is kept (open decision 6 of the design), before slice 2. (Decided 2026-10-12, see "Open decisions" in [`features/vacations/design-decisions.md`](./design-decisions.md).)
+- What the hotel template leaves out (open decision 7 of the design), before slice 1. (Decided 2026-10-13, see "Open decisions" in [`features/vacations/design-decisions.md`](./design-decisions.md).)
 
 ### Noticed, not changed
 
@@ -60,7 +60,7 @@ Every rule of the tables gets a test in the RLS suite: another household reads a
 
 ## Engineering review of the scope additions (2026-10-12)
 
-The scope review added seven things after the engineering review above (see "Scope review" in [`features/vacations-scope-review.md`](./vacations-scope-review.md)). They were checked against the code the same day, and only they. The user decided one thing; the rest is what the additions need in order to be true.
+The scope review added seven things after the engineering review above (see "Scope review" in [`features/vacations/scope-review.md`](./scope-review.md)). They were checked against the code the same day, and only they. The user decided one thing; the rest is what the additions need in order to be true.
 
 ### Decided for the additions (user, 2026-10-12)
 

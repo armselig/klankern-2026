@@ -1,14 +1,14 @@
 # Vacation planner: slice 2
 
-How the second slice of the vacation planner was built. The design is "Design: a vacation planner" in [`features/vacations.md`](./vacations.md), and most of what this slice shows was decided in "Design review" in [`features/vacations-design-review.md`](./vacations-design-review.md). Slice 1 is in [`features/vacations-slice-1.md`](./vacations-slice-1.md). The current state is in [`progress.md`](../progress.md).
+How the second slice of the vacation planner was built. The design is "Design: a vacation planner" in [`features/vacations/design.md`](./design.md), and most of what this slice shows was decided in "Design review" in [`features/vacations/design-review.md`](./design-review.md). Slice 1 is in [`features/vacations/slice-1.md`](./slice-1.md). The current state is in [`progress.md`](../../progress.md).
 
 ## Slice 2: fair share (built 2026-10-13)
 
 A vacation has people: the household's members and people without an account, such as a small child. A task is given to a person, taken, or handed back; the person it was given to can reject it with a reason, which everyone sees, and the task is nobody's again. "Who has what" shows the open tasks per person at the top of the page, "Only my tasks" filters the phases, and "Tell them" hands a sentence with a link to the device's share sheet. A link opened signed out leads to its page after sign-in.
 
-("Tell them" and the links that land at a task were taken out again the same day, before the slice was released, see "“Tell them” removed" in [`features/vacations-slice-2-after-trying.md`](./vacations-slice-2-after-trying.md). What this section says about them is how they were built.)
+("Tell them" and the links that land at a task were taken out again the same day, before the slice was released, see "“Tell them” removed" in [`features/vacations/slice-2-after-trying.md`](./slice-2-after-trying.md). What this section says about them is how they were built.)
 
-The user approved the plan and three recommendations beforehand: the tests start signed in with a session (see "Signing in without the form" in [`infra/testing.md`](../infra/testing.md)), a person without an email address is drawn as the plain account icon, and the order of the build.
+The user approved the plan and three recommendations beforehand: the tests start signed in with a session (see "Signing in without the form" in [`infra/testing.md`](../../infra/testing.md)), a person without an email address is drawn as the plain account icon, and the order of the build.
 
 ### Migration 0016
 
@@ -54,7 +54,7 @@ The new states were compared with the approved screens on screenshots at 375 px,
 
 ### When it breaks
 
-In addition to "When it breaks" in [`features/vacations-slice-1.md`](./vacations-slice-1.md):
+In addition to "When it breaks" in [`features/vacations/slice-1.md`](./slice-1.md):
 
 - **"This task isn't yours any more."** Someone gave the task to another person while the reject dialog was open. Nothing was written.
 - **The reject dialog stays open with a red line.** The write was refused; the line is the database's message.

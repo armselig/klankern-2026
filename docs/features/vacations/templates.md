@@ -1,6 +1,6 @@
 # Vacation planner: the templates
 
-What the two templates of the vacation planner hold and how that was decided. The design is "Design: a vacation planner" in [`features/vacations.md`](./vacations.md). The current state is in [`progress.md`](../progress.md); [`CLAUDE.md`](../CLAUDE.md) lists the other topic files.
+What the two templates of the vacation planner hold and how that was decided. The design is "Design: a vacation planner" in [`features/vacations/design.md`](./design.md). The current state is in [`progress.md`](../../progress.md); [`CLAUDE.md`](../../CLAUDE.md) lists the other topic files.
 
 ## The house and hotel templates (decided 2026-10-13, not built yet)
 
@@ -14,7 +14,7 @@ Most entries are things to pack ("Sleeping bags"), three are tasks ("Book the fe
 2. **A title is worded as on paper**: a noun for a thing to pack, a verb only where the list had one. The approved screens show tasks with a verb ("Pack the kids' clothes"); those were examples. Not chosen: a verb in every title, with which most titles would start with "Pack".
 3. **The entries that fit this household alone stay**: the ferry, the Tiptoi, the kids' phone, the baby monitor, the iPad, and the laptop with LAN and HDMI. This is an exception to the design's rule that nothing in the feature is specific to one household. A template is copied into a vacation, where any task can be removed, and this household's next trip is the first use. The entries are to be generalized when another household is to use the app. Not chosen: generalizing them now ("Book the journey"), and leaving them out.
 4. **What the list does not cover was drafted in the session and approved by the user**: the house's own tasks before the trip, and every task of "During" and "Afterwards". Not chosen: a second list written by the user, and leaving the two later phases nearly empty.
-5. **The hotel template leaves out two entries of the list**, see open decision 7 under "Open decisions" in [`features/vacations-design-decisions.md`](./vacations-design-decisions.md).
+5. **The hotel template leaves out two entries of the list**, see open decision 7 under "Open decisions" in [`features/vacations/design-decisions.md`](./design-decisions.md).
 
 ### The templates
 

@@ -1,6 +1,6 @@
 # Vacation planner: slice 2 after the user tried it
 
-What the user changed in the second slice of the vacation planner after trying it, before it was released. How the slice was built is in [`features/vacations-slice-2.md`](./vacations-slice-2.md) (this file was split off it on 2026-10-13), and the current state is in [`progress.md`](../progress.md).
+What the user changed in the second slice of the vacation planner after trying it, before it was released. How the slice was built is in [`features/vacations/slice-2.md`](./slice-2.md) (this file was split off it on 2026-10-13), and the current state is in [`progress.md`](../../progress.md).
 
 ## The task's row back to one line (2026-10-13)
 
@@ -8,7 +8,7 @@ The user tried the built slice and reported that the list was too long to scan: 
 
 Measured at 375 px, a row with its second line was 97 px high against 53 px for the title alone, so "Before" with the house template's 23 tasks was about 2,230 px, nearly four screens. And the second line said the same on most rows, "I'll take it" and "Give to…", so rows did not differ to the eye.
 
-That second line was decided in the design review (decisions 2 and 11 of "Design review" in [`features/vacations-design-review.md`](./vacations-design-review.md)), on text and drawings, to make giving a task as easy as keeping it. The user chose again, from three drawn alternatives:
+That second line was decided in the design review (decisions 2 and 11 of "Design review" in [`features/vacations/design-review.md`](./design-review.md)), on text and drawings, to make giving a task as easy as keeping it. The user chose again, from three drawn alternatives:
 
 - **Chosen: a person button in line 1.** Between the title and "More", a round button shows who has the task: the person's picture, or a dashed circle with a plus for nobody. Pressing it lists "Me", the other people and, for a task that is someone's, "Nobody". Taking and giving are both two taps, through one control that is on every open row. "Reject" moved into the menu of the member's own task. Only a rejected task has a second line, for the reason, and the "Tell them" line still appears after giving or rejecting.
 - Not chosen: a second line only on tasks that are someone's (free tasks would need the menu to be taken, and the list grows back as tasks are given out), and a compact view beside the rows as they were (two modes, and the default keeps the problem).
