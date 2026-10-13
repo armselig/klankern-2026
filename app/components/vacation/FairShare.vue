@@ -3,7 +3,10 @@ import type { TaskShare, VacationPerson } from "~/types/vacation";
 
 /**
  * "Who has what": the open tasks of every person on the trip, out in the
- * open, so it shows who carries how much and who carries nothing.
+ * open, so it shows who carries how much and who carries nothing. A strip
+ * of names with their numbers, not a row per person: with a row each, four
+ * people filled 42% of a phone's screen and no task was on it without
+ * scrolling.
  */
 const props = defineProps<{
   /** One line per person, and the tasks that are nobody's (see taskShares). */
@@ -17,10 +20,6 @@ const emit = defineEmits<{ changePeople: [] }>();
 
 const changeButton = useTemplateRef<{ $el: HTMLElement }>("changeButton");
 
-/** The longest bar is the full width; the others are measured against it. */
-const most = computed(() =>
-  Math.max(1, ...props.shares.map((share) => share.open)),
-);
 const nothingOpen = computed(() =>
   props.shares.every((share) => share.open === 0),
 );
@@ -56,28 +55,19 @@ defineExpose({
     <p v-else-if="nothingOpen" class="text-muted q-my-none">Nothing open.</p>
 
     <!-- role="list" because Safari stops announcing a list once its bullets
-         are styled away. The number is text; the bar only repeats it. -->
+         are styled away. -->
     <ul v-else role="list" class="fair-share">
       <li v-for="share in shares" :key="share.person?.id ?? 'nobody'">
-        <person-avatar
-          v-if="share.person"
-          :email="emailOf(share.person)"
-          :size="24"
-        />
-        <span v-else class="fair-share__no-avatar" />
-        <span class="fair-share__name" :class="{ 'text-muted': !share.person }">
-          <template v-if="share.person">
-            {{ share.person.name
-            }}{{ share.person.id === me?.id ? " (you)" : "" }}
-          </template>
-          <template v-else>Nobody yet</template>
-        </span>
-        <span class="fair-share__track" aria-hidden="true">
-          <span
-            class="fair-share__bar"
-            :style="{ width: `${(share.open / most) * 100}%` }"
-          />
-        </span>
+        <template v-if="share.person">
+          <person-avatar :email="emailOf(share.person)" :size="24" />
+          <span class="fair-share__name">{{ share.person.name }}</span>
+          <!-- Beside the name, not in it: a long name is cut short, and
+               "(you)" has to stay. -->
+          <span v-if="share.person.id === me?.id" class="fair-share__you">{{
+            " (you)"
+          }}</span>
+        </template>
+        <span v-else class="fair-share__name text-muted">Nobody yet</span>
         <span class="fair-share__open">{{ share.open }}</span>
       </li>
     </ul>
@@ -99,48 +89,40 @@ defineExpose({
 }
 
 .fair-share {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
   margin: 0;
-  padding: 4px 8px 4px 12px;
+  padding: 0;
   list-style: none;
-  border: 1px solid var(--theme-outline);
-  border-radius: 4px;
 }
 
+/* Nothing here is pressed, so a line is as high as its text needs, not
+   the 44px of a control. */
 .fair-share li {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 44px;
-}
-
-.fair-share__no-avatar {
-  flex: 0 0 24px;
+  gap: 6px;
+  min-width: 0;
+  min-height: 36px;
 }
 
 .fair-share__name {
-  flex: 0 0 76px;
+  max-width: 6.5rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.fair-share__track {
-  flex: 1;
-  height: 8px;
-}
-
-/* One muted color for every bar: a color per person would have to be
-   calculated in both modes, and a person without an email address has
-   none. */
-.fair-share__bar {
-  display: block;
-  height: 8px;
-  border-radius: 4px;
-  background: var(--theme-text-muted);
+/* Its leading space is kept: the gap between the two is the flex gap of
+   the others, and the text reads "Anna (you)" to a screen reader. */
+.fair-share__you {
+  margin-left: -6px;
+  white-space: pre;
 }
 
 .fair-share__open {
-  flex: 0 0 20px;
-  text-align: right;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 </style>

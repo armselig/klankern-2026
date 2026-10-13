@@ -119,3 +119,18 @@ What "did not work on a desktop" was, is not known. A desktop browser has no sha
 Not verified: nothing of "Tell them" was ever tried on a phone.
 
 After the removal: 486 unit and isolation tests, and the two vacation journeys, the accessibility scans and the auth tests pass.
+
+## “Who has what” as a strip of names (2026-10-13)
+
+The user reported that the overview takes up a lot of the screen and that the tasks are only reached by scrolling. Measured at 375x667 on a trip with four people: "Who has what" was 278 px high, 42% of the screen, with one 44 px row per person and one for "Nobody yet" in a bordered box. The first phase's heading began at 581 px, so no task was on the screen.
+
+The user chose a strip from four ways to shorten it. Each person is an avatar, the name and the number of open tasks, one after the other, wrapping onto a second line; "Nobody yet" stands last without an avatar. The heading, "Change people", the list and its order are unchanged, so a person without open tasks is still listed with 0. Nothing in the strip is pressed, so a line is 36 px and not the 44 px of a control.
+
+- **The bars are gone.** The number was always the text and the bar only repeated it; who carries more is now read from the numbers.
+- **A name is cut short at 6.5rem**, so that two long names share a line; "(you)" stands beside the name and is never cut off. With two names as long as a test user's (26 characters) and two short ones the strip is two lines.
+
+After the change the block is 120 px and the first phase's heading begins at 423 px: three tasks are on the screen without scrolling. Checked in light and dark mode at 375x667.
+
+Not chosen: folding the overview behind one line (it would hide who carries nothing, which is what it is there to show), moving it below the phases (the same, under up to 33 tasks), and names that are buttons and filter the tasks to one person, which would also replace "Only my tasks". The last frees the most and reverses a decision of the design review; it is open as a later step.
+
+Not verified: a trip with more than five people, where the strip takes a third line, and whether the numbers alone show an uneven share as quickly as the bars did.

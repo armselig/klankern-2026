@@ -26,7 +26,7 @@ Start with `progress.md`, then read the topic files for what you are about to to
 - [`vacations-design-eng-review.md`](./features/vacations-design-eng-review.md): the engineering review of what the design review changed: four decisions, the rules for a link's parameters, and what was not confirmed.
 - [`vacations-templates.md`](./features/vacations-templates.md): what its house and hotel templates hold: the list the user handed over, how its entries are worded, and the tasks added for the two later phases.
 - [`vacations-slice-1.md`](./features/vacations-slice-1.md): how slice 1 was built, the trip checklist from a template: migration 0015, what was decided and found during the build, its tests, "When it breaks" and "After a deploy".
-- [`vacations-slice-2.md`](./features/vacations-slice-2.md): how slice 2 was built, fair share: migration 0016, people and assignment, the gap in the live sync that was narrowed for every feature, its tests, "When it breaks" and "After a deploy"; and what the user changed after trying it: the task's row back on one line, and "Tell them" removed.
+- [`vacations-slice-2.md`](./features/vacations-slice-2.md): how slice 2 was built, fair share: migration 0016, people and assignment, the gap in the live sync that was narrowed for every feature, its tests, "When it breaks" and "After a deploy"; and what the user changed after trying it: the task's row back on one line, "Tell them" removed, and "Who has what" as a strip of names.
 - [`avatars.md`](./features/avatars.md): the members' avatars, rosette and Gravatar.
 - [`header.md`](./features/header.md): the header with the wordmark and the account menu.
 
