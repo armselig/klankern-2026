@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.6.0](https://github.com/armselig/klankern-2026/compare/v1.5.0...v1.6.0) (2026-10-13)
+
+### Features
+
+* **vacations:** plan a trip with a checklist from a template ([64df9bd](https://github.com/armselig/klankern-2026/commit/64df9bd0c03531261eabbd175f400dd8df4451c4))
+
 ## [1.5.0](https://github.com/armselig/klankern-2026/compare/v1.4.0...v1.5.0) (2026-10-12)
 
 ### Features
