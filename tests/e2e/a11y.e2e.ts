@@ -433,26 +433,29 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       await expectNoBlockingViolations(page, "a task being renamed");
       await page.keyboard.press("Escape");
 
-      // The people of the trip: the member took a task, so the row shows a
-      // person and "Reject", and "Who has what" a bar.
+      // The people of the trip: the member took a task, so its row shows a
+      // picture, and "Who has what" a bar.
       await page
-        .getByRole("button", { name: "I'll take it: Toothbrushes" })
+        .getByRole("button", { name: "Nobody yet: Toothbrushes" })
         .click();
+      const people = page.getByRole("group", {
+        name: "Give to…: Toothbrushes",
+      });
+      await expect(people).toBeVisible();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "the list of people to give to");
+      await people.getByRole("button", { name: "Me", exact: true }).click();
       await expect(
-        page.getByRole("button", { name: "Reject: Toothbrushes" }),
+        page.getByRole("button", { name: "Yours: Toothbrushes" }),
       ).toBeVisible();
       await untilFadesEnd(page);
       await expectNoBlockingViolations(page, "a vacation with a task taken");
 
-      await page.getByRole("button", { name: "Give to…: iPad" }).click();
-      await expect(
-        page.getByRole("group", { name: "Give to…: iPad" }),
-      ).toBeVisible();
-      await untilFadesEnd(page);
-      await expectNoBlockingViolations(page, "the list of people to give to");
-      await page.keyboard.press("Escape");
-
-      await page.getByRole("button", { name: "Reject: Toothbrushes" }).click();
+      await taskMoreButton(page, "Toothbrushes").click();
+      await page
+        .getByRole("group", { name: "More: Toothbrushes" })
+        .getByRole("button", { name: "Reject" })
+        .click();
       await expect(page.getByLabel("Why not?")).toBeFocused();
       await untilFadesEnd(page);
       await expectNoBlockingViolations(page, "the reject dialog");

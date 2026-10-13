@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { mdiClose, mdiDotsVertical } from "@quasar/extras/mdi-v7";
+import { mdiClose, mdiDotsVertical, mdiPlus } from "@quasar/extras/mdi-v7";
 import type {
   TaskRowState,
   VacationPerson,
@@ -36,8 +36,7 @@ interface HasElement {
 const row = useTemplateRef<HasElement>("row");
 const tickBox = useTemplateRef<HasElement>("tickBox");
 const moreButton = useTemplateRef<HasElement>("moreButton");
-const takeButton = useTemplateRef<HasElement>("takeButton");
-const giveButton = useTemplateRef<HasElement>("giveButton");
+const whoButton = useTemplateRef<HasElement>("whoButton");
 
 /**
  * Whether the row's menu is open. The menu is opened here and not by
@@ -46,8 +45,8 @@ const giveButton = useTemplateRef<HasElement>("giveButton");
  * title and the focus has just moved back to the button.
  */
 const menuOpen = ref(false);
-/** The list of people to give the task to, opened from the row's own
- * button or from the menu. */
+/** The list of people to give the task to, opened from the row's person
+ * button. */
 const giveOpen = ref(false);
 
 /** The row is edited in place: its title turns into a field where it
@@ -81,30 +80,43 @@ async function saveTitle() {
 }
 
 /** A task nobody has: free, rejected, or given to someone who was taken
- * off the trip. It offers itself to be taken or given. */
+ * off the trip. */
 const isFree = computed(() => !props.state.assignee);
 
-/** Who "Give to…" lists: everyone on the trip but the one who has the
- * task. */
-const giveTo = computed(() =>
-  props.people.filter((person) => person.id !== props.state.assignee?.id),
+/**
+ * Whether the row has its person button: an open task on a trip that has
+ * people. A done task is nobody's business any more, and a vacation from
+ * before people could be on one has nobody to give a task to.
+ */
+const showsWho = computed(() => !props.task.done && props.people.length > 0);
+
+/** Who the list of people offers besides the member themselves: everyone
+ * on the trip but the one who has the task. */
+const others = computed(() =>
+  props.people.filter(
+    (person) =>
+      person.id !== props.state.assignee?.id && person.id !== props.me?.id,
+  ),
 );
+
+/** Who has the task, as the person button's name says it, before the
+ * task's title: a page has some thirty of these buttons. */
+const whoLabel = computed(() => {
+  if (props.state.mine) return "Yours";
+  return props.state.assignee?.name ?? "Nobody yet";
+});
 
 function emailOf(person: VacationPerson): string | null {
   return person.user_id ? (props.emails[person.user_id] ?? null) : null;
-}
-
-function nameOf(person: VacationPerson): string {
-  return person.id === props.me?.id ? `${person.name} (you)` : person.name;
 }
 
 defineExpose({
   /** Puts the focus on the row's tick box: after a tick has moved the row,
    * and after the row above it was removed. */
   focusTickBox: () => tickBox.value?.$el.focus(),
-  /** Puts the focus on the row's first offer, after the member rejected
-   * the task: "I'll take it", or "Give to…" where that isn't offered. */
-  focusOffer: () => (takeButton.value ?? giveButton.value)?.$el.focus(),
+  /** Puts the focus on the row's person button, after the member rejected
+   * the task: it is where the task is taken or given next. */
+  focusOffer: () => whoButton.value?.$el.focus(),
   /** Scrolls to the row and puts the focus on its tick box: where a link to
    * the task lands. */
   arrive: () => {
@@ -162,6 +174,79 @@ defineExpose({
             :class="{ 'text-strike text-muted': task.done }"
             @update:model-value="emit('toggle', task.id)"
           />
+          <!-- Who has the task, and the one control to change that: the
+               person's picture, or an empty circle for nobody. One line per
+               task keeps the list short enough to scan; a second line with
+               the person's name and buttons made it twice as long. -->
+          <q-btn
+            v-if="showsWho"
+            ref="whoButton"
+            flat
+            round
+            :aria-label="`${whoLabel}: ${task.title}`"
+            :aria-expanded="giveOpen"
+            class="touch-target"
+            @click="giveOpen = !giveOpen"
+          >
+            <person-avatar
+              v-if="state.assignee"
+              :email="emailOf(state.assignee)"
+              :size="28"
+            />
+            <span v-else class="vacation-task__nobody" aria-hidden="true">
+              <q-icon :name="mdiPlus" size="16px" />
+            </span>
+            <q-tooltip>{{ whoLabel }}</q-tooltip>
+            <q-menu
+              v-model="giveOpen"
+              no-parent-event
+              auto-close
+              anchor="bottom right"
+              self="top right"
+              role="group"
+              :aria-label="`Give to…: ${task.title}`"
+            >
+              <div class="column vacation-task__menu">
+                <!-- The member first: taking a task is as close as giving
+                     it away. -->
+                <q-btn
+                  v-if="me && !state.mine"
+                  flat
+                  no-caps
+                  align="left"
+                  class="touch-target"
+                  @click="emit('give', task.id, me.id)"
+                >
+                  <person-avatar :email="emailOf(me)" :size="24" />
+                  <span class="q-ml-sm">Me</span>
+                </q-btn>
+                <q-btn
+                  v-for="person in others"
+                  :key="person.id"
+                  flat
+                  no-caps
+                  align="left"
+                  class="touch-target"
+                  @click="emit('give', task.id, person.id)"
+                >
+                  <person-avatar :email="emailOf(person)" :size="24" />
+                  <span class="q-ml-sm">{{ person.name }}</span>
+                  <span v-if="!person.user_id" class="q-ml-sm text-muted"
+                    >no account</span
+                  >
+                </q-btn>
+                <q-btn
+                  v-if="!isFree"
+                  flat
+                  no-caps
+                  align="left"
+                  label="Nobody"
+                  class="touch-target text-muted"
+                  @click="emit('give', task.id, null)"
+                />
+              </div>
+            </q-menu>
+          </q-btn>
           <!-- The visible sign is the same in every row, so the name adds
                the task: a page has some thirty of these buttons. -->
           <q-btn
@@ -195,13 +280,13 @@ defineExpose({
                   @click="startEditing"
                 />
                 <q-btn
-                  v-if="people.length > 0 && !task.done"
+                  v-if="state.mine && !task.done"
                   flat
                   no-caps
                   align="left"
-                  label="Give to…"
+                  label="Reject"
                   class="touch-target"
-                  @click="giveOpen = true"
+                  @click="emit('reject', task.id)"
                 />
                 <q-btn
                   v-if="state.canTell"
@@ -225,100 +310,15 @@ defineExpose({
           </q-btn>
         </div>
 
-        <!-- From here on only for an open task on a trip that has people:
-             a done task is nobody's business any more. -->
-        <template v-if="!task.done && people.length > 0">
+        <!-- Below the line only what needs a reader: the reason of a
+             rejection, and the offer to tell the others. -->
+        <template v-if="showsWho">
           <p
             v-if="isFree && state.rejecter && task.rejection_reason"
             class="vacation-task__reason text-muted"
           >
             {{ state.rejecter.name }} said no: “{{ task.rejection_reason }}”
           </p>
-
-          <div class="vacation-task__second">
-            <!-- A free task offers itself, in place of the words "Nobody
-                 yet": with one button only, keeping every task would be the
-                 easy path. -->
-            <template v-if="isFree">
-              <q-btn
-                v-if="me"
-                ref="takeButton"
-                flat
-                label="I'll take it"
-                :aria-label="`I'll take it: ${task.title}`"
-                class="touch-target"
-                @click="emit('give', task.id, me.id)"
-              />
-            </template>
-            <span v-else class="vacation-task__who">
-              <person-avatar :email="emailOf(state.assignee!)" :size="24" />
-              <span v-if="state.mine" class="text-weight-medium">yours</span>
-              <template v-else>
-                <span class="vacation-task__name">{{
-                  state.assignee!.name
-                }}</span>
-                <span v-if="!state.assignee!.user_id" class="text-muted"
-                  >no account</span
-                >
-              </template>
-            </span>
-
-            <!-- The list of people hangs on this button where the row has
-                 it, and on "More" where it doesn't (someone's task). -->
-            <q-btn
-              v-if="isFree"
-              ref="giveButton"
-              flat
-              label="Give to…"
-              :aria-label="`Give to…: ${task.title}`"
-              :aria-expanded="giveOpen"
-              class="touch-target"
-              @click="giveOpen = !giveOpen"
-            />
-            <q-btn
-              v-else-if="state.mine"
-              flat
-              label="Reject"
-              :aria-label="`Reject: ${task.title}`"
-              class="touch-target"
-              @click="emit('reject', task.id)"
-            />
-
-            <q-menu
-              v-model="giveOpen"
-              no-parent-event
-              auto-close
-              :target="(giveButton ?? moreButton)?.$el"
-              anchor="bottom left"
-              self="top left"
-              role="group"
-              :aria-label="`Give to…: ${task.title}`"
-            >
-              <div class="column vacation-task__menu">
-                <q-btn
-                  v-for="person in giveTo"
-                  :key="person.id"
-                  flat
-                  no-caps
-                  align="left"
-                  class="touch-target"
-                  @click="emit('give', task.id, person.id)"
-                >
-                  <person-avatar :email="emailOf(person)" :size="24" />
-                  <span class="q-ml-sm">{{ nameOf(person) }}</span>
-                </q-btn>
-                <q-btn
-                  v-if="!isFree"
-                  flat
-                  no-caps
-                  align="left"
-                  label="Nobody"
-                  class="touch-target text-muted"
-                  @click="emit('give', task.id, null)"
-                />
-              </div>
-            </q-menu>
-          </div>
 
           <!-- Announced when it appears. It has no timer: it stays until it
                is closed or the member leaves the page. -->
@@ -386,28 +386,17 @@ defineExpose({
   overflow-wrap: anywhere;
 }
 
-/* Under the title, which starts 40px in, after the tick box. */
-.vacation-task__second {
-  display: flex;
-  flex-wrap: wrap;
+/* The empty place of a person: a dashed circle, as the roster's "Invite"
+   is, the size of a picture in this row. */
+.vacation-task__nobody {
+  display: inline-flex;
   align-items: center;
-  gap: 4px 8px;
-  min-height: 44px;
-  padding-left: 40px;
-}
-
-.vacation-task__who {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.vacation-task__name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px dashed var(--theme-text-muted);
+  border-radius: 50%;
+  color: var(--theme-text-muted);
 }
 
 .vacation-task__reason {

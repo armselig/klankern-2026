@@ -365,7 +365,7 @@ test.describe("a vacation's tasks, shared between its people", () => {
     });
 
     await test.step("A gives a task to B, who sees it as theirs", async () => {
-      await pageA.getByRole("button", { name: "Give to…: Clothes" }).click();
+      await pageA.getByRole("button", { name: "Nobody yet: Clothes" }).click();
       await pageA
         .getByRole("group", { name: "Give to…: Clothes" })
         .getByRole("button", { name: nameB })
@@ -373,21 +373,34 @@ test.describe("a vacation's tasks, shared between its people", () => {
       const row = pageA.locator(".q-item").filter({
         has: vacationTask(pageA, "Clothes"),
       });
-      await expect(row).toContainText(nameB);
+      // The row's person button now carries B's picture and name.
+      await expect(
+        pageA.getByRole("button", { name: `${nameB}: Clothes` }),
+      ).toBeVisible();
       await expect(row.getByRole("status")).toContainText(`Given to ${nameB}.`);
       await expect(whoHasWhat(pageA).nth(1)).toHaveText(/1$/);
 
-      const rowB = pageB.locator(".q-item").filter({
-        has: vacationTask(pageB, "Clothes"),
-      });
-      await expect(rowB).toContainText("yours");
       await expect(
-        pageB.getByRole("button", { name: "Reject: Clothes" }),
+        pageB.getByRole("button", { name: "Yours: Clothes" }),
       ).toBeVisible();
-      // Nobody rejects another person's task.
+      // "Reject" is in the menu of the member's own task, and of no other.
+      await taskMoreButton(pageB, "Clothes").click();
       await expect(
-        pageA.getByRole("button", { name: "Reject: Clothes" }),
+        pageB
+          .getByRole("group", { name: "More: Clothes" })
+          .getByRole("button", { name: "Reject" }),
+      ).toBeVisible();
+      await pageB.keyboard.press("Escape");
+      await taskMoreButton(pageA, "Clothes").click();
+      await expect(
+        pageA.getByRole("group", { name: "More: Clothes" }),
+      ).toBeVisible();
+      await expect(
+        pageA
+          .getByRole("group", { name: "More: Clothes" })
+          .getByRole("button", { name: "Reject" }),
       ).toHaveCount(0);
+      await pageA.keyboard.press("Escape");
     });
 
     await test.step('"Tell them" hands A a sentence with a link to the task', async () => {
@@ -411,8 +424,8 @@ test.describe("a vacation's tasks, shared between its people", () => {
       await expect(row.getByRole("status")).toHaveCount(0);
     });
 
-    await test.step("B rejects it with a reason; the focus moves to what the row offers next", async () => {
-      await pageB.getByRole("button", { name: "Reject: Clothes" }).click();
+    await test.step("B rejects it with a reason; the focus moves to the row's person button", async () => {
+      await chooseFromTaskMenu(pageB, "Clothes", "Reject");
       const dialog = pageB.getByRole("dialog");
       await expect(dialog).toContainText("Everyone sees your reason.");
       // A reason of spaces is none.
@@ -428,7 +441,7 @@ test.describe("a vacation's tasks, shared between its people", () => {
       });
       await expect(rowB).toContainText(`${nameB} said no: “${reason}”`);
       await expect(
-        pageB.getByRole("button", { name: "I'll take it: Clothes" }),
+        pageB.getByRole("button", { name: "Nobody yet: Clothes" }),
       ).toBeFocused();
       await expect(rowB.getByRole("status")).toContainText("Back to nobody.");
     });
@@ -440,10 +453,14 @@ test.describe("a vacation's tasks, shared between its people", () => {
       await expect(row).toContainText(`${nameB} said no: “${reason}”`);
       await expect(whoHasWhat(pageA).nth(1)).toHaveText(/0$/);
 
+      await pageA.getByRole("button", { name: "Nobody yet: Clothes" }).click();
       await pageA
-        .getByRole("button", { name: "I'll take it: Clothes" })
+        .getByRole("group", { name: "Give to…: Clothes" })
+        .getByRole("button", { name: "Me", exact: true })
         .click();
-      await expect(row).toContainText("yours");
+      await expect(
+        pageA.getByRole("button", { name: "Yours: Clothes" }),
+      ).toBeVisible();
       await expect(row).not.toContainText("said no");
       // Nobody sends a message to themselves.
       await expect(row.getByRole("status")).toHaveCount(0);
@@ -451,22 +468,23 @@ test.describe("a vacation's tasks, shared between its people", () => {
     });
 
     await test.step('a task of a person without an account has no "Reject", and any member ticks it', async () => {
-      await pageA.getByRole("button", { name: "Give to…: Books" }).click();
+      await pageA.getByRole("button", { name: "Nobody yet: Books" }).click();
       await pageA
         .getByRole("group", { name: "Give to…: Books" })
         .getByRole("button", { name: "Mia" })
         .click();
-      const row = pageB.locator(".q-item").filter({
-        has: vacationTask(pageB, "Books"),
-      });
-      await expect(row).toContainText("Mia");
-      await expect(row).toContainText("no account");
       await expect(
-        pageB.getByRole("button", { name: "Reject: Books" }),
-      ).toHaveCount(0);
-      await expect(
-        pageA.getByRole("button", { name: "Reject: Books" }),
-      ).toHaveCount(0);
+        pageB.getByRole("button", { name: "Mia: Books" }),
+      ).toBeVisible();
+      for (const page of [pageA, pageB]) {
+        await taskMoreButton(page, "Books").click();
+        const menu = page.getByRole("group", { name: "More: Books" });
+        await expect(menu).toBeVisible();
+        await expect(menu.getByRole("button", { name: "Reject" })).toHaveCount(
+          0,
+        );
+        await page.keyboard.press("Escape");
+      }
       // Nor a message: a small child can't open the link.
       await expect(
         pageA
@@ -514,7 +532,7 @@ test.describe("a vacation's tasks, shared between its people", () => {
     });
 
     await test.step('a person who is taken off leaves "Who has what", and their task is nobody\'s', async () => {
-      await pageA.getByRole("button", { name: "Give to…: iPad" }).click();
+      await pageA.getByRole("button", { name: "Nobody yet: iPad" }).click();
       await pageA
         .getByRole("group", { name: "Give to…: iPad" })
         .getByRole("button", { name: "Mia" })
@@ -531,7 +549,7 @@ test.describe("a vacation's tasks, shared between its people", () => {
       await expect(whoHasWhat(pageB)).toHaveCount(3);
       // The task Mia had offers itself again.
       await expect(
-        pageB.getByRole("button", { name: "I'll take it: iPad" }),
+        pageB.getByRole("button", { name: "Nobody yet: iPad" }),
       ).toBeVisible();
     });
 
