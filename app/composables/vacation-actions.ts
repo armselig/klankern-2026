@@ -2,8 +2,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "~/types/database.types";
 import type {
   NewVacation,
+  NewVacationPerson,
   Vacation,
   VacationDetails,
+  VacationPerson,
   VacationPhase,
   VacationTask,
   VacationTemplateTask,
@@ -95,6 +97,27 @@ export async function fetchVacationTasks(
   return rows as VacationTask[];
 }
 
+/**
+ * Every person of the household's vacations, those taken off a trip
+ * included: a rejection keeps the name of who said no, and the app works
+ * out from the row that a task given to such a person is nobody's.
+ */
+export async function fetchVacationPeople(
+  client: Client,
+  householdId: string,
+): Promise<VacationPerson[]> {
+  return fetchAllPages((afterId) => {
+    let query = client
+      .from("vacation_people")
+      .select()
+      .eq("household_id", householdId)
+      .order("id")
+      .limit(VACATION_PAGE_SIZE);
+    if (afterId) query = query.gt("id", afterId);
+    return query;
+  });
+}
+
 /** A new vacation with the ids the client gave it and its tasks. Type
  * aliases, not interfaces: only an alias is assignable to the generated
  * `Json` type of the function's arguments. */
@@ -103,24 +126,27 @@ export type VacationToCreate = NewVacation & {
   householdId: string;
 };
 export type TaskToCreate = VacationTemplateTask & { id: string };
+export type PersonToCreate = NewVacationPerson & { id: string };
 
 /** The rows create_vacation wrote. */
 export interface CreatedVacation {
   vacation: Vacation;
   tasks: VacationTask[];
+  people: VacationPerson[];
 }
 
 /**
- * Adds a vacation with the tasks of its template in one transaction, through
- * the function create_vacation (migration 0015): with separate inserts a
- * failure after the first would leave a vacation without tasks, which every
- * member would see. The ids are the client's, so the rows that come back
+ * Adds a vacation with the tasks of its template and the people who are
+ * coming in one transaction, through the function create_vacation
+ * (migrations 0015 and 0016): with separate inserts a failure after the
+ * first would leave a vacation without tasks, which every member would see. The ids are the client's, so the rows that come back
  * and the Realtime echoes of their inserts share one key each.
  */
 export async function createVacation(
   client: Client,
   vacation: VacationToCreate,
   tasks: TaskToCreate[],
+  people: PersonToCreate[],
 ): Promise<CreatedVacation> {
   const { data, error } = await client.rpc("create_vacation", {
     p_vacation: {
@@ -137,10 +163,15 @@ export async function createVacation(
       title: task.title,
       position: task.position,
     })),
+    p_people: people.map((person) => ({
+      id: person.id,
+      name: person.name,
+      user_id: person.user_id,
+    })),
   });
   if (error) throw error;
   // The function returns jsonb, so the generated type is Json; it builds the
-  // object from the two rows it inserted.
+  // object from the rows it inserted.
   return data as unknown as CreatedVacation;
 }
 
@@ -249,4 +280,105 @@ export async function softDeleteVacationTaskRemote(
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw error;
+}
+
+/** Adds a person to a vacation, with a client-supplied id (see
+ * insertVacationTask). */
+export async function insertVacationPerson(
+  client: Client,
+  person: NewVacationPerson & {
+    id: string;
+    vacationId: string;
+    householdId: string;
+  },
+): Promise<VacationPerson> {
+  const userId = await getCurrentUserId(client);
+  const { data, error } = await client
+    .from("vacation_people")
+    .insert({
+      id: person.id,
+      vacation_id: person.vacationId,
+      household_id: person.householdId,
+      name: person.name,
+      user_id: person.user_id,
+      created_by: userId,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function renameVacationPersonRemote(
+  client: Client,
+  id: string,
+  name: string,
+): Promise<void> {
+  const { error } = await client
+    .from("vacation_people")
+    .update({ name })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+/** Takes a person off a vacation. One write: their open tasks are shown as
+ * nobody's from the person's row, and are not rewritten (see assigneeOf). */
+export async function softDeleteVacationPersonRemote(
+  client: Client,
+  id: string,
+): Promise<void> {
+  const { error } = await client
+    .from("vacation_people")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+/** Gives a task to a person, takes it, or hands it back to nobody (null):
+ * the same write. It clears a rejection, since only the latest one is kept,
+ * and a task handed back was not rejected. */
+export async function assignVacationTaskRemote(
+  client: Client,
+  taskId: string,
+  personId: string | null,
+): Promise<void> {
+  const { error } = await client
+    .from("vacation_tasks")
+    .update({
+      assignee_id: personId,
+      rejected_by: null,
+      rejection_reason: null,
+    })
+    .eq("id", taskId);
+  if (error) throw error;
+}
+
+/**
+ * Rejects a task with a reason: one conditional update, which only matches
+ * while the task is still the rejecting person's. If someone gave it to
+ * another person in the meantime it matches no row, which is no error to
+ * Postgres, so the returned rows are counted.
+ *
+ * @returns whether the task was rejected; false when it wasn't that
+ *   person's any more
+ */
+export async function rejectVacationTaskRemote(
+  client: Client,
+  taskId: string,
+  personId: string,
+  reason: string,
+): Promise<boolean> {
+  const { data, error } = await client
+    .from("vacation_tasks")
+    .update({
+      assignee_id: null,
+      rejected_by: personId,
+      rejection_reason: reason,
+    })
+    .eq("id", taskId)
+    .eq("assignee_id", personId)
+    .is("deleted_at", null)
+    .select("id");
+  if (error) throw error;
+  return data.length > 0;
 }

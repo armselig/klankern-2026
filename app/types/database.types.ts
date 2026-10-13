@@ -393,8 +393,58 @@ export type Database = {
           },
         ];
       };
+      vacation_people: {
+        Row: {
+          created_at: string;
+          created_by: string;
+          deleted_at: string | null;
+          household_id: string;
+          id: string;
+          name: string;
+          user_id: string | null;
+          vacation_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by: string;
+          deleted_at?: string | null;
+          household_id: string;
+          id?: string;
+          name: string;
+          user_id?: string | null;
+          vacation_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string;
+          deleted_at?: string | null;
+          household_id?: string;
+          id?: string;
+          name?: string;
+          user_id?: string | null;
+          vacation_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "vacation_people_member_fkey";
+            columns: ["household_id", "user_id"];
+            isOneToOne: false;
+            referencedRelation: "household_members";
+            referencedColumns: ["household_id", "user_id"];
+          },
+          {
+            foreignKeyName: "vacation_people_vacation_fkey";
+            columns: ["vacation_id", "household_id"];
+            isOneToOne: false;
+            referencedRelation: "vacations";
+            referencedColumns: ["id", "household_id"];
+          },
+        ];
+      };
       vacation_tasks: {
         Row: {
+          assignee_id: string | null;
           created_at: string;
           created_by: string;
           deleted_at: string | null;
@@ -403,11 +453,14 @@ export type Database = {
           id: string;
           phase: string;
           position: number;
+          rejected_by: string | null;
+          rejection_reason: string | null;
           title: string;
           vacation_id: string;
         };
         ComputedFields: never;
         Insert: {
+          assignee_id?: string | null;
           created_at?: string;
           created_by: string;
           deleted_at?: string | null;
@@ -416,10 +469,13 @@ export type Database = {
           id?: string;
           phase: string;
           position?: number;
+          rejected_by?: string | null;
+          rejection_reason?: string | null;
           title: string;
           vacation_id: string;
         };
         Update: {
+          assignee_id?: string | null;
           created_at?: string;
           created_by?: string;
           deleted_at?: string | null;
@@ -428,10 +484,26 @@ export type Database = {
           id?: string;
           phase?: string;
           position?: number;
+          rejected_by?: string | null;
+          rejection_reason?: string | null;
           title?: string;
           vacation_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "vacation_tasks_assignee_fkey";
+            columns: ["assignee_id", "vacation_id"];
+            isOneToOne: false;
+            referencedRelation: "vacation_people";
+            referencedColumns: ["id", "vacation_id"];
+          },
+          {
+            foreignKeyName: "vacation_tasks_rejected_by_fkey";
+            columns: ["rejected_by", "vacation_id"];
+            isOneToOne: false;
+            referencedRelation: "vacation_people";
+            referencedColumns: ["id", "vacation_id"];
+          },
           {
             foreignKeyName: "vacation_tasks_vacation_fkey";
             columns: ["vacation_id", "household_id"];
@@ -507,7 +579,7 @@ export type Database = {
       };
       create_invite: { Args: { p_household_id: string }; Returns: string };
       create_vacation: {
-        Args: { p_tasks: Json; p_vacation: Json };
+        Args: { p_people?: Json; p_tasks: Json; p_vacation: Json };
         Returns: Json;
       };
       is_household_member: { Args: { hid: string }; Returns: boolean };

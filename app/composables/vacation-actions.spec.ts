@@ -1,9 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  assignVacationTaskRemote,
   createVacation,
+  fetchVacationPeople,
   fetchVacations,
   fetchVacationTasks,
+  insertVacationPerson,
   insertVacationTask,
+  rejectVacationTaskRemote,
+  renameVacationPersonRemote,
+  softDeleteVacationPersonRemote,
   renameVacationTaskRemote,
   setVacationTaskDone,
   softDeleteVacationRemote,
@@ -89,7 +95,16 @@ describe("createVacation", () => {
     const rpc = vi.fn().mockResolvedValue({ data: created, error: null });
     const client = fakeClient({ rpc });
 
-    const result = await createVacation(client as never, vacation, [...tasks]);
+    const people = [
+      { id: "person-1", name: "alex", user_id: "user-1" },
+      { id: "person-2", name: "Mia", user_id: null },
+    ];
+    const result = await createVacation(
+      client as never,
+      vacation,
+      [...tasks],
+      people,
+    );
 
     expect(result).toEqual(created);
     expect(rpc).toHaveBeenCalledTimes(1);
@@ -106,6 +121,7 @@ describe("createVacation", () => {
         { id: "task-1", phase: "before", title: "Clothes", position: 1 },
         { id: "task-2", phase: "during", title: "Return the key", position: 1 },
       ],
+      p_people: people,
     });
     // The function writes the rows itself; a second write from here could
     // succeed where the first failed, and leave half a vacation.
@@ -118,9 +134,9 @@ describe("createVacation", () => {
       rpc: vi.fn().mockResolvedValue({ data: null, error }),
     });
 
-    await expect(createVacation(client as never, vacation, [])).rejects.toBe(
-      error,
-    );
+    await expect(
+      createVacation(client as never, vacation, [], []),
+    ).rejects.toBe(error);
   });
 });
 
@@ -264,6 +280,11 @@ describe.each([
     softDeleteVacationTaskRemote,
     "vacation_tasks",
   ],
+  [
+    "softDeleteVacationPersonRemote",
+    softDeleteVacationPersonRemote,
+    "vacation_people",
+  ],
 ] as const)("%s", (_name, softDelete, table) => {
   it("sets deleted_at for the given id", async () => {
     const query = fakeQueryBuilder({ data: null, error: null });
@@ -284,5 +305,144 @@ describe.each([
     const client = fakeClient({ from: () => query.builder });
 
     await expect(softDelete(client as never, "row-1")).rejects.toBe(error);
+  });
+});
+
+describe("fetchVacationPeople", () => {
+  it("returns every person of the household, those taken off a trip included", async () => {
+    const rows = [{ id: "a" }, { id: "b", deleted_at: "2026-10-02" }];
+    const query = fakeQueryBuilder({ data: rows, error: null });
+    const { client, from } = fakeClientWithQueries([query]);
+
+    expect(await fetchVacationPeople(client as never, "h1")).toEqual(rows);
+    expect(from).toHaveBeenCalledWith("vacation_people");
+    expect(query.calls.eq).toEqual(["household_id", "h1"]);
+    // A removed person still names an old rejection.
+    expect(query.calls.is).toBeUndefined();
+    expect(query.calls.order).toEqual(["id"]);
+  });
+
+  it("throws on error", async () => {
+    const error = { message: "boom" };
+    const { client } = fakeClientWithQueries([
+      fakeQueryBuilder({ data: null, error }),
+    ]);
+
+    await expect(fetchVacationPeople(client as never, "h1")).rejects.toBe(
+      error,
+    );
+  });
+});
+
+describe("insertVacationPerson", () => {
+  it("inserts with the client-supplied id and the resolved created_by", async () => {
+    const row = { id: "person-1", name: "Mia" };
+    const query = fakeQueryBuilder({ data: row, error: null });
+    const client = fakeClient({ userId: "user-1", from: () => query.builder });
+
+    const result = await insertVacationPerson(client as never, {
+      id: "person-1",
+      vacationId: "vacation-1",
+      householdId: "h1",
+      name: "Mia",
+      user_id: null,
+    });
+
+    expect(result).toEqual(row);
+    expect(client.from).toHaveBeenCalledWith("vacation_people");
+    expect(query.calls.insert).toEqual([
+      {
+        id: "person-1",
+        vacation_id: "vacation-1",
+        household_id: "h1",
+        name: "Mia",
+        user_id: null,
+        created_by: "user-1",
+      },
+    ]);
+  });
+});
+
+describe("renameVacationPersonRemote", () => {
+  it("updates the name for the given id", async () => {
+    const query = fakeQueryBuilder({ data: null, error: null });
+    const client = fakeClient({ from: () => query.builder });
+
+    await renameVacationPersonRemote(client as never, "person-1", "Mia B.");
+
+    expect(client.from).toHaveBeenCalledWith("vacation_people");
+    expect(query.calls.update).toEqual([{ name: "Mia B." }]);
+    expect(query.calls.eq).toEqual(["id", "person-1"]);
+  });
+});
+
+describe("assignVacationTaskRemote", () => {
+  it("sets the assignee and clears a rejection", async () => {
+    const query = fakeQueryBuilder({ data: null, error: null });
+    const client = fakeClient({ from: () => query.builder });
+
+    await assignVacationTaskRemote(client as never, "task-1", "person-1");
+
+    expect(client.from).toHaveBeenCalledWith("vacation_tasks");
+    expect(query.calls.update).toEqual([
+      { assignee_id: "person-1", rejected_by: null, rejection_reason: null },
+    ]);
+    expect(query.calls.eq).toEqual(["id", "task-1"]);
+  });
+
+  it("throws on error", async () => {
+    const error = { message: "boom" };
+    const query = fakeQueryBuilder({ data: null, error });
+    const client = fakeClient({ from: () => query.builder });
+
+    await expect(
+      assignVacationTaskRemote(client as never, "task-1", "person-1"),
+    ).rejects.toBe(error);
+  });
+});
+
+describe("rejectVacationTaskRemote", () => {
+  it("clears the assignee and sets the rejection, only while the task is that person's", async () => {
+    const query = fakeQueryBuilder({ data: [{ id: "task-1" }], error: null });
+    const client = fakeClient({ from: () => query.builder });
+
+    const rejected = await rejectVacationTaskRemote(
+      client as never,
+      "task-1",
+      "person-1",
+      "No time.",
+    );
+
+    expect(rejected).toBe(true);
+    expect(query.calls.update).toEqual([
+      {
+        assignee_id: null,
+        rejected_by: "person-1",
+        rejection_reason: "No time.",
+      },
+    ]);
+    // The fake keeps the last call of a method: the condition on the
+    // assignee comes after the one on the id.
+    expect(query.calls.eq).toEqual(["assignee_id", "person-1"]);
+    expect(query.calls.is).toEqual(["deleted_at", null]);
+  });
+
+  it("says so when the task wasn't that person's any more", async () => {
+    const query = fakeQueryBuilder({ data: [], error: null });
+    const client = fakeClient({ from: () => query.builder });
+
+    expect(
+      await rejectVacationTaskRemote(client as never, "t", "p", "No."),
+    ).toBe(false);
+  });
+
+  it("throws on error", async () => {
+    const error = { message: "boom" };
+    const query = fakeQueryBuilder({ data: null, error });
+    const client = fakeClient({ from: () => query.builder });
+
+    await expect(
+      rejectVacationTaskRemote(client as never, "t", "p", "No."),
+    ).rejects.toBe(error);
   });
 });

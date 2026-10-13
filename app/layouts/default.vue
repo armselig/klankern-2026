@@ -22,10 +22,13 @@ const showLoginButton = computed(
     !route.path.startsWith(ROUTES.joinPrefix),
 );
 
-/** Signs the user out and returns them to the login screen. */
+/** Signs the user out and returns them to the login screen. The page a
+ * signed-out person asked for is forgotten with it: left in its cookie, it
+ * would lead whoever signs in next on this device to that page. */
 async function signOut() {
   await client.auth.signOut();
   await router.push(ROUTES.login);
+  useSupabaseCookieRedirect().pluck();
 }
 </script>
 

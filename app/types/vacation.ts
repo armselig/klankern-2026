@@ -55,3 +55,46 @@ export interface VacationGroups {
   /** The rest, the latest first. */
   past: Vacation[];
 }
+
+type VacationPersonRow = Database["public"]["Tables"]["vacation_people"]["Row"];
+
+/** A person on a trip: a member of the household (`user_id`) or just a
+ * name, such as a small child or a guest. A person taken off the trip stays
+ * as a row with `deleted_at`, so a rejection keeps its name. */
+export type VacationPerson = VacationPersonRow;
+
+export type VacationPersonRealtimeEvent = RowRealtimeEvent<VacationPerson>;
+
+/** A person as the form for a new vacation collects one, before the trip
+ * gives them an id. A type alias: it is sent as JSON (see TaskToCreate). */
+export type NewVacationPerson = {
+  name: string;
+  /** The member's account, or null for a person without one. */
+  user_id: string | null;
+};
+
+/** One line of "Who has what": a person and their open tasks, or the tasks
+ * that are nobody's (`person` is null). */
+export interface TaskShare {
+  person: VacationPerson | null;
+  open: number;
+}
+
+/** What a task's row shows beyond the task itself, worked out by the page:
+ * the row only renders. */
+export interface TaskRowState {
+  /** Who has the task, if that person is still on the trip. */
+  assignee: VacationPerson | null;
+  /** Who said no, for a task that is nobody's since. */
+  rejecter: VacationPerson | null;
+  /** The task is the signed-in member's. */
+  mine: boolean;
+  /** The line that offers "Tell them" after the member gave or rejected
+   * the task ("Given to sam."), or null. */
+  tellLine: string | null;
+  /** Whether a message about the task has someone to go to: its assignee
+   * with an account, or everyone after a rejection. */
+  canTell: boolean;
+  /** The row a link led to, marked for a moment. */
+  marked: boolean;
+}

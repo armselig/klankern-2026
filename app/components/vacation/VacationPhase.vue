@@ -4,12 +4,31 @@ import {
   mdiChevronRight,
   mdiPlus,
 } from "@quasar/extras/mdi-v7";
-import type { VacationPhase, VacationTask } from "~/types/vacation";
+import type {
+  TaskRowState,
+  VacationPerson,
+  VacationPhase,
+  VacationTask,
+} from "~/types/vacation";
 
 const props = defineProps<{
   phase: VacationPhase;
-  /** The phase's tasks in the order they are shown (see tasksInPhase). */
+  /** The phase's tasks in the order they are shown (see tasksInPhase);
+   * with "Only my tasks" ticked, the member's open ones alone. */
   tasks: VacationTask[];
+  /** What stands beside the heading: "5 open", or the filtered view's own
+   * text. */
+  summary: string;
+  /** Whether the field for a new task is shown. Not while "Only my tasks"
+   * is ticked: a new task is nobody's and would vanish as it is saved. */
+  canAdd: boolean;
+  /** What each row shows beyond its task, by task id. */
+  rowStates: Record<string, TaskRowState>;
+  /** The people on the trip, the member's own person and the members'
+   * email addresses, handed on to the rows. */
+  people: VacationPerson[];
+  me: VacationPerson | null;
+  emails: Record<string, string>;
   /** Why the task typed last could not be saved, to stand under the field. */
   addError: string | null;
 }>();
@@ -18,6 +37,10 @@ const emit = defineEmits<{
   toggle: [id: string];
   rename: [id: string, title: string];
   remove: [id: string];
+  give: [id: string, personId: string | null];
+  reject: [id: string];
+  tell: [id: string];
+  closeTell: [id: string];
 }>();
 /** Whether the phase is unfolded. The page decides how it starts (it
  * follows the trip); a press here changes it for the visit. */
@@ -29,6 +52,8 @@ const addInput = useTemplateRef<{ focus: () => void }>("addInput");
 
 interface TaskRow {
   focusTickBox: () => void;
+  focusOffer: () => void;
+  arrive: () => void;
 }
 /** The rows by task id, to put the focus on one after the list changed. */
 const rows = new Map<string, TaskRow>();
@@ -68,6 +93,13 @@ async function remove(id: string) {
   if (next) rows.get(next.id)?.focusTickBox();
   else addInput.value?.focus();
 }
+
+defineExpose({
+  /** Puts the focus on a row's first offer, after its task was rejected. */
+  focusOffer: (id: string) => rows.get(id)?.focusOffer(),
+  /** Scrolls to a row and focuses it: where a link to its task lands. */
+  arrive: (id: string) => rows.get(id)?.arrive(),
+});
 </script>
 
 <template>
@@ -85,9 +117,7 @@ async function remove(id: string) {
         class="touch-target vacation-phase__fold"
         @click="open = !open"
       />
-      <span class="vacation-phase__summary text-muted">{{
-        phaseSummary(tasks)
-      }}</span>
+      <span class="vacation-phase__summary text-muted">{{ summary }}</span>
     </h3>
 
     <div v-if="open" :id="bodyId">
@@ -97,13 +127,21 @@ async function remove(id: string) {
           :key="task.id"
           :ref="(row) => rememberRow(task.id, row)"
           :task="task"
+          :state="rowStates[task.id]!"
+          :people="people"
+          :me="me"
+          :emails="emails"
           @toggle="toggle"
           @rename="(id, title) => emit('rename', id, title)"
           @remove="remove"
+          @give="(id, personId) => emit('give', id, personId)"
+          @reject="(id) => emit('reject', id)"
+          @tell="(id) => emit('tell', id)"
+          @close-tell="(id) => emit('closeTell', id)"
         />
       </q-list>
 
-      <q-form class="vacation-phase__add" @submit.prevent="add">
+      <q-form v-if="canAdd" class="vacation-phase__add" @submit.prevent="add">
         <q-input
           ref="addInput"
           v-model="newTitle"

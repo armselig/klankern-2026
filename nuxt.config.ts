@@ -60,6 +60,10 @@ export default defineNuxtConfig({
       login: ROUTES.login,
       callback: ROUTES.confirm,
       exclude: [`${ROUTES.joinPrefix}**`, ROUTES.login, ROUTES.confirm],
+      // The page a signed-out person asked for is remembered in a cookie
+      // while they sign in, so a link from a messenger leads to its page and
+      // not to the dashboard (see pages/login.vue).
+      saveRedirectToCookie: true,
     },
   },
   quasar: {

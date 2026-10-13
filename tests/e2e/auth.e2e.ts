@@ -2,9 +2,11 @@ import { expect, test } from "@playwright/test";
 import { ROUTES } from "../../app/utils/routes";
 import {
   accountButton,
+  enterLoginCode,
   signIn,
   signOut,
   stubOtpRequest,
+  waitForSessionCookie,
 } from "../support/e2e-ui";
 import {
   createHousehold,
@@ -82,6 +84,46 @@ test.describe("auth", () => {
         await page.goto(path);
         await expect(page).toHaveURL(LOGIN_URL);
       }
+    });
+  });
+
+  test("a link opened signed out leads to its page after sign-in, and sign-out forgets it", async ({
+    page,
+  }) => {
+    // What "Tell them" sends: a vacation's page with a task in the address.
+    // On a phone the link opens in the browser, which may not be signed in.
+    const asked = `${ROUTES.vacation("some-id")}?task=some-task`;
+    const remembered = async () =>
+      (await page.context().cookies()).find((cookie) =>
+        cookie.name.endsWith("-redirect-path"),
+      )?.value;
+
+    await stubOtpRequest(page);
+    await page.goto(asked);
+    await expect(page).toHaveURL(LOGIN_URL);
+
+    // Filled in here and not by signIn, which expects the dashboard: where
+    // sign-in leads is what this case is about.
+    await enterLoginCode(page, user.email, "Verify");
+    await expect(page).toHaveURL(new RegExp(`${ROUTES.vacation("some-id")}`));
+    expect(new URL(page.url()).search).toBe("?task=some-task");
+    await expect(accountButton(page, user.email)).toBeVisible();
+    await waitForSessionCookie(page);
+    // Read once: the next sign-in on this device starts at the dashboard.
+    expect(await remembered()).toBeFalsy();
+
+    await test.step("a page asked for and never reached is forgotten at sign-out", async () => {
+      await signOut(page);
+      await page.goto(ROUTES.todos);
+      await expect(page).toHaveURL(LOGIN_URL);
+      expect(decodeURIComponent((await remembered()) ?? "")).toBe(ROUTES.todos);
+      // Someone signs in elsewhere on the page, as the join page does, and
+      // out again: the remembered page must not wait for the next person.
+      await enterLoginCode(page, user.email, "Verify");
+      await expect(page).toHaveURL(new RegExp(`${ROUTES.todos}$`));
+      await page.goto(ROUTES.home);
+      await signOut(page);
+      expect(await remembered()).toBeFalsy();
     });
   });
 

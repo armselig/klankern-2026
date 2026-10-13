@@ -311,16 +311,32 @@ export function vacationTilePreview(
   vacationsById: ItemsById<Vacation>,
   tasksById: ItemsById<VacationTask>,
   today: LocalDate,
+  /** What the tile adds for the signed-in member, of the vacation with
+   * this id: how many open tasks are theirs and how many came back
+   * rejected (see myShareOf). The tile stands in for notifications. */
+  shareOf?: (vacationId: string) => { mine: number; rejected: number },
 ): ListPreview<TitledEntry> | null {
   const { current } = groupVacations(vacationsById, tasksById, today);
   const first = current[0];
   if (!first) return null;
+  const shown: TitledEntry[] = [
+    { id: first.id, title: first.title },
+    { id: `${first.id}-stage`, title: stageLine(first, today), muted: true },
+  ];
+  const share = shareOf?.(first.id);
+  const parts = [
+    share?.mine ? `${share.mine} yours` : "",
+    share?.rejected ? `${share.rejected} came back` : "",
+  ].filter(Boolean);
+  if (parts.length > 0)
+    shown.push({
+      id: `${first.id}-share`,
+      title: parts.join(" · "),
+      muted: true,
+    });
   return {
     count: openTaskCount(tasksOfVacation(tasksById, first.id)),
-    shown: [
-      { id: first.id, title: first.title },
-      { id: `${first.id}-stage`, title: stageLine(first, today), muted: true },
-    ],
+    shown,
     more: current.length - 1,
   };
 }

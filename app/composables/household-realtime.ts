@@ -7,6 +7,8 @@ import type { RowRealtimeEvent } from "~/types/synced-row";
 import type { TodoItem } from "~/types/todo";
 import type {
   Vacation,
+  VacationPerson,
+  VacationPersonRealtimeEvent,
   VacationRealtimeEvent,
   VacationTask,
   VacationTaskRealtimeEvent,
@@ -43,9 +45,11 @@ export interface HouseholdChangeListeners {
   onRecipeChange: (event: RecipeRealtimeEvent) => void;
   onVacationChange: (event: VacationRealtimeEvent) => void;
   onVacationTaskChange: (event: VacationTaskRealtimeEvent) => void;
+  onVacationPersonChange: (event: VacationPersonRealtimeEvent) => void;
   /** Fires on the first subscribe and on every automatic rejoin after a
    * dropped connection; postgres_changes has no replay, so this is the cue
-   * to refetch. */
+   * to refetch. It fires a second time once the server says that the
+   * changes are flowing (see subscribeToHouseholdChanges). */
   onSubscribed: () => void;
 }
 
@@ -57,6 +61,11 @@ export interface HouseholdChangeListeners {
  *
  * Only INSERT and UPDATE are subscribed: DELETE events can't be filtered and
  * bypass RLS, and the app never hard-deletes (deletes are soft UPDATEs).
+ *
+ * A joined channel does not deliver changes yet: the server reports
+ * "Subscribed to PostgreSQL" about half a second after the join (measured
+ * 2026-10-13), and a change made in between is in neither the refetch at
+ * the join nor an event. So that report is a second cue to refetch.
  *
  * @returns a function that removes the channel
  */
@@ -82,6 +91,12 @@ export function subscribeToHouseholdChanges(
   const vacationTasks = {
     schema: "public",
     table: "vacation_tasks",
+    filter,
+  } as const;
+
+  const vacationPeople = {
+    schema: "public",
+    table: "vacation_people",
     filter,
   } as const;
 
@@ -147,6 +162,22 @@ export function subscribeToHouseholdChanges(
       { ...vacationTasks, event: "UPDATE" },
       (payload) => listeners.onVacationTaskChange(toRowRealtimeEvent(payload)),
     )
+    .on<VacationPerson>(
+      "postgres_changes",
+      { ...vacationPeople, event: "INSERT" },
+      (payload) =>
+        listeners.onVacationPersonChange(toRowRealtimeEvent(payload)),
+    )
+    .on<VacationPerson>(
+      "postgres_changes",
+      { ...vacationPeople, event: "UPDATE" },
+      (payload) =>
+        listeners.onVacationPersonChange(toRowRealtimeEvent(payload)),
+    )
+    .on("system", {}, (message: { extension?: string; status?: string }) => {
+      if (message.extension === "postgres_changes" && message.status === "ok")
+        listeners.onSubscribed();
+    })
     .subscribe((status) => {
       if (status === "SUBSCRIBED") listeners.onSubscribed();
     });

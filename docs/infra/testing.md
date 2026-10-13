@@ -52,7 +52,7 @@ With the vacation planner's first journey the `dev` project signed in through th
 
 - `openSignedIn` gives the browser a session of the test user as the app stores one, in its cookie, and opens the dashboard. The session comes from a sign-in with the user's password, which the limit does not count: every test user has always been signed in that way once, for its API client, and the suite created some 25 of them per run without trouble.
 - Each call makes a session of its own. A sign-out ends all sessions of a user, and several tests share one user.
-- The form is still used where it is the subject: `auth.e2e.ts`, the invite flows of `household.e2e.ts` and the second user of `session-switch.e2e.ts`. That is 7 form sign-ins in a run.
+- The form is still used where it is the subject: `auth.e2e.ts`, the invite flows of `household.e2e.ts` and the second user of `session-switch.e2e.ts`. That is 7 form sign-ins in a run. (9 since the case for the sign-in return was added to `auth.e2e.ts` the same day, see "Tests" in [`features/vacations-slice-2.md`](../features/vacations-slice-2.md).)
 - `session-switch.e2e.ts` now answers the request for a code itself before its second user signs in; the form sign-in of its first user used to do that.
 
 The whole suite passed afterwards, 32 tests. What it no longer does 23 times is type a code into the form; the form's own tests are unchanged.

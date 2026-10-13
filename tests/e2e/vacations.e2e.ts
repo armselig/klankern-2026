@@ -16,6 +16,7 @@ import {
   vacationTask,
 } from "../support/e2e-ui";
 import {
+  admin,
   createHousehold,
   createTestUser,
   deleteTestData,
@@ -271,6 +272,267 @@ test.describe("a vacation's checklist, for two members", () => {
       ).toBeVisible();
       await pageB.getByRole("link", { name: "All vacations" }).click();
       await expect(pageB.getByText(NO_VACATIONS_TEXT)).toBeVisible();
+    });
+
+    await contextA.close();
+    await contextB.close();
+  });
+});
+
+// Slice 2: the people on a trip, and tasks that are given, taken and
+// rejected with a reason, out in the open.
+
+test.describe("a vacation's tasks, shared between its people", () => {
+  let userA: TestUser;
+  let userB: TestUser;
+  let householdId: string;
+
+  test.beforeAll(async () => {
+    [userA, userB] = await Promise.all([
+      createTestUser("e2e-fair-a"),
+      createTestUser("e2e-fair-b"),
+    ]);
+    householdId = await createHousehold(userA.client, `E2E fair ${runId}`);
+    await joinHousehold(userA, userB, householdId);
+  });
+
+  test.afterAll(async () => {
+    await deleteTestData([householdId], [userA, userB]);
+  });
+
+  test("a task is given, rejected with a reason and taken, and everyone sees it", async ({
+    browser,
+  }) => {
+    // The clipboard may be written, and the share sheet is taken away, so
+    // "Tell them" copies whatever system the test runs on.
+    const contextA = await browser.newContext({
+      permissions: ["clipboard-read", "clipboard-write"],
+    });
+    const contextB = await browser.newContext();
+    await contextA.addInitScript(() => {
+      Object.defineProperty(navigator, "share", { value: undefined });
+    });
+    const pageA = await contextA.newPage();
+    const pageB = await contextB.newPage();
+    await openSignedIn(pageA, userA);
+    await openSignedIn(pageB, userB);
+
+    // A member's name on a trip starts as their address before the "@".
+    const nameA = userA.email.split("@")[0]!;
+    const nameB = userB.email.split("@")[0]!;
+    const today = localDateOf(new Date());
+    const whoHasWhat = (page: typeof pageA) =>
+      page
+        .locator("section")
+        .filter({
+          has: page.getByRole("heading", { name: "Who has what", level: 3 }),
+        })
+        .getByRole("listitem");
+    const reason = "I'm already busy enough washing all the clothes.";
+    let vacationId = "";
+
+    await test.step("A adds a vacation with both members and a child", async () => {
+      await openVacations(pageA);
+      await pageA.getByRole("link", { name: "Add vacation" }).click();
+      await pageA.getByLabel("Title").fill("Winter week by the sea");
+      await pageA.getByLabel("From").fill(addDays(today, 10));
+      await pageA.getByLabel("Until").fill(addDays(today, 17));
+      await expect(
+        pageA.getByRole("checkbox", { name: `${nameA} (you)` }),
+      ).toBeChecked();
+      await expect(pageA.getByRole("checkbox", { name: nameB })).toBeChecked();
+      // Enter in the name's field adds the name; it doesn't save the form.
+      await pageA.getByLabel("Add a name").fill("Mia");
+      await pageA.keyboard.press("Enter");
+      await expect(pageA.getByRole("checkbox", { name: "Mia" })).toBeChecked();
+      await expect(pageA).toHaveURL(/\/vacations\/new$/);
+      await pageA.getByRole("button", { name: "Add vacation" }).click();
+      await expect(pageA).toHaveURL(/\/vacations\/[0-9a-f-]{36}$/);
+      vacationId = pageA.url().split("/").pop()!;
+
+      await expect(whoHasWhat(pageA)).toHaveText([
+        new RegExp(`${nameA} \\(you\\).*0$`),
+        new RegExp(`${nameB}.*0$`),
+        /Mia.*0$/,
+        /Nobody yet.*33$/,
+      ]);
+    });
+
+    await test.step("B opens it and sees the same", async () => {
+      await openVacations(pageB);
+      await vacationLink(pageB, "Winter week by the sea").click();
+      await expect(whoHasWhat(pageB)).toHaveCount(4);
+    });
+
+    await test.step("A gives a task to B, who sees it as theirs", async () => {
+      await pageA.getByRole("button", { name: "Give to…: Clothes" }).click();
+      await pageA
+        .getByRole("group", { name: "Give to…: Clothes" })
+        .getByRole("button", { name: nameB })
+        .click();
+      const row = pageA.locator(".q-item").filter({
+        has: vacationTask(pageA, "Clothes"),
+      });
+      await expect(row).toContainText(nameB);
+      await expect(row.getByRole("status")).toContainText(`Given to ${nameB}.`);
+      await expect(whoHasWhat(pageA).nth(1)).toHaveText(/1$/);
+
+      const rowB = pageB.locator(".q-item").filter({
+        has: vacationTask(pageB, "Clothes"),
+      });
+      await expect(rowB).toContainText("yours");
+      await expect(
+        pageB.getByRole("button", { name: "Reject: Clothes" }),
+      ).toBeVisible();
+      // Nobody rejects another person's task.
+      await expect(
+        pageA.getByRole("button", { name: "Reject: Clothes" }),
+      ).toHaveCount(0);
+    });
+
+    await test.step('"Tell them" hands A a sentence with a link to the task', async () => {
+      await pageA.getByRole("button", { name: "Tell them: Clothes" }).click();
+      await expect(pageA.getByText("Message copied")).toBeVisible();
+      const message = await pageA.evaluate(() =>
+        navigator.clipboard.readText(),
+      );
+      expect(message).toContain(
+        '"Clothes" is yours for Winter week by the sea.',
+      );
+      expect(message).toMatch(
+        new RegExp(`/vacations/${vacationId}\\?task=[0-9a-f-]{36}$`),
+      );
+
+      // The line has no timer; it goes when it is closed.
+      const row = pageA.locator(".q-item").filter({
+        has: vacationTask(pageA, "Clothes"),
+      });
+      await row.getByRole("button", { name: "Close" }).click();
+      await expect(row.getByRole("status")).toHaveCount(0);
+    });
+
+    await test.step("B rejects it with a reason; the focus moves to what the row offers next", async () => {
+      await pageB.getByRole("button", { name: "Reject: Clothes" }).click();
+      const dialog = pageB.getByRole("dialog");
+      await expect(dialog).toContainText("Everyone sees your reason.");
+      // A reason of spaces is none.
+      await dialog.getByLabel("Why not?").fill("  ");
+      await dialog.getByRole("button", { name: "Reject task" }).click();
+      await expect(dialog).toContainText("Say why, so the others know.");
+      await dialog.getByLabel("Why not?").fill(reason);
+      await dialog.getByRole("button", { name: "Reject task" }).click();
+      await expect(dialog).toHaveCount(0);
+
+      const rowB = pageB.locator(".q-item").filter({
+        has: vacationTask(pageB, "Clothes"),
+      });
+      await expect(rowB).toContainText(`${nameB} said no: “${reason}”`);
+      await expect(
+        pageB.getByRole("button", { name: "I'll take it: Clothes" }),
+      ).toBeFocused();
+      await expect(rowB.getByRole("status")).toContainText("Back to nobody.");
+    });
+
+    await test.step("A sees the rejection without reloading, and takes the task", async () => {
+      const row = pageA.locator(".q-item").filter({
+        has: vacationTask(pageA, "Clothes"),
+      });
+      await expect(row).toContainText(`${nameB} said no: “${reason}”`);
+      await expect(whoHasWhat(pageA).nth(1)).toHaveText(/0$/);
+
+      await pageA
+        .getByRole("button", { name: "I'll take it: Clothes" })
+        .click();
+      await expect(row).toContainText("yours");
+      await expect(row).not.toContainText("said no");
+      // Nobody sends a message to themselves.
+      await expect(row.getByRole("status")).toHaveCount(0);
+      await expect(whoHasWhat(pageA).first()).toHaveText(/1$/);
+    });
+
+    await test.step('a task of a person without an account has no "Reject", and any member ticks it', async () => {
+      await pageA.getByRole("button", { name: "Give to…: Books" }).click();
+      await pageA
+        .getByRole("group", { name: "Give to…: Books" })
+        .getByRole("button", { name: "Mia" })
+        .click();
+      const row = pageB.locator(".q-item").filter({
+        has: vacationTask(pageB, "Books"),
+      });
+      await expect(row).toContainText("Mia");
+      await expect(row).toContainText("no account");
+      await expect(
+        pageB.getByRole("button", { name: "Reject: Books" }),
+      ).toHaveCount(0);
+      await expect(
+        pageA.getByRole("button", { name: "Reject: Books" }),
+      ).toHaveCount(0);
+      // Nor a message: a small child can't open the link.
+      await expect(
+        pageA
+          .locator(".q-item")
+          .filter({ has: vacationTask(pageA, "Books") })
+          .getByRole("status"),
+      ).toHaveCount(0);
+
+      await vacationTask(pageB, "Books").click();
+      await expect(vacationTask(pageA, "Books")).toBeChecked();
+    });
+
+    await test.step('"Only my tasks" leaves A\'s open tasks and hides the add fields', async () => {
+      await pageA.getByRole("checkbox", { name: "Only my tasks" }).click();
+      const before = vacationPhase(pageA, "Before");
+      await expect(before.getByRole("checkbox")).toHaveCount(1);
+      await expect(before).toContainText("1 of yours open");
+      await expect(pageA.getByText("Untick to add tasks.")).toBeVisible();
+      await expect(pageA.getByLabel("Add a task before the trip")).toHaveCount(
+        0,
+      );
+      await expect(vacationPhase(pageA, "During")).toContainText(
+        "Nothing of yours here.",
+      );
+      await pageA.getByRole("checkbox", { name: "Only my tasks" }).click();
+      await expect(before.getByRole("checkbox")).toHaveCount(23);
+    });
+
+    await test.step("a link to a task opens its phase and lands at its row, once", async () => {
+      const { data: task } = await admin
+        .from("vacation_tasks")
+        .select("id")
+        .eq("vacation_id", vacationId)
+        .eq("title", "Return the key")
+        .single();
+      await pageB.goto(`/vacations/${vacationId}?task=${task!.id}`);
+      await expect(phaseButton(pageB, "During")).toHaveAttribute(
+        "aria-expanded",
+        "true",
+      );
+      await expect(vacationTask(pageB, "Return the key")).toBeFocused();
+      await expect(vacationTask(pageB, "Return the key")).toBeInViewport();
+      // The parameter is read once and taken out of the address.
+      await expect(pageB).toHaveURL(new RegExp(`/vacations/${vacationId}$`));
+    });
+
+    await test.step('a person who is taken off leaves "Who has what", and their task is nobody\'s', async () => {
+      await pageA.getByRole("button", { name: "Give to…: iPad" }).click();
+      await pageA
+        .getByRole("group", { name: "Give to…: iPad" })
+        .getByRole("button", { name: "Mia" })
+        .click();
+      await expect(whoHasWhat(pageA).nth(2)).toHaveText(/Mia.*1$/);
+
+      await pageA.getByRole("button", { name: "Change people" }).click();
+      await pageA.getByRole("checkbox", { name: "Mia is coming" }).click();
+      await pageA.getByRole("button", { name: "Done" }).click();
+      await expect(
+        pageA.getByRole("button", { name: "Change people" }),
+      ).toBeFocused();
+      await expect(whoHasWhat(pageA)).toHaveCount(3);
+      await expect(whoHasWhat(pageB)).toHaveCount(3);
+      // The task Mia had offers itself again.
+      await expect(
+        pageB.getByRole("button", { name: "I'll take it: iPad" }),
+      ).toBeVisible();
     });
 
     await contextA.close();

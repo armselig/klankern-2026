@@ -44,11 +44,18 @@ const recipePreview = computed(() => previewOfList(recipeStore.visible));
 /** The day the dashboard was opened on; it decides which vacations are
  * current and where the first of them stands. */
 const today = localDateOf(new Date());
+const user = useSupabaseUser();
 const vacationPreview = computed(() =>
   vacationTilePreview(
     vacationStore.vacationsById,
     vacationStore.tasksById,
     today,
+    (vacationId) =>
+      myShareOf(
+        vacationStore.tasksOf(vacationId),
+        personOfUser(vacationStore.peopleOf(vacationId), user.value?.sub),
+        vacationStore.peopleById,
+      ),
   ),
 );
 

@@ -39,6 +39,8 @@ export function useHouseholdRealtime() {
         onRecipeChange: (event) => recipeStore.applyRealtimeEvent(event),
         onVacationChange: (event) => vacationStore.applyVacationEvent(event),
         onVacationTaskChange: (event) => vacationStore.applyTaskEvent(event),
+        onVacationPersonChange: (event) =>
+          vacationStore.applyPersonEvent(event),
         onSubscribed: () => {
           void todoStore.resync();
           void shoppingStore.resync();

@@ -49,6 +49,9 @@ function task(overrides: Partial<VacationTask> = {}): VacationTask {
     title: "Clothes",
     done: false,
     position: 1,
+    assignee_id: null,
+    rejected_by: null,
+    rejection_reason: null,
     created_by: "user-1",
     created_at: "2026-10-01T00:00:00Z",
     deleted_at: null,
@@ -567,6 +570,24 @@ describe("vacationTilePreview", () => {
     );
     expect(preview?.count).toBe(0);
     expect(preview?.shown).toHaveLength(2);
+  });
+
+  it("adds what is the member's and what came back, when there is any", () => {
+    const share = (mine: number, rejected: number) => () => ({
+      mine,
+      rejected,
+    });
+    const line = (mine: number, rejected: number) =>
+      vacationTilePreview(byId(next), {}, today, share(mine, rejected))
+        ?.shown[2];
+    expect(line(2, 1)).toEqual({
+      id: "vacation-1-share",
+      title: "2 yours · 1 came back",
+      muted: true,
+    });
+    expect(line(2, 0)?.title).toBe("2 yours");
+    expect(line(0, 1)?.title).toBe("1 came back");
+    expect(line(0, 0)).toBeUndefined();
   });
 
   it("does not count another vacation's tasks", () => {

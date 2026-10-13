@@ -2,18 +2,27 @@ import { defineStore } from "pinia";
 import type { ItemsById } from "~/types/list";
 import type {
   NewVacation,
+  NewVacationPerson,
   Vacation,
   VacationDetails,
+  VacationPerson,
+  VacationPersonRealtimeEvent,
   VacationPhase,
   VacationRealtimeEvent,
   VacationTask,
   VacationTaskRealtimeEvent,
 } from "~/types/vacation";
 import {
+  assignVacationTaskRemote,
   createVacation,
+  fetchVacationPeople,
   fetchVacations,
   fetchVacationTasks,
+  insertVacationPerson,
   insertVacationTask,
+  rejectVacationTaskRemote,
+  renameVacationPersonRemote,
+  softDeleteVacationPersonRemote,
   renameVacationTaskRemote,
   setVacationTaskDone,
   softDeleteVacationRemote,
@@ -41,14 +50,15 @@ import {
   tasksInPhase,
   tasksOfVacation,
 } from "~/utils/vacation-state";
+import { peopleOfVacation } from "~/utils/vacation-share";
 import { templateTasks } from "~/utils/vacation-templates";
 
-// One store for the vacations and their tasks, and one of each piece of
-// bookkeeping for both: they are keyed by a row's id, and ids are UUIDs, so
-// a vacation and a task can't be mistaken for each other.
+// One store for the vacations, their tasks and their people, and one of each
+// piece of bookkeeping for all three: they are keyed by a row's id, and ids
+// are UUIDs, so rows of different tables can't be mistaken for each other.
 
-/** Task adds still being saved; see createInsertsInFlight. A vacation has
- * none: it is put into state only once it is saved (see add). */
+/** Adds of tasks and people still being saved; see createInsertsInFlight. A
+ * vacation has none: it is put into state only once it is saved (see add). */
 const insertsInFlight = createInsertsInFlight();
 
 /** Rows changed while a resync fetch is in flight; see createChangesDuringFetch. */
@@ -67,6 +77,10 @@ export const useVacationStore = defineStore("vacations", {
     /** The tasks of all vacations, since the dashboard's tile and the list
      * count them for each. */
     tasksById: {} as ItemsById<VacationTask>,
+    /** The people of all vacations, those taken off a trip included: an old
+     * rejection keeps its name, and a task given to such a person counts as
+     * nobody's (see assigneeOf). */
+    peopleById: {} as ItemsById<VacationPerson>,
     /** Ids with a write still in flight; a resync must not overwrite them
      * with a fetch that may predate the write. */
     pendingIds: [] as string[],
@@ -83,6 +97,9 @@ export const useVacationStore = defineStore("vacations", {
     /** A vacation's live tasks, in no particular order. */
     tasksOf: (state) => (vacationId: string) =>
       tasksOfVacation(state.tasksById, vacationId),
+    /** The people who are on a vacation, in the order they were added. */
+    peopleOf: (state) => (vacationId: string) =>
+      peopleOfVacation(state.peopleById, vacationId),
     /** The live vacations as the list and the tile show them on a day. */
     groups: (state) => (today: LocalDate) =>
       groupVacations(state.vacationsById, state.tasksById, today),
@@ -95,8 +112,9 @@ export const useVacationStore = defineStore("vacations", {
      * background (see resync): replacing it would drop a write that is
      * still on its way.
      *
-     * Both tables are fetched before either is put into state, so a failure
-     * of one leaves the state as it was instead of vacations without tasks.
+     * The three tables are fetched before any is put into state, so a
+     * failure of one leaves the state as it was instead of vacations without
+     * tasks, or tasks without the people they were given to.
      */
     async load(householdId: string) {
       if (this.householdId === householdId) return this.resync();
@@ -104,9 +122,10 @@ export const useVacationStore = defineStore("vacations", {
       this.error = null;
       try {
         const client = useSupabaseClient();
-        const [vacations, tasks] = await Promise.all([
+        const [vacations, tasks, people] = await Promise.all([
           fetchVacations(client, householdId),
           fetchVacationTasks(client, householdId),
+          fetchVacationPeople(client, householdId),
         ]);
         // A reset in the meantime (the user changed) ended this load; the
         // rows fetched are the previous user's.
@@ -116,6 +135,9 @@ export const useVacationStore = defineStore("vacations", {
         );
         this.tasksById = Object.fromEntries(
           tasks.map((task) => [task.id, task]),
+        );
+        this.peopleById = Object.fromEntries(
+          people.map((person) => [person.id, person]),
         );
         this.householdId = householdId;
       } catch (e) {
@@ -149,6 +171,19 @@ export const useVacationStore = defineStore("vacations", {
       );
     },
 
+    /** Folds a change of a person from the household's Realtime channel into
+     * state. */
+    applyPersonEvent(event: VacationPersonRealtimeEvent) {
+      if (!realtimeEventOrder.accept(event.new.id, event.commitTimestamp))
+        return;
+      changesDuringFetch.record(event.new.id);
+      this.peopleById = applyVacationRowEvent(
+        this.peopleById,
+        event,
+        this.householdId,
+      );
+    },
+
     /** Repairs state after a (re)connect, since Realtime doesn't replay missed
      * events. Skipped until load() has fetched the rows (the channel can
      * connect first). As in load(), a failure of one fetch changes nothing. */
@@ -158,9 +193,10 @@ export const useVacationStore = defineStore("vacations", {
       const changes = changesDuringFetch.start();
       try {
         const client = useSupabaseClient();
-        const [vacations, tasks] = await Promise.all([
+        const [vacations, tasks, people] = await Promise.all([
           fetchVacations(client, householdId),
           fetchVacationTasks(client, householdId),
+          fetchVacationPeople(client, householdId),
         ]);
         if (householdId !== this.householdId) return;
         const keepLocalIds = [...this.pendingIds, ...changes.stop()];
@@ -170,6 +206,12 @@ export const useVacationStore = defineStore("vacations", {
           keepLocalIds,
         );
         this.tasksById = mergeListResync(this.tasksById, tasks, keepLocalIds);
+        // The fetch holds removed people too, so none is dropped as "gone".
+        this.peopleById = mergeListResync(
+          this.peopleById,
+          people,
+          keepLocalIds,
+        );
       } catch (e) {
         this.error = errorMessage(e);
       } finally {
@@ -195,7 +237,8 @@ export const useVacationStore = defineStore("vacations", {
     },
 
     /**
-     * Adds a vacation, filled with the tasks of its kind's template. Not
+     * Adds a vacation, filled with the tasks of its kind's template and with
+     * the people who are coming. Not
      * optimistic, unlike an added task: the form waits for the result, so
      * that a failed save leaves the member on the form with what they typed,
      * and no member sees a vacation that then fails to save. The ids are
@@ -204,7 +247,10 @@ export const useVacationStore = defineStore("vacations", {
      *
      * @returns the new vacation's id, or null when saving failed (see `error`)
      */
-    async add(vacation: NewVacation): Promise<string | null> {
+    async add(
+      vacation: NewVacation,
+      people: NewVacationPerson[],
+    ): Promise<string | null> {
       const householdId = this.householdId;
       if (!householdId) throw new Error("not_initialized");
       this.error = null;
@@ -220,6 +266,11 @@ export const useVacationStore = defineStore("vacations", {
             useSupabaseClient(),
             { ...vacation, title: vacation.title.trim(), id, householdId },
             tasks,
+            people.map((person) => ({
+              name: person.name.trim(),
+              user_id: person.user_id,
+              id: crypto.randomUUID(),
+            })),
           );
           saved = true;
           // Not after a reset.
@@ -239,6 +290,12 @@ export const useVacationStore = defineStore("vacations", {
             tasksById[task.id] ??= task;
           }
           this.tasksById = tasksById;
+          const peopleById = { ...this.peopleById };
+          for (const person of created.people) {
+            changesDuringFetch.record(person.id);
+            peopleById[person.id] ??= person;
+          }
+          this.peopleById = peopleById;
         } catch (e) {
           this.error = errorMessage(e);
         }
@@ -329,6 +386,9 @@ export const useVacationStore = defineStore("vacations", {
         title,
         done: false,
         position: nextPosition(tasksInPhase(this.tasksOf(vacationId), phase)),
+        assignee_id: null,
+        rejected_by: null,
+        rejection_reason: null,
         created_by: userId,
         created_at: new Date().toISOString(),
         deleted_at: null,
@@ -428,6 +488,168 @@ export const useVacationStore = defineStore("vacations", {
           this.error = errorMessage(e);
         }
       });
+    },
+
+    /**
+     * Optimistic add of a person to a vacation; refused, the person is
+     * taken out again.
+     *
+     * @returns the reason the person could not be saved, or null when they
+     *   are; it belongs under the field the name was typed into
+     */
+    async addPerson(
+      vacationId: string,
+      person: NewVacationPerson,
+    ): Promise<string | null> {
+      const householdId = this.householdId;
+      if (!householdId || !this.find(vacationId))
+        throw new Error("not_initialized");
+      const userId = useSupabaseUser().value?.sub;
+      if (!userId) throw new Error("not_authenticated");
+      const id = crypto.randomUUID();
+      const optimistic: VacationPerson = {
+        id,
+        vacation_id: vacationId,
+        household_id: householdId,
+        name: person.name,
+        user_id: person.user_id,
+        created_by: userId,
+        created_at: new Date().toISOString(),
+        deleted_at: null,
+      };
+      this.peopleById = upsertListItem(this.peopleById, optimistic);
+
+      let failure: string | null = null;
+      await this.withPending(id, async () => {
+        try {
+          const confirmed = await insertsInFlight.track(
+            id,
+            insertVacationPerson(useSupabaseClient(), {
+              ...person,
+              id,
+              vacationId,
+              householdId,
+            }),
+          );
+          this.peopleById = confirmListItem(
+            this.peopleById,
+            optimistic,
+            confirmed,
+          );
+        } catch (e) {
+          const { [id]: _removed, ...rest } = this.peopleById;
+          this.peopleById = rest;
+          failure = errorMessage(e);
+        }
+      });
+      return failure;
+    },
+
+    /** Optimistic change of a person's name, taken back if the server
+     * refuses it; it waits for the person's add to be saved. */
+    async renamePerson(id: string, name: string) {
+      const person = this.peopleById[id];
+      if (!person || person.deleted_at || name === person.name) return;
+      this.error = null;
+      this.peopleById = applyRowEdit(this.peopleById, id, { name });
+      await this.withPending(id, async () => {
+        await insertsInFlight.settled(id);
+        if (!this.peopleById[id]) return;
+        try {
+          await renameVacationPersonRemote(useSupabaseClient(), id, name);
+        } catch (e) {
+          this.peopleById = revertRowEdit(this.peopleById, person, { name });
+          this.error = errorMessage(e);
+        }
+      });
+    },
+
+    /** Takes a person off a vacation, optimistically. Their open tasks are
+     * nobody's from then on, without a write to the tasks (see assigneeOf). */
+    async removePerson(id: string) {
+      const previous = this.peopleById[id];
+      if (!previous || previous.deleted_at) return;
+      this.error = null;
+      this.peopleById = softDeleteListItem(this.peopleById, id);
+      await this.withPending(id, async () => {
+        await insertsInFlight.settled(id);
+        if (!this.peopleById[id]) return;
+        try {
+          await softDeleteVacationPersonRemote(useSupabaseClient(), id);
+        } catch (e) {
+          this.peopleById = upsertListItem(this.peopleById, previous);
+          this.error = errorMessage(e);
+        }
+      });
+    },
+
+    /**
+     * Gives a task to a person, lets a member take it, or hands it back to
+     * nobody (null): optimistic, and taken back if the server refuses it. It waits for the task's add and
+     * the person's add to be saved, since the write names both.
+     *
+     * @returns whether the task is saved as that person's
+     */
+    async assignTask(id: string, personId: string | null) {
+      const task = this.tasksById[id];
+      if (!task || task.deleted_at) return false;
+      this.error = null;
+      const changes = {
+        assignee_id: personId,
+        rejected_by: null,
+        rejection_reason: null,
+      };
+      this.tasksById = applyRowEdit(this.tasksById, id, changes);
+      let saved = false;
+      await this.withPending(id, async () => {
+        await insertsInFlight.settled(id);
+        if (personId) await insertsInFlight.settled(personId);
+        if (!this.tasksById[id]) return;
+        try {
+          await assignVacationTaskRemote(useSupabaseClient(), id, personId);
+          saved = true;
+        } catch (e) {
+          this.tasksById = revertRowEdit(this.tasksById, task, changes);
+          this.error = errorMessage(e);
+        }
+      });
+      return saved;
+    },
+
+    /**
+     * Rejects a task with a reason. Not optimistic: the dialog waits, since
+     * the write only counts while the task is still that person's, and the
+     * dialog has to say when it isn't.
+     *
+     * @returns "rejected"; "not-yours" when someone gave the task to
+     *   another person in the meantime; or the reason the write failed
+     */
+    async rejectTask(
+      id: string,
+      personId: string,
+      reason: string,
+    ): Promise<"rejected" | "not-yours" | { failure: string }> {
+      let outcome: "rejected" | "not-yours" | { failure: string } = "not-yours";
+      await this.withPending(id, async () => {
+        try {
+          const rejected = await rejectVacationTaskRemote(
+            useSupabaseClient(),
+            id,
+            personId,
+            reason,
+          );
+          if (!rejected) return;
+          outcome = "rejected";
+          this.tasksById = applyRowEdit(this.tasksById, id, {
+            assignee_id: null,
+            rejected_by: personId,
+            rejection_reason: reason,
+          });
+        } catch (e) {
+          outcome = { failure: errorMessage(e) };
+        }
+      });
+      return outcome;
     },
   },
 });

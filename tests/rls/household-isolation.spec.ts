@@ -136,6 +136,27 @@ function vacationTaskRow(
   };
 }
 
+/** A person as the app hands one to create_vacation; `userId` is null for a
+ * person without an account. */
+function personJson(name: string, userId: string | null = null) {
+  return { id: randomUUID(), name, user_id: userId };
+}
+
+/** A person row for a direct insert, as the app adds one to a vacation. */
+function vacationPersonRow(
+  user: TestUser,
+  vacationId: string,
+  householdId: string,
+) {
+  return {
+    vacation_id: vacationId,
+    household_id: householdId,
+    name: "Mia",
+    user_id: null as string | null,
+    created_by: user.userId,
+  };
+}
+
 describe("household RLS isolation", () => {
   let userA: TestUser;
   let userB: TestUser;
@@ -150,6 +171,8 @@ describe("household RLS isolation", () => {
   let vacationAId: string;
   let vacationBId: string;
   let taskAId: string;
+  let personAId: string;
+  let guestAId: string;
 
   beforeAll(async () => {
     [userA, userB, userC] = await Promise.all([
@@ -188,11 +211,13 @@ describe("household RLS isolation", () => {
       taskJson(1, "Clothes"),
       taskJson(1, "Return the key", "during"),
     ];
+    const peopleA = [personJson("alex", userA.userId), personJson("Mia")];
     const vacationB = vacationJson(householdBId);
     const [createdA, createdB] = await Promise.all([
       userA.client.rpc("create_vacation", {
         p_vacation: vacationA,
         p_tasks: tasksA,
+        p_people: peopleA,
       }),
       userB.client.rpc("create_vacation", {
         p_vacation: vacationB,
@@ -204,6 +229,8 @@ describe("household RLS isolation", () => {
     vacationAId = vacationA.id;
     vacationBId = vacationB.id;
     taskAId = tasksA[0]!.id;
+    personAId = peopleA[0]!.id;
+    guestAId = peopleA[1]!.id;
   });
 
   afterAll(async () => {
@@ -949,12 +976,13 @@ describe("household RLS isolation", () => {
     expect(task.error).toBeNull();
   });
 
-  it("removes a household's vacations and their tasks with the household", async () => {
+  it("removes a household's vacations, their people and their tasks with the household", async () => {
     householdCId = await createHousehold(userC.client, `Household C ${runId}`);
     const vacation = vacationJson(householdCId);
     const { error } = await userC.client.rpc("create_vacation", {
       p_vacation: vacation,
       p_tasks: [taskJson(1, "Clothes"), taskJson(2, "Books")],
+      p_people: [personJson("carl", userC.userId), personJson("Mia")],
     });
     expect(error).toBeNull();
 
@@ -976,5 +1004,286 @@ describe("household RLS isolation", () => {
       .select("id")
       .eq("vacation_id", vacation.id);
     expect(tasks).toHaveLength(0);
+    const { data: people } = await admin
+      .from("vacation_people")
+      .select("id")
+      .eq("vacation_id", vacation.id);
+    expect(people).toHaveLength(0);
+  });
+
+  it("create_vacation writes the people who are coming, and still takes a call without them", async () => {
+    const people = await userA.client
+      .from("vacation_people")
+      .select("id, name, user_id, household_id, created_by, deleted_at")
+      .eq("vacation_id", vacationAId)
+      // The member first: the database's order of names ignores case.
+      .order("name");
+    expect(people.error).toBeNull();
+    expect(people.data).toEqual([
+      {
+        id: personAId,
+        name: "alex",
+        user_id: userA.userId,
+        household_id: householdAId,
+        created_by: userA.userId,
+        deleted_at: null,
+      },
+      {
+        id: guestAId,
+        name: "Mia",
+        user_id: null,
+        household_id: householdAId,
+        created_by: userA.userId,
+        deleted_at: null,
+      },
+    ]);
+
+    // What an installed app sends that hasn't updated since slice 1.
+    const vacation = vacationJson(householdBId);
+    const { data, error } = await userB.client.rpc("create_vacation", {
+      p_vacation: vacation,
+      p_tasks: [taskJson(1, "Clothes")],
+    });
+    expect(error).toBeNull();
+    expect(data.tasks).toHaveLength(1);
+    expect(data.people).toEqual([]);
+  });
+
+  it("create_vacation writes nothing when one of its people is refused", async () => {
+    const vacation = vacationJson(householdBId);
+    // A is no member of household B.
+    const { error } = await userB.client.rpc("create_vacation", {
+      p_vacation: vacation,
+      p_tasks: [taskJson(1, "Clothes")],
+      p_people: [
+        personJson("berta", userB.userId),
+        personJson("alex", userA.userId),
+      ],
+    });
+    expect(error).not.toBeNull();
+
+    const { data: vacations } = await admin
+      .from("vacations")
+      .select("id")
+      .eq("id", vacation.id);
+    expect(vacations).toHaveLength(0);
+  });
+
+  it("returns zero of household A's people to a member of household B, and none without signing in", async () => {
+    const people = await userB.client
+      .from("vacation_people")
+      .select("id")
+      .eq("vacation_id", vacationAId);
+    expect(people.error).toBeNull();
+    expect(people.data).toHaveLength(0);
+
+    const signedOutRead = await signedOut.from("vacation_people").select("id");
+    expect(signedOutRead.data).toBeNull();
+    expect(signedOutRead.error).not.toBeNull();
+  });
+
+  it("blocks adding a person to another household's vacation, under either household", async () => {
+    const asTheirs = await userB.client
+      .from("vacation_people")
+      .insert(vacationPersonRow(userB, vacationAId, householdAId));
+    expect(asTheirs.error).not.toBeNull();
+
+    // The policy alone would pass this row; the composite foreign key ties
+    // the person to the vacation's household.
+    const asOwn = await userB.client
+      .from("vacation_people")
+      .insert(vacationPersonRow(userB, vacationAId, householdBId));
+    expect(asOwn.error).not.toBeNull();
+  });
+
+  it("leaves another household's person untouched, and lets no member hard-delete one", async () => {
+    const edit = await userB.client
+      .from("vacation_people")
+      .update({ name: "Taken over", deleted_at: new Date().toISOString() })
+      .eq("id", guestAId);
+    expect(edit.error).toBeNull();
+    const removal = await userA.client
+      .from("vacation_people")
+      .delete()
+      .eq("id", guestAId);
+    expect(removal.error).not.toBeNull();
+
+    const { data: person } = await admin
+      .from("vacation_people")
+      .select("name, deleted_at")
+      .eq("id", guestAId)
+      .single();
+    expect(person).toEqual({ name: "Mia", deleted_at: null });
+  });
+
+  it("puts a member on a vacation only once, and lets two people without an account share a name", async () => {
+    const twice = await userA.client.from("vacation_people").insert({
+      ...vacationPersonRow(userA, vacationAId, householdAId),
+      name: "alex again",
+      user_id: userA.userId,
+    });
+    expect(twice.error).not.toBeNull();
+
+    const sameName = await userA.client
+      .from("vacation_people")
+      .insert(vacationPersonRow(userA, vacationAId, householdAId));
+    expect(sameName.error).toBeNull();
+  });
+
+  it("lets a member who was taken off a vacation be added again", async () => {
+    const off = await userA.client
+      .from("vacation_people")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", personAId);
+    expect(off.error).toBeNull();
+
+    const again = await userA.client.from("vacation_people").insert({
+      ...vacationPersonRow(userA, vacationAId, householdAId),
+      name: "alex",
+      user_id: userA.userId,
+    });
+    expect(again.error).toBeNull();
+  });
+
+  it.each([
+    ["a blank name", { name: " " }],
+    ["a name that is too long", { name: "a".repeat(101) }],
+  ])("rejects a person with %s", async (_name, override) => {
+    const { error } = await userB.client.from("vacation_people").insert({
+      ...vacationPersonRow(userB, vacationBId, householdBId),
+      ...override,
+    });
+    expect(error).not.toBeNull();
+  });
+
+  it("rejects a person tied to an account that is no member of the household", async () => {
+    const { error } = await userB.client.from("vacation_people").insert({
+      ...vacationPersonRow(userB, vacationBId, householdBId),
+      name: "alex",
+      user_id: userA.userId,
+    });
+    expect(error).not.toBeNull();
+  });
+
+  it("lets a task be given, rejected by its assignee with a reason, and taken", async () => {
+    const give = await userA.client
+      .from("vacation_tasks")
+      .update({ assignee_id: personAId })
+      .eq("id", taskAId);
+    expect(give.error).toBeNull();
+
+    // The reject is conditional on the task still being that person's; for
+    // anyone else it matches no row.
+    const rejection = {
+      assignee_id: null,
+      rejected_by: guestAId,
+      rejection_reason: "Too small to carry it.",
+    };
+    const notTheirs = await userA.client
+      .from("vacation_tasks")
+      .update(rejection)
+      .eq("id", taskAId)
+      .eq("assignee_id", guestAId)
+      .select("id");
+    expect(notTheirs.error).toBeNull();
+    expect(notTheirs.data).toHaveLength(0);
+
+    const reject = await userA.client
+      .from("vacation_tasks")
+      .update({ ...rejection, rejected_by: personAId })
+      .eq("id", taskAId)
+      .eq("assignee_id", personAId)
+      .select("assignee_id, rejected_by, rejection_reason");
+    expect(reject.error).toBeNull();
+    expect(reject.data).toEqual([
+      {
+        assignee_id: null,
+        rejected_by: personAId,
+        rejection_reason: "Too small to carry it.",
+      },
+    ]);
+
+    const take = await userA.client
+      .from("vacation_tasks")
+      .update({
+        assignee_id: guestAId,
+        rejected_by: null,
+        rejection_reason: null,
+      })
+      .eq("id", taskAId);
+    expect(take.error).toBeNull();
+  });
+
+  it.each([
+    [
+      "an assignee and a rejection at once",
+      { rejected_by: "own", rejection_reason: "No." },
+    ],
+    ["a rejection without a reason", { assignee_id: null, rejected_by: "own" }],
+    [
+      "a blank reason",
+      { assignee_id: null, rejected_by: "own", rejection_reason: "  " },
+    ],
+    [
+      "a reason that is too long",
+      {
+        assignee_id: null,
+        rejected_by: "own",
+        rejection_reason: "a".repeat(201),
+      },
+    ],
+    [
+      "a reason without a person",
+      { assignee_id: null, rejection_reason: "No." },
+    ],
+  ])("rejects a task with %s", async (_name, override) => {
+    // The task has an assignee since the test above. "own" stands for a
+    // person of the task's vacation, whose id is known only now.
+    const changes = Object.fromEntries(
+      Object.entries(override).map(([key, value]) => [
+        key,
+        value === "own" ? guestAId : value,
+      ]),
+    );
+    const { error } = await userA.client
+      .from("vacation_tasks")
+      .update(changes)
+      .eq("id", taskAId);
+    expect(error).not.toBeNull();
+  });
+
+  it("accepts a reason of the largest allowed size beside a title of the largest", async () => {
+    // Four bytes per character, the size the task row's byte budget counts with.
+    const longest = "\u{1F9F3}".repeat(200);
+    const { data: added } = await userA.client
+      .from("vacation_tasks")
+      .insert({
+        ...vacationTaskRow(userA, vacationAId, householdAId),
+        title: longest,
+      })
+      .select("id")
+      .single();
+    const { error } = await userA.client
+      .from("vacation_tasks")
+      .update({ rejected_by: guestAId, rejection_reason: longest })
+      .eq("id", added!.id);
+    expect(error).toBeNull();
+  });
+
+  it("rejects an assignee of another vacation", async () => {
+    const other = vacationJson(householdAId);
+    const stranger = personJson("guest");
+    const created = await userA.client.rpc("create_vacation", {
+      p_vacation: other,
+      p_tasks: [],
+      p_people: [stranger],
+    });
+    expect(created.error).toBeNull();
+
+    const { error } = await userA.client
+      .from("vacation_tasks")
+      .update({ assignee_id: stranger.id })
+      .eq("id", taskAId);
+    expect(error).not.toBeNull();
   });
 });

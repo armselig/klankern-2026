@@ -124,6 +124,9 @@ const vacationTaskRow: VacationTask = {
   title: "Clothes",
   done: false,
   position: 1,
+  assignee_id: null,
+  rejected_by: null,
+  rejection_reason: null,
   created_by: "user-1",
   created_at: "2026-01-01T00:00:00Z",
   deleted_at: null,
@@ -137,6 +140,7 @@ function listeners() {
     onRecipeChange: vi.fn(),
     onVacationChange: vi.fn(),
     onVacationTaskChange: vi.fn(),
+    onVacationPersonChange: vi.fn(),
     onSubscribed: vi.fn(),
   };
 }
@@ -159,13 +163,18 @@ describe("subscribeToHouseholdChanges", () => {
       "recipes",
       "vacations",
       "vacation_tasks",
+      "vacation_people",
     ].flatMap((table) =>
       ["INSERT", "UPDATE"].map((event) => [
         "postgres_changes",
         { event, schema: "public", table, filter: "household_id=eq.house-1" },
       ]),
     );
-    expect(fake.registrations.map((r) => [r.type, r.filter])).toEqual(expected);
+    expect(
+      fake.registrations
+        .filter((r) => r.type === "postgres_changes")
+        .map((r) => [r.type, r.filter]),
+    ).toEqual(expected);
   });
 
   /** Finds the callback registered for a table/event pair, independent of registration order. */
@@ -385,6 +394,23 @@ describe("subscribeToHouseholdChanges", () => {
     fake.emitStatus("SUBSCRIBED");
 
     expect(l.onSubscribed).toHaveBeenCalledTimes(2);
+  });
+
+  it("asks for a resync again once the server says the changes are flowing", () => {
+    const fake = fakeRealtimeClient();
+    const l = listeners();
+    subscribeToHouseholdChanges(fake.client, "house-1", l);
+    const system = fake.registrations.find((r) => r.type === "system")!
+      .callback as unknown as (message: Record<string, string>) => void;
+
+    // A change made between the join and this report is in no event.
+    system({ extension: "postgres_changes", status: "ok" });
+    expect(l.onSubscribed).toHaveBeenCalledTimes(1);
+
+    // Not for a failed subscription, nor for another extension's report.
+    system({ extension: "postgres_changes", status: "error" });
+    system({ extension: "presence", status: "ok" });
+    expect(l.onSubscribed).toHaveBeenCalledTimes(1);
   });
 
   it("returns an unsubscribe function that removes the channel", () => {

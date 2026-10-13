@@ -433,6 +433,50 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       await expectNoBlockingViolations(page, "a task being renamed");
       await page.keyboard.press("Escape");
 
+      // The people of the trip: the member took a task, so the row shows a
+      // person and "Reject", and "Who has what" a bar.
+      await page
+        .getByRole("button", { name: "I'll take it: Toothbrushes" })
+        .click();
+      await expect(
+        page.getByRole("button", { name: "Reject: Toothbrushes" }),
+      ).toBeVisible();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "a vacation with a task taken");
+
+      await page.getByRole("button", { name: "Give to…: iPad" }).click();
+      await expect(
+        page.getByRole("group", { name: "Give to…: iPad" }),
+      ).toBeVisible();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "the list of people to give to");
+      await page.keyboard.press("Escape");
+
+      await page.getByRole("button", { name: "Reject: Toothbrushes" }).click();
+      await expect(page.getByLabel("Why not?")).toBeFocused();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "the reject dialog");
+      await page.getByLabel("Why not?").fill("No room in the bag.");
+      await page.getByRole("button", { name: "Reject task" }).click();
+      await expect(page.getByText("Back to nobody.")).toBeVisible();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "a rejected task with its reason");
+
+      await page.getByRole("checkbox", { name: "Only my tasks" }).click();
+      await expect(page.getByText("Untick to add tasks.")).toBeVisible();
+      await expectNoBlockingViolations(page, "only my tasks");
+      await page.getByRole("checkbox", { name: "Only my tasks" }).click();
+
+      await page.getByRole("button", { name: "Change people" }).click();
+      await page.getByLabel("Add a name").fill("Mia");
+      await page.keyboard.press("Enter");
+      await expect(
+        page.getByRole("checkbox", { name: "Mia is coming" }),
+      ).toBeVisible();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "the people of a vacation");
+      await page.getByRole("button", { name: "Done" }).click();
+
       await page.getByRole("button", { name: "Edit", exact: true }).click();
       await expect(page.getByLabel("Title")).toBeFocused();
       await untilFadesEnd(page);

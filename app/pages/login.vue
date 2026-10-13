@@ -43,7 +43,11 @@ async function verifyCode() {
     error.value = verifyError.message;
     return;
   }
-  await router.push(ROUTES.home);
+  // The page that was asked for before signing in, if any. Read only now,
+  // after a code that worked, and only a path inside the app is followed:
+  // the cookie is not the app's word (see isInAppPath).
+  const asked = useSupabaseCookieRedirect().pluck();
+  await router.push(isInAppPath(asked) ? asked : ROUTES.home);
 }
 </script>
 
