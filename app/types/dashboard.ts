@@ -24,6 +24,8 @@ export interface ListPreview<T extends TitledEntry> {
  * vacations open".
  */
 export interface VacationTileLines {
+  /** The vacation's id, for the link to its page. */
+  id: string;
   /** The vacation's title. */
   title: string;
   /** Where the trip stands today: "in 54 days", "day 2 of 8". */

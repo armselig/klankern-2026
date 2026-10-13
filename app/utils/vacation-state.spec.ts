@@ -548,6 +548,7 @@ describe("vacationTilePreview", () => {
   it("names the vacation, where it stands, and its open tasks", () => {
     const list = tasks(["before", false], ["before", true], ["after", false]);
     expect(vacationTilePreview(byId(next), byId(...list), today)).toEqual({
+      id: "vacation-1",
       title: "Winter week by the sea",
       when: "in 54 days",
       tasks: "2 tasks open",

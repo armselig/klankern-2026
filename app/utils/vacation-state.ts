@@ -333,6 +333,7 @@ export function vacationTilePreview(
   ].filter(Boolean);
   const more = current.length - 1;
   return {
+    id: first.id,
     title: first.title,
     when: stageLine(first, today),
     tasks: openTasksLine(openTaskCount(tasksOfVacation(tasksById, first.id))),

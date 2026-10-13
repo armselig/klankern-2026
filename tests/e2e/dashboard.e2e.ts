@@ -17,6 +17,7 @@ import {
   saveRecipeForm,
   openSignedIn,
   untilSaved,
+  vacationLink,
   whiteboardPreview,
 } from "../support/e2e-ui";
 import {
@@ -208,6 +209,30 @@ test.describe("the dashboard's tiles", () => {
       await expect(pageA).toHaveURL(new RegExp(`${ROUTES.shopping}$`));
       // The dashboard loaded the list already: it is there at once.
       await expect(listItem(pageA, "Coffee")).toBeVisible();
+    });
+
+    await test.step("the vacations' tile leads to the trip from its lines, and to the list from the rest", async () => {
+      await pageA.getByRole("link", { name: "Klankern" }).click();
+      const tile = dashboardTile(pageA, "Vacations");
+
+      // On the line about the tasks, away from the link's own text. By
+      // position, as a finger presses: the link lies over the line. The
+      // tile is the last one and below the fold of a small screen.
+      await tile.scrollIntoViewIfNeeded();
+      const line = await tile.getByText("25 tasks open").boundingBox();
+      if (!line) throw new Error("the tile's line is not on screen");
+      await pageA.mouse.click(line.x + 20, line.y + line.height / 2);
+      await expect(pageA).toHaveURL(
+        new RegExp(`${ROUTES.vacations}/[0-9a-f-]{36}$`),
+      );
+      await expect(
+        pageA.getByRole("heading", { name: "Easter at grandma's" }),
+      ).toBeVisible();
+
+      await pageA.getByRole("link", { name: "Klankern" }).click();
+      await tile.getByRole("link", { name: "See all vacations" }).click();
+      await expect(pageA).toHaveURL(new RegExp(`${ROUTES.vacations}$`));
+      await expect(vacationLink(pageA, "Summer at the lake")).toBeVisible();
     });
 
     await contextA.close();

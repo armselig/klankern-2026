@@ -42,3 +42,18 @@ Tests: the unit tests of `vacationTilePreview` are rewritten for the lines, with
 Not chosen: only rewording "N open" to "N tasks open" under the large number, which the user named as the alternative; the number would still come before the trip.
 
 Not verified: the tile with a title longer than two lines, and during and after a trip ("day 2 of 8", "back since 30 Oct").
+
+## The vacations' tile leads to the trip (2026-10-13)
+
+At the user's request, the same day: pressing the next vacation and its lines in the tile opens that vacation, and a button "See all" with an arrow, under the lines with some space above it, opens the list of vacations.
+
+- **The trip's link is its title's text, stretched over the lines**, as the tile's link is its heading's text stretched over the card. So the link is named by the trip, the lines stay plain text, and all of them can be pressed. The lines' area lies over the tile's, being later in the page and positioned.
+- **The heading and the rest of the tile still lead to the list.** The heading "Vacations" is the tile's name in the browser tests and for a screen reader, and a tile that leads nowhere outside its lines would differ from the other four. "See all" is the same destination said in words; it is named "See all vacations" for a screen reader.
+- **Hover and focus are an outline around the lines**, for the reason the tile has one: a veil would take the muted lines below 4.5:1. "See all" is a flat button without a color and gets the theme's veil.
+- **Without a current vacation the tile has no "See all"**: it says "No vacation planned." and leads to the list as a whole.
+
+With the button the tile is 222 px high at 375 px, 34 px more than the other four; it stands alone in the last row.
+
+Tests: a new step in `dashboard.e2e.ts` presses the line about the tasks and lands on the trip, then "See all" and lands on the list. The accessibility scan of the dashboard with a vacation covers the link and the button in both modes.
+
+Not verified: with a keyboard or a screen reader by hand; the order is heading, trip, "See all".
