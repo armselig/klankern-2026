@@ -80,6 +80,12 @@ export interface TaskShare {
   open: number;
 }
 
+/** Whose open tasks a vacation's page shows alone, once a line of "Who has
+ * what" is pressed: a person's, or with null those that are nobody's. */
+export interface TaskFilter {
+  person: VacationPerson | null;
+}
+
 /** What a task's row shows beyond the task itself, worked out by the page:
  * the row only renders. */
 export interface TaskRowState {

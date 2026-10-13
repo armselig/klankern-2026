@@ -1,6 +1,7 @@
 import type { ItemsById } from "~/types/list";
 import type {
   NewVacationPerson,
+  TaskFilter,
   TaskShare,
   VacationPerson,
   VacationTask,
@@ -105,32 +106,59 @@ export function taskShares(
   return shares;
 }
 
-/** The tasks "Only my tasks" leaves: the open ones of the given person.
- * Done ones go too, so the filtered view is what is left to do. */
-export function openTasksOf(
+/** The tasks a pressed line of "Who has what" leaves: the open ones of
+ * that person, or the open ones nobody has. Done ones go too, so the
+ * filtered view is what is left to do. */
+export function openTasksIn(
   tasks: readonly VacationTask[],
-  person: VacationPerson | null,
+  filter: TaskFilter,
   peopleById: ItemsById<VacationPerson>,
 ): VacationTask[] {
   return tasks.filter(
-    (task) => !task.done && isTaskOf(task, person, peopleById),
+    (task) =>
+      !task.done && assigneeOf(task, peopleById)?.id === filter.person?.id,
   );
 }
 
 /**
- * What stands beside a phase's heading while "Only my tasks" is ticked. The
+ * What stands beside a phase's heading while the tasks are filtered. The
  * unfiltered texts would contradict the filtered list: "5 open" above two
- * rows.
+ * rows. The signed-in member is spoken to; another person is named.
  */
-export function phaseSummaryOfMine(
+export function phaseSummaryIn(
   tasks: readonly VacationTask[],
-  person: VacationPerson | null,
+  filter: TaskFilter,
+  me: VacationPerson | null,
   peopleById: ItemsById<VacationPerson>,
 ): string {
-  const mine = tasks.filter((task) => isTaskOf(task, person, peopleById));
-  if (mine.length === 0) return "Nothing of yours here.";
-  const open = openTaskCount(mine);
-  return open === 0 ? "Yours are done" : `${open} of yours open`;
+  const { person } = filter;
+  if (!person) {
+    const open = openTasksIn(tasks, filter, peopleById).length;
+    return open === 0
+      ? "Nothing without a person here."
+      : `${open} without a person`;
+  }
+  const mine = person.id === me?.id;
+  const theirs = tasks.filter((task) => isTaskOf(task, person, peopleById));
+  if (theirs.length === 0)
+    return mine ? "Nothing of yours here." : `Nothing for ${person.name} here.`;
+  const open = openTaskCount(theirs);
+  if (open === 0) return mine ? "Yours are done" : `Done for ${person.name}`;
+  return mine ? `${open} of yours open` : `${open} open for ${person.name}`;
+}
+
+/** The line under "Who has what" while the tasks are filtered: what is
+ * shown, and how to get back, since the fields for a new task are hidden
+ * until then. */
+export function taskFilterHint(
+  filter: TaskFilter,
+  me: VacationPerson | null,
+): string {
+  const { person } = filter;
+  if (!person)
+    return "Only the open tasks nobody has. Press “Nobody yet” again to see all and add tasks.";
+  const whose = person.id === me?.id ? "your" : `${person.name}'s`;
+  return `Only ${whose} open tasks. Press the name again to see all and add tasks.`;
 }
 
 /** What the dashboard's tile adds for the signed-in member: how many of a

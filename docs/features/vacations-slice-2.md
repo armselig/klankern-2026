@@ -6,7 +6,7 @@ How the second slice of the vacation planner was built. The design is "Design: a
 
 A vacation has people: the household's members and people without an account, such as a small child. A task is given to a person, taken, or handed back; the person it was given to can reject it with a reason, which everyone sees, and the task is nobody's again. "Who has what" shows the open tasks per person at the top of the page, "Only my tasks" filters the phases, and "Tell them" hands a sentence with a link to the device's share sheet. A link opened signed out leads to its page after sign-in.
 
-("Tell them" and the links that land at a task were taken out again the same day, before the slice was released, see "“Tell them” removed". What this section says about them is how they were built.)
+("Tell them" and the links that land at a task were taken out again the same day, before the slice was released, see "“Tell them” removed" in [`features/vacations-slice-2-after-trying.md`](./vacations-slice-2-after-trying.md). What this section says about them is how they were built.)
 
 The user approved the plan and three recommendations beforehand: the tests start signed in with a session (see "Signing in without the form" in [`infra/testing.md`](../infra/testing.md)), a person without an email address is drawn as the plain account icon, and the order of the build.
 
@@ -78,59 +78,3 @@ Nothing of this slice was tried on the deployed site or on a phone when this was
 - The time between the join and the report was measured twice, on one machine and one day.
 - That the gap is gone in practice: the journey that showed it failed once in two runs before and has passed since, which is few runs. And see above for the case that is left.
 - A screen reader was not used; the announcements (`role="status"` on the "Tell them" line, `role="alert"` on errors) are asserted to exist, not heard.
-
-## The task's row back to one line (2026-10-13)
-
-The user tried the built slice and reported that the list was too long to scan: "the vacation to-dos with 2 lines of text make the list way too long and confusing", it took long to scroll, and there was no overview of what needs doing.
-
-Measured at 375 px, a row with its second line was 97 px high against 53 px for the title alone, so "Before" with the house template's 23 tasks was about 2,230 px, nearly four screens. And the second line said the same on most rows, "I'll take it" and "Give to…", so rows did not differ to the eye.
-
-That second line was decided in the design review (decisions 2 and 11 of "Design review" in [`features/vacations-design-review.md`](./vacations-design-review.md)), on text and drawings, to make giving a task as easy as keeping it. The user chose again, from three drawn alternatives:
-
-- **Chosen: a person button in line 1.** Between the title and "More", a round button shows who has the task: the person's picture, or a dashed circle with a plus for nobody. Pressing it lists "Me", the other people and, for a task that is someone's, "Nobody". Taking and giving are both two taps, through one control that is on every open row. "Reject" moved into the menu of the member's own task. Only a rejected task has a second line, for the reason, and the "Tell them" line still appears after giving or rejecting.
-- Not chosen: a second line only on tasks that are someone's (free tasks would need the menu to be taken, and the list grows back as tasks are given out), and a compact view beside the rows as they were (two modes, and the default keeps the problem).
-
-Afterwards a row is 53 px and a rejected one 99 px; "Before" with 23 tasks, one of them rejected, is 1,378 px. Every control is still at least 44 px, and no page scrolls sideways.
-
-The button's name says who has the task before the task's title ("Yours: Clothes", "sam: Clothes", "Nobody yet: Clothes"), since the picture says nothing to a screen reader; a tooltip shows the same. The journey, the accessibility scan and the helpers were changed to the new controls; the scans pass in light and dark mode.
-
-Not verified: whether a new member understands the dashed circle without being told. The words "I'll take it" are gone from the row.
-
-## “Tell them” removed (2026-10-13)
-
-The user tried the built slice and had "Tell them" removed before it was released: it did not work on a desktop, and the app is to get notifications later, which is what "Tell them" stood in for.
-
-What went:
-
-- The line "Given to sam." with its "Tell them" button after giving or rejecting a task, and the entry in the row's menu.
-- The share button of a person in "Who has what".
-- The sentences, the share sheet and the copy fallback (`composables/share-or-copy.ts`), and both kinds of link with the page's landing at a task (`utils/vacation-link.ts`): a link to a task had no other source.
-- Their tests: 14 unit tests, two steps of browser journey 2, and the assertions on the line elsewhere.
-
-What stays:
-
-- **Sign-in leads back to the page that was asked for.** It was added for these links and holds for every address of the app, such as a vacation's page sent by hand. Its test in `auth.e2e.ts` stays.
-- Everything else of the slice: people, giving, taking and rejecting, "Who has what", "Only my tasks".
-
-A member again learns of an assignment or a rejection only by opening the app: the dashboard's tile says how many tasks are theirs and how many came back. That is the state the design started from ("No notifications in the first version"), and the failure the scope review named, one partner never opening the app, is open again until notifications exist.
-
-What "did not work on a desktop" was, is not known. A desktop browser has no share sheet, so the app copied the sentence and said "Message copied"; whether that failed or was not what the user expected was not looked into, since the feature went.
-
-Not verified: nothing of "Tell them" was ever tried on a phone.
-
-After the removal: 486 unit and isolation tests, and the two vacation journeys, the accessibility scans and the auth tests pass.
-
-## “Who has what” as a strip of names (2026-10-13)
-
-The user reported that the overview takes up a lot of the screen and that the tasks are only reached by scrolling. Measured at 375x667 on a trip with four people: "Who has what" was 278 px high, 42% of the screen, with one 44 px row per person and one for "Nobody yet" in a bordered box. The first phase's heading began at 581 px, so no task was on the screen.
-
-The user chose a strip from four ways to shorten it. Each person is an avatar, the name and the number of open tasks, one after the other, wrapping onto a second line; "Nobody yet" stands last without an avatar. The heading, "Change people", the list and its order are unchanged, so a person without open tasks is still listed with 0. Nothing in the strip is pressed, so a line is 36 px and not the 44 px of a control.
-
-- **The bars are gone.** The number was always the text and the bar only repeated it; who carries more is now read from the numbers.
-- **A name is cut short at 6.5rem**, so that two long names share a line; "(you)" stands beside the name and is never cut off. With two names as long as a test user's (26 characters) and two short ones the strip is two lines.
-
-After the change the block is 120 px and the first phase's heading begins at 423 px: three tasks are on the screen without scrolling. Checked in light and dark mode at 375x667.
-
-Not chosen: folding the overview behind one line (it would hide who carries nothing, which is what it is there to show), moving it below the phases (the same, under up to 33 tasks), and names that are buttons and filter the tasks to one person, which would also replace "Only my tasks". The last frees the most and reverses a decision of the design review; it is open as a later step.
-
-Not verified: a trip with more than five people, where the strip takes a third line, and whether the numbers alone show an uneven share as quickly as the bars did.

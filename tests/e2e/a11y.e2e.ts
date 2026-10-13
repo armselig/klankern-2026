@@ -434,7 +434,7 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       await page.keyboard.press("Escape");
 
       // The people of the trip: the member took a task, so its row shows a
-      // picture, and "Who has what" a bar.
+      // picture.
       await page
         .getByRole("button", { name: "Nobody yet: Toothbrushes" })
         .click();
@@ -467,10 +467,17 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       await untilFadesEnd(page);
       await expectNoBlockingViolations(page, "a rejected task with its reason");
 
-      await page.getByRole("checkbox", { name: "Only my tasks" }).click();
-      await expect(page.getByText("Untick to add tasks.")).toBeVisible();
-      await expectNoBlockingViolations(page, "only my tasks");
-      await page.getByRole("checkbox", { name: "Only my tasks" }).click();
+      // A pressed line of "Who has what": its frame, and the line under it.
+      const nobodysLine = page.getByRole("button", {
+        name: /^Nobody yet ?\d+$/,
+      });
+      await nobodysLine.click();
+      await expect(
+        page.getByText(/^Only the open tasks nobody has\./),
+      ).toBeVisible();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "the tasks of one line alone");
+      await nobodysLine.click();
 
       await page.getByRole("button", { name: "Change people" }).click();
       await page.getByLabel("Add a name").fill("Mia");

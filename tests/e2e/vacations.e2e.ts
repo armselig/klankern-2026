@@ -451,20 +451,46 @@ test.describe("a vacation's tasks, shared between its people", () => {
       await expect(vacationTask(pageA, "Books")).toBeChecked();
     });
 
-    await test.step('"Only my tasks" leaves A\'s open tasks and hides the add fields', async () => {
-      await pageA.getByRole("checkbox", { name: "Only my tasks" }).click();
+    await test.step('a line of "Who has what" leaves that line\'s open tasks and hides the add fields', async () => {
+      const line = (name: string | RegExp) =>
+        whoHasWhat(pageA).getByRole("button", { name });
       const before = vacationPhase(pageA, "Before");
+
+      await line(`${nameA} (you)`).click();
+      await expect(line(`${nameA} (you)`)).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
       await expect(before.getByRole("checkbox")).toHaveCount(1);
       await expect(before).toContainText("1 of yours open");
-      await expect(pageA.getByText("Untick to add tasks.")).toBeVisible();
+      await expect(
+        pageA.getByText(
+          "Only your open tasks. Press the name again to see all and add tasks.",
+        ),
+      ).toBeVisible();
       await expect(pageA.getByLabel("Add a task before the trip")).toHaveCount(
         0,
       );
       await expect(vacationPhase(pageA, "During")).toContainText(
         "Nothing of yours here.",
       );
-      await pageA.getByRole("checkbox", { name: "Only my tasks" }).click();
+
+      // Another line takes over; the one before is released.
+      await line(/^Nobody yet/).click();
+      await expect(line(`${nameA} (you)`)).toHaveAttribute(
+        "aria-pressed",
+        "false",
+      );
+      await expect(before).toContainText(/\d+ without a person/);
+      await expect(vacationPhase(pageA, "During")).toContainText(
+        "6 without a person",
+      );
+
+      await line(/^Nobody yet/).click();
       await expect(before.getByRole("checkbox")).toHaveCount(23);
+      await expect(
+        pageA.getByLabel("Add a task before the trip"),
+      ).toBeVisible();
     });
 
     await test.step('a person who is taken off leaves "Who has what", and their task is nobody\'s', async () => {

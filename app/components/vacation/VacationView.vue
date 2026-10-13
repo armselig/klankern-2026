@@ -3,6 +3,7 @@ import { mdiArrowLeft } from "@quasar/extras/mdi-v7";
 import { Dialog, Notify } from "quasar";
 import type {
   NewVacationPerson,
+  TaskFilter,
   TaskRowState,
   VacationDetails,
   VacationPhase,
@@ -44,21 +45,35 @@ const shares = computed(() =>
   taskShares(tasks.value, people.value, vacationStore.peopleById),
 );
 
-/** "Only my tasks": each phase lists the member's open tasks alone. It
- * lasts for the visit and is stored nowhere. */
-const onlyMine = ref(false);
+/** The line of "Who has what" that was pressed. It lasts for the visit and
+ * is stored nowhere. */
+const chosenFilter = ref<TaskFilter | null>(null);
 
-/** What each phase shows: its tasks, or the member's open ones, and the
- * text beside its heading to match. */
+/** Whose open tasks each phase lists alone, or null for all tasks. Worked
+ * out from the people of the trip, so a person who is renamed is named
+ * anew, and one who is taken off takes the filter along. */
+const taskFilter = computed<TaskFilter | null>(() => {
+  const chosen = chosenFilter.value?.person;
+  if (!chosenFilter.value || !chosen) return chosenFilter.value;
+  const person = people.value.find((other) => other.id === chosen.id);
+  return person ? { person } : null;
+});
+
+const filterHint = computed(() =>
+  taskFilter.value ? taskFilterHint(taskFilter.value, me.value) : null,
+);
+
+/** What each phase shows: its tasks, or the open ones of the pressed line,
+ * and the text beside its heading to match. */
 const phases = computed(() =>
   VACATION_PHASES.map((phase) => {
     const all = tasksInPhase(tasks.value, phase);
-    const mine = onlyMine.value && me.value;
+    const filter = taskFilter.value;
     return {
       phase,
-      tasks: mine ? openTasksOf(all, me.value, vacationStore.peopleById) : all,
-      summary: mine
-        ? phaseSummaryOfMine(all, me.value, vacationStore.peopleById)
+      tasks: filter ? openTasksIn(all, filter, vacationStore.peopleById) : all,
+      summary: filter
+        ? phaseSummaryIn(all, filter, me.value, vacationStore.peopleById)
         : phaseSummary(all),
     };
   }),
@@ -162,8 +177,15 @@ async function rejectTask(reason: string) {
   phaseSections.get(task.phase)?.focusOffer(task.id);
 }
 
-/** "Who has what" turns into the list of names while people are changed. */
+/** "Who has what" turns into the list of names while people are changed.
+ * All tasks are shown again then: the pressed line is no longer there to be
+ * pressed again. */
 const editingPeople = ref(false);
+
+function startEditingPeople() {
+  chosenFilter.value = null;
+  editingPeople.value = true;
+}
 const addPersonError = ref<string | null>(null);
 // Not named after the component: in a template, <fair-share> would then
 // be this variable instead of the component.
@@ -282,21 +304,11 @@ function confirmRemove() {
         :shares="shares"
         :me="me"
         :emails="emails"
-        @change-people="editingPeople = true"
+        :shown="taskFilter"
+        :hint="filterHint"
+        @change-people="startEditingPeople"
+        @show="(filter) => (chosenFilter = filter)"
       />
-
-      <!-- Only for a person of this trip: a member who isn't coming has no
-           tasks here. -->
-      <div v-if="me" class="q-mt-md">
-        <q-checkbox
-          v-model="onlyMine"
-          label="Only my tasks"
-          class="touch-target"
-        />
-        <p v-if="onlyMine" class="vacation-view__hint text-muted">
-          Untick to add tasks.
-        </p>
-      </div>
 
       <vacation-phase
         v-for="entry in phases"
@@ -305,7 +317,7 @@ function confirmRemove() {
         :phase="entry.phase"
         :tasks="entry.tasks"
         :summary="entry.summary"
-        :can-add="!onlyMine"
+        :can-add="!taskFilter"
         :row-states="rowStates"
         :people="people"
         :me="me"
@@ -343,11 +355,3 @@ function confirmRemove() {
     </p>
   </div>
 </template>
-
-<style scoped>
-/* Under the checkbox's label, which starts 40px in. */
-.vacation-view__hint {
-  margin: 0 0 0 40px;
-  font-size: 0.8125rem;
-}
-</style>

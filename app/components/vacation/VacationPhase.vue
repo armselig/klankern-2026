@@ -14,13 +14,15 @@ import type {
 const props = defineProps<{
   phase: VacationPhase;
   /** The phase's tasks in the order they are shown (see tasksInPhase);
-   * with "Only my tasks" ticked, the member's open ones alone. */
+   * with a line of "Who has what" pressed, that line's open ones alone. */
   tasks: VacationTask[];
   /** What stands beside the heading: "5 open", or the filtered view's own
    * text. */
   summary: string;
-  /** Whether the field for a new task is shown. Not while "Only my tasks"
-   * is ticked: a new task is nobody's and would vanish as it is saved. */
+  /** Whether the field for a new task is shown. Not while a person's line
+   * of "Who has what" is pressed: a new task is nobody's and would vanish
+   * as it is saved. Nor for the line of nobody's, so that every filtered
+   * view is the same. */
   canAdd: boolean;
   /** What each row shows beyond its task, by task id. */
   rowStates: Record<string, TaskRowState>;

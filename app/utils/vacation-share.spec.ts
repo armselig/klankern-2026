@@ -6,12 +6,13 @@ import {
   lastCreatedVacationId,
   myShareOf,
   nameFromEmail,
-  openTasksOf,
+  openTasksIn,
   peopleOfVacation,
   peopleToStartWith,
   personOfUser,
-  phaseSummaryOfMine,
+  phaseSummaryIn,
   rejecterOf,
+  taskFilterHint,
   taskShares,
 } from "./vacation-share";
 
@@ -153,30 +154,65 @@ describe("taskShares", () => {
   });
 });
 
-describe("only my tasks", () => {
+describe("the tasks filtered by a line of “Who has what”", () => {
   const tasks = [
     task({ id: "1", assignee_id: "alex" }),
     task({ id: "2", assignee_id: "alex", done: true }),
     task({ id: "3", assignee_id: "sam" }),
+    task({ id: "4" }),
+    task({ id: "5", done: true }),
+    task({ id: "6", assignee_id: "gone" }),
   ];
+  const ids = (person: VacationPerson | null) =>
+    openTasksIn(tasks, { person }, everyone).map((t) => t.id);
 
-  it("leaves the member's open tasks", () => {
-    expect(openTasksOf(tasks, alex, everyone).map((t) => t.id)).toEqual(["1"]);
-    expect(openTasksOf(tasks, null, everyone)).toEqual([]);
+  it("leaves a person's open tasks", () => {
+    expect(ids(alex)).toEqual(["1"]);
+    expect(ids(mia)).toEqual([]);
   });
 
-  it("counts the member's tasks beside the heading", () => {
-    expect(phaseSummaryOfMine(tasks, alex, everyone)).toBe("1 of yours open");
+  it("leaves the open tasks nobody has, a removed person's among them", () => {
+    expect(ids(null)).toEqual(["4", "6"]);
   });
 
-  it("says so when the member's tasks are done", () => {
-    const done = [task({ assignee_id: "alex", done: true })];
-    expect(phaseSummaryOfMine(done, alex, everyone)).toBe("Yours are done");
+  it("speaks to the member beside the heading", () => {
+    const summary = (list: VacationTask[], person: VacationPerson) =>
+      phaseSummaryIn(list, { person }, person, everyone);
+    expect(summary(tasks, alex)).toBe("1 of yours open");
+    expect(summary([task({ assignee_id: "alex", done: true })], alex)).toBe(
+      "Yours are done",
+    );
+    expect(summary(tasks, mia)).toBe("Nothing of yours here.");
   });
 
-  it("says so when the member has none there", () => {
-    expect(phaseSummaryOfMine(tasks, mia, everyone)).toBe(
-      "Nothing of yours here.",
+  it("names another person beside the heading", () => {
+    const summary = (list: VacationTask[], person: VacationPerson) =>
+      phaseSummaryIn(list, { person }, alex, everyone);
+    expect(summary(tasks, sam)).toBe("1 open for sam");
+    expect(summary([task({ assignee_id: "sam", done: true })], sam)).toBe(
+      "Done for sam",
+    );
+    expect(summary(tasks, mia)).toBe("Nothing for Mia here.");
+  });
+
+  it("counts the open tasks nobody has beside the heading", () => {
+    expect(phaseSummaryIn(tasks, { person: null }, alex, everyone)).toBe(
+      "2 without a person",
+    );
+    expect(
+      phaseSummaryIn([task({ done: true })], { person: null }, alex, everyone),
+    ).toBe("Nothing without a person here.");
+  });
+
+  it("says under the strip what is shown and how to get back", () => {
+    expect(taskFilterHint({ person: alex }, alex)).toBe(
+      "Only your open tasks. Press the name again to see all and add tasks.",
+    );
+    expect(taskFilterHint({ person: mia }, alex)).toBe(
+      "Only Mia's open tasks. Press the name again to see all and add tasks.",
+    );
+    expect(taskFilterHint({ person: null }, alex)).toBe(
+      "Only the open tasks nobody has. Press “Nobody yet” again to see all and add tasks.",
     );
   });
 });
