@@ -14,7 +14,6 @@ const vacationStore = useVacationStore();
 const householdStore = useHouseholdStore();
 const user = useSupabaseUser();
 const router = useRouter();
-const route = useRoute();
 
 onMounted(() => {
   void vacationStore.load(props.householdId);
@@ -65,21 +64,6 @@ const phases = computed(() =>
   }),
 );
 
-/** The line a row gets after the member gave or rejected its task, by task
- * id. Held here only: nobody else sees it, and it is gone with the page. */
-const tellLines = reactive<Record<string, string>>({});
-/** The task a link led to, marked for a moment. */
-const markedTaskId = ref<string | null>(null);
-
-/** Whether a message about a task has someone to go to: its assignee, if
- * that is another person with an account, who can open the link; or
- * everyone, when it is the member's own "no". */
-function canTell(task: VacationTask): boolean {
-  const assignee = assigneeOf(task, vacationStore.peopleById);
-  if (assignee) return !!assignee.user_id && assignee.id !== me.value?.id;
-  return !!task.rejected_by && task.rejected_by === me.value?.id;
-}
-
 const rowStates = computed<Record<string, TaskRowState>>(() =>
   Object.fromEntries(
     tasks.value.map((task) => [
@@ -88,9 +72,6 @@ const rowStates = computed<Record<string, TaskRowState>>(() =>
         assignee: assigneeOf(task, vacationStore.peopleById),
         rejecter: rejecterOf(task, vacationStore.peopleById),
         mine: isTaskOf(task, me.value, vacationStore.peopleById),
-        tellLine: tellLines[task.id] ?? null,
-        canTell: canTell(task),
-        marked: markedTaskId.value === task.id,
       },
     ]),
   ),
@@ -110,7 +91,6 @@ function setPhaseOpen(phase: VacationPhase, open: boolean) {
 
 interface PhaseSection {
   focusOffer: (id: string) => void;
-  arrive: (id: string) => void;
 }
 /** The phases' components, to reach a row in one of them. */
 const phaseSections = new Map<VacationPhase, PhaseSection>();
@@ -120,39 +100,12 @@ function rememberPhase(phase: VacationPhase, section: unknown) {
   else phaseSections.delete(phase);
 }
 
-/** Said at the top when a link named a task that is gone. */
-const linkNotice = ref<string | null>(null);
-
-/**
- * Acts on what a link asked for (see utils/vacation-link.ts), once, and
- * takes the parameters out of the address: left there, every reload would
- * mark the row again and tick "Only my tasks" again.
- */
-async function landFromLink() {
-  const target = readVacationLink(route.query);
-  if (!target.taskId && !target.onlyMine) return;
-  await router.replace({ query: withoutVacationLink(route.query) });
-  if (target.onlyMine && me.value) onlyMine.value = true;
-  if (!target.taskId) return;
-  const task = tasks.value.find((candidate) => candidate.id === target.taskId);
-  if (!task) {
-    linkNotice.value = "The task this link led to was removed.";
-    return;
-  }
-  setPhaseOpen(task.phase, true);
-  markedTaskId.value = task.id;
-  await nextTick();
-  phaseSections.get(task.phase)?.arrive(task.id);
-}
-
-// Only once the first load is in: before it, the row to scroll to does not
-// exist.
+// Once, when the vacation is loaded: the page follows the trip.
 watch(
   vacation,
   (loaded) => {
-    if (!loaded || openPhases.value) return;
-    openPhases.value = phasesOpenAtFirst(loaded, tasks.value, today);
-    void landFromLink();
+    if (loaded && !openPhases.value)
+      openPhases.value = phasesOpenAtFirst(loaded, tasks.value, today);
   },
   { immediate: true },
 );
@@ -174,22 +127,6 @@ async function addTask(phase: VacationPhase, title: string) {
   );
 }
 
-/** Gives a task to a person, to the member themselves or back to nobody.
- * After giving it to someone else who can open a link, the row offers to
- * tell them; nobody sends a message to themselves or to a small child. */
-async function giveTask(id: string, personId: string | null) {
-  // An earlier line of this row is about an assignment that no longer holds.
-  Reflect.deleteProperty(tellLines, id);
-  const saved = await vacationStore.assignTask(id, personId);
-  const person = personId ? vacationStore.peopleById[personId] : null;
-  if (saved && person?.user_id && person.id !== me.value?.id)
-    tellLines[id] = `Given to ${person.name}.`;
-}
-
-function closeTellLine(id: string) {
-  Reflect.deleteProperty(tellLines, id);
-}
-
 /** The task whose rejection the dialog is asking a reason for. */
 const rejecting = ref<VacationTask | null>(null);
 const rejectOpen = ref(false);
@@ -203,8 +140,8 @@ function askWhyNot(id: string) {
 }
 
 /** Rejects the task with the reason from the dialog. The focus then goes to
- * what the row offers next, "I'll take it": the "Reject" button it was on
- * is gone. */
+ * the row's person button, where the task is taken or given next: the
+ * dialog it was in is gone. */
 async function rejectTask(reason: string) {
   const task = rejecting.value;
   if (!task || !me.value) return;
@@ -221,66 +158,8 @@ async function rejectTask(reason: string) {
     Notify.create({ message: "This task isn't yours any more." });
     return;
   }
-  tellLines[task.id] = "Back to nobody.";
   await nextTick();
   phaseSections.get(task.phase)?.focusOffer(task.id);
-}
-
-/**
- * Hands a message to the share sheet, or copies it. Called straight from
- * the press, with nothing awaited before it: a browser opens the share
- * sheet only during a gesture.
- */
-async function send(message: string) {
-  const outcome = await shareOrCopy(navigator, message);
-  if (outcome === "copied") {
-    Notify.create({
-      message: "Message copied",
-      // See InviteDialog.vue for the colors.
-      color: "primary",
-      textColor: "on-accent",
-    });
-  } else if (outcome === "manual") {
-    // Neither the share sheet nor the clipboard: the sentence is shown to
-    // be selected by hand.
-    Dialog.create({
-      title: "Copy this message",
-      message,
-      ok: { label: "Close", flat: true, color: undefined },
-    });
-  }
-}
-
-/** Tells the others about one task: that it is someone's now, or that the
- * member said no to it. */
-function tellAboutTask(id: string) {
-  const task = tasks.value.find((candidate) => candidate.id === id);
-  if (!task || !vacation.value) return;
-  const link = taskLink(location.origin, props.vacationId, task.id);
-  const message =
-    task.rejected_by && task.rejection_reason
-      ? rejectedTaskMessage(
-          task.title,
-          vacation.value.title,
-          task.rejection_reason,
-          link,
-        )
-      : givenTaskMessage(task.title, vacation.value.title, link);
-  void send(message);
-}
-
-/** Tells one person about everything they have, in one message: after a
- * trip is added, a member gives several tasks in a row. */
-function tellPerson(personId: string) {
-  const share = shares.value.find((entry) => entry.person?.id === personId);
-  if (!share || !vacation.value) return;
-  void send(
-    openTasksMessage(
-      share.open,
-      vacation.value.title,
-      myTasksLink(location.origin, props.vacationId),
-    ),
-  );
 }
 
 /** "Who has what" turns into the list of names while people are changed. */
@@ -368,10 +247,6 @@ function confirmRemove() {
     <div v-if="vacationStore.loading"><q-spinner color="primary" /></div>
 
     <article v-else-if="vacation && openPhases">
-      <p v-if="linkNotice" role="status" class="text-muted">
-        {{ linkNotice }}
-      </p>
-
       <vacation-header
         v-model:editing="editing"
         :vacation="vacation"
@@ -408,7 +283,6 @@ function confirmRemove() {
         :me="me"
         :emails="emails"
         @change-people="editingPeople = true"
-        @tell="tellPerson"
       />
 
       <!-- Only for a person of this trip: a member who isn't coming has no
@@ -443,10 +317,8 @@ function confirmRemove() {
         @toggle="vacationStore.toggleTask"
         @rename="vacationStore.renameTask"
         @remove="vacationStore.removeTask"
-        @give="giveTask"
+        @give="vacationStore.assignTask"
         @reject="askWhyNot"
-        @tell="tellAboutTask"
-        @close-tell="closeTellLine"
       />
 
       <reject-dialog

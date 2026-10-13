@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { mdiClose, mdiDotsVertical, mdiPlus } from "@quasar/extras/mdi-v7";
+import { mdiDotsVertical, mdiPlus } from "@quasar/extras/mdi-v7";
 import type {
   TaskRowState,
   VacationPerson,
@@ -26,14 +26,11 @@ const emit = defineEmits<{
   /** Give the task to a person, or to nobody (null). */
   give: [id: string, personId: string | null];
   reject: [id: string];
-  tell: [id: string];
-  closeTell: [id: string];
 }>();
 
 interface HasElement {
   $el: HTMLElement;
 }
-const row = useTemplateRef<HasElement>("row");
 const tickBox = useTemplateRef<HasElement>("tickBox");
 const moreButton = useTemplateRef<HasElement>("moreButton");
 const whoButton = useTemplateRef<HasElement>("whoButton");
@@ -117,21 +114,11 @@ defineExpose({
   /** Puts the focus on the row's person button, after the member rejected
    * the task: it is where the task is taken or given next. */
   focusOffer: () => whoButton.value?.$el.focus(),
-  /** Scrolls to the row and puts the focus on its tick box: where a link to
-   * the task lands. */
-  arrive: () => {
-    row.value?.$el.scrollIntoView({ block: "center" });
-    tickBox.value?.$el.focus({ preventScroll: true });
-  },
 });
 </script>
 
 <template>
-  <q-item
-    ref="row"
-    class="vacation-task"
-    :class="{ 'vacation-task--marked': state.marked }"
-  >
+  <q-item class="vacation-task">
     <q-item-section>
       <q-form
         v-if="editing"
@@ -289,15 +276,6 @@ defineExpose({
                   @click="emit('reject', task.id)"
                 />
                 <q-btn
-                  v-if="state.canTell"
-                  flat
-                  no-caps
-                  align="left"
-                  label="Tell them"
-                  class="touch-target"
-                  @click="emit('tell', task.id)"
-                />
-                <q-btn
                   flat
                   no-caps
                   align="left"
@@ -311,37 +289,13 @@ defineExpose({
         </div>
 
         <!-- Below the line only what needs a reader: the reason of a
-             rejection, and the offer to tell the others. -->
-        <template v-if="showsWho">
-          <p
-            v-if="isFree && state.rejecter && task.rejection_reason"
-            class="vacation-task__reason text-muted"
-          >
-            {{ state.rejecter.name }} said no: “{{ task.rejection_reason }}”
-          </p>
-
-          <!-- Announced when it appears. It has no timer: it stays until it
-               is closed or the member leaves the page. -->
-          <div v-if="state.tellLine" role="status" class="vacation-task__tell">
-            <span class="col">{{ state.tellLine }}</span>
-            <q-btn
-              v-if="state.canTell"
-              flat
-              label="Tell them"
-              :aria-label="`Tell them: ${task.title}`"
-              class="touch-target"
-              @click="emit('tell', task.id)"
-            />
-            <q-btn
-              flat
-              round
-              :icon="mdiClose"
-              aria-label="Close"
-              class="touch-target"
-              @click="emit('closeTell', task.id)"
-            />
-          </div>
-        </template>
+             rejection. -->
+        <p
+          v-if="showsWho && isFree && state.rejecter && task.rejection_reason"
+          class="vacation-task__reason text-muted"
+        >
+          {{ state.rejecter.name }} said no: “{{ task.rejection_reason }}”
+        </p>
       </template>
     </q-item-section>
   </q-item>
@@ -352,19 +306,6 @@ defineExpose({
    44px wide and bring their room with them. */
 .vacation-task {
   padding: 4px 8px;
-}
-
-/* Where a link landed: the theme's veil for a surface, fading out. It is
-   an animation of a color only, so it also runs for a person who has
-   turned motion off, for whom it marks the row just the same. */
-.vacation-task--marked {
-  animation: vacation-task-arrival 2s ease-out;
-}
-
-@keyframes vacation-task-arrival {
-  from {
-    background: var(--theme-veil-on-surface);
-  }
 }
 
 .vacation-task__line {
@@ -402,14 +343,6 @@ defineExpose({
 .vacation-task__reason {
   margin: 0 8px 4px 40px;
   overflow-wrap: anywhere;
-}
-
-.vacation-task__tell {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-height: 44px;
-  padding-left: 40px;
 }
 
 .vacation-task__edit {

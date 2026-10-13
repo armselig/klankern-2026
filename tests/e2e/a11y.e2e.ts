@@ -461,7 +461,9 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       await expectNoBlockingViolations(page, "the reject dialog");
       await page.getByLabel("Why not?").fill("No room in the bag.");
       await page.getByRole("button", { name: "Reject task" }).click();
-      await expect(page.getByText("Back to nobody.")).toBeVisible();
+      await expect(
+        page.getByText(/said no: “No room in the bag\.”/),
+      ).toBeVisible();
       await untilFadesEnd(page);
       await expectNoBlockingViolations(page, "a rejected task with its reason");
 

@@ -6,6 +6,8 @@ How the second slice of the vacation planner was built. The design is "Design: a
 
 A vacation has people: the household's members and people without an account, such as a small child. A task is given to a person, taken, or handed back; the person it was given to can reject it with a reason, which everyone sees, and the task is nobody's again. "Who has what" shows the open tasks per person at the top of the page, "Only my tasks" filters the phases, and "Tell them" hands a sentence with a link to the device's share sheet. A link opened signed out leads to its page after sign-in.
 
+("Tell them" and the links that land at a task were taken out again the same day, before the slice was released, see "“Tell them” removed". What this section says about them is how they were built.)
+
 The user approved the plan and three recommendations beforehand: the tests start signed in with a session (see "Signing in without the form" in [`infra/testing.md`](../infra/testing.md)), a person without an email address is drawn as the plain account icon, and the order of the build.
 
 ### Migration 0016
@@ -66,6 +68,7 @@ Nothing of this slice was tried on the deployed site or on a phone when this was
 
 - "Tell them" opens the phone's share sheet, and the messenger keeps the link. Neither can be tested automatically.
 - The link from that message, opened on a phone whose browser is signed out, leads to the task after signing in.
+  (These two went with "Tell them" on 2026-10-13. What is left of the second: an address of the app opened in a browser that is signed out leads to its page after signing in.)
 - An existing vacation from before this slice: "Who has what" offers "Change people", and after adding the people its tasks can be given.
 - Two phones: a task given on one shows as "yours" on the other without a reload.
 
@@ -92,3 +95,27 @@ Afterwards a row is 53 px and a rejected one 99 px; "Before" with 23 tasks, one 
 The button's name says who has the task before the task's title ("Yours: Clothes", "sam: Clothes", "Nobody yet: Clothes"), since the picture says nothing to a screen reader; a tooltip shows the same. The journey, the accessibility scan and the helpers were changed to the new controls; the scans pass in light and dark mode.
 
 Not verified: whether a new member understands the dashed circle without being told. The words "I'll take it" are gone from the row.
+
+## “Tell them” removed (2026-10-13)
+
+The user tried the built slice and had "Tell them" removed before it was released: it did not work on a desktop, and the app is to get notifications later, which is what "Tell them" stood in for.
+
+What went:
+
+- The line "Given to sam." with its "Tell them" button after giving or rejecting a task, and the entry in the row's menu.
+- The share button of a person in "Who has what".
+- The sentences, the share sheet and the copy fallback (`composables/share-or-copy.ts`), and both kinds of link with the page's landing at a task (`utils/vacation-link.ts`): a link to a task had no other source.
+- Their tests: 14 unit tests, two steps of browser journey 2, and the assertions on the line elsewhere.
+
+What stays:
+
+- **Sign-in leads back to the page that was asked for.** It was added for these links and holds for every address of the app, such as a vacation's page sent by hand. Its test in `auth.e2e.ts` stays.
+- Everything else of the slice: people, giving, taking and rejecting, "Who has what", "Only my tasks".
+
+A member again learns of an assignment or a rejection only by opening the app: the dashboard's tile says how many tasks are theirs and how many came back. That is the state the design started from ("No notifications in the first version"), and the failure the scope review named, one partner never opening the app, is open again until notifications exist.
+
+What "did not work on a desktop" was, is not known. A desktop browser has no share sheet, so the app copied the sentence and said "Message copied"; whether that failed or was not what the user expected was not looked into, since the feature went.
+
+Not verified: nothing of "Tell them" was ever tried on a phone.
+
+After the removal: 486 unit and isolation tests, and the two vacation journeys, the accessibility scans and the auth tests pass.

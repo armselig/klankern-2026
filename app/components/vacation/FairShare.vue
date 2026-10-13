@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { mdiShareVariantOutline } from "@quasar/extras/mdi-v7";
 import type { TaskShare, VacationPerson } from "~/types/vacation";
 
 /**
@@ -14,11 +13,7 @@ const props = defineProps<{
   /** The members' email addresses by user id, for their avatars. */
   emails: Record<string, string>;
 }>();
-const emit = defineEmits<{
-  changePeople: [];
-  /** Send one message about everything a person has. */
-  tell: [personId: string];
-}>();
+const emit = defineEmits<{ changePeople: [] }>();
 
 const changeButton = useTemplateRef<{ $el: HTMLElement }>("changeButton");
 
@@ -33,16 +28,6 @@ const hasPeople = computed(() => props.shares.some((share) => share.person));
 
 function emailOf(person: VacationPerson): string | null {
   return person.user_id ? (props.emails[person.user_id] ?? null) : null;
-}
-
-/** A message can go to a person who can open its link: another person with
- * an account, who has something open. */
-function canTell(share: TaskShare): boolean {
-  return (
-    !!share.person?.user_id &&
-    share.person.id !== props.me?.id &&
-    share.open > 0
-  );
 }
 
 defineExpose({
@@ -94,16 +79,6 @@ defineExpose({
           />
         </span>
         <span class="fair-share__open">{{ share.open }}</span>
-        <q-btn
-          v-if="canTell(share)"
-          flat
-          round
-          :icon="mdiShareVariantOutline"
-          :aria-label="`Tell ${share.person!.name} about their open tasks`"
-          class="touch-target"
-          @click="emit('tell', share.person!.id)"
-        />
-        <span v-else class="fair-share__no-button" />
       </li>
     </ul>
   </section>
@@ -167,9 +142,5 @@ defineExpose({
 .fair-share__open {
   flex: 0 0 20px;
   text-align: right;
-}
-
-.fair-share__no-button {
-  flex: 0 0 44px;
 }
 </style>

@@ -16,7 +16,6 @@ import {
   vacationTask,
 } from "../support/e2e-ui";
 import {
-  admin,
   createHousehold,
   createTestUser,
   deleteTestData,
@@ -303,15 +302,8 @@ test.describe("a vacation's tasks, shared between its people", () => {
   test("a task is given, rejected with a reason and taken, and everyone sees it", async ({
     browser,
   }) => {
-    // The clipboard may be written, and the share sheet is taken away, so
-    // "Tell them" copies whatever system the test runs on.
-    const contextA = await browser.newContext({
-      permissions: ["clipboard-read", "clipboard-write"],
-    });
+    const contextA = await browser.newContext();
     const contextB = await browser.newContext();
-    await contextA.addInitScript(() => {
-      Object.defineProperty(navigator, "share", { value: undefined });
-    });
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
     await openSignedIn(pageA, userA);
@@ -329,7 +321,6 @@ test.describe("a vacation's tasks, shared between its people", () => {
         })
         .getByRole("listitem");
     const reason = "I'm already busy enough washing all the clothes.";
-    let vacationId = "";
 
     await test.step("A adds a vacation with both members and a child", async () => {
       await openVacations(pageA);
@@ -348,7 +339,6 @@ test.describe("a vacation's tasks, shared between its people", () => {
       await expect(pageA).toHaveURL(/\/vacations\/new$/);
       await pageA.getByRole("button", { name: "Add vacation" }).click();
       await expect(pageA).toHaveURL(/\/vacations\/[0-9a-f-]{36}$/);
-      vacationId = pageA.url().split("/").pop()!;
 
       await expect(whoHasWhat(pageA)).toHaveText([
         new RegExp(`${nameA} \\(you\\).*0$`),
@@ -370,14 +360,10 @@ test.describe("a vacation's tasks, shared between its people", () => {
         .getByRole("group", { name: "Give to…: Clothes" })
         .getByRole("button", { name: nameB })
         .click();
-      const row = pageA.locator(".q-item").filter({
-        has: vacationTask(pageA, "Clothes"),
-      });
       // The row's person button now carries B's picture and name.
       await expect(
         pageA.getByRole("button", { name: `${nameB}: Clothes` }),
       ).toBeVisible();
-      await expect(row.getByRole("status")).toContainText(`Given to ${nameB}.`);
       await expect(whoHasWhat(pageA).nth(1)).toHaveText(/1$/);
 
       await expect(
@@ -403,27 +389,6 @@ test.describe("a vacation's tasks, shared between its people", () => {
       await pageA.keyboard.press("Escape");
     });
 
-    await test.step('"Tell them" hands A a sentence with a link to the task', async () => {
-      await pageA.getByRole("button", { name: "Tell them: Clothes" }).click();
-      await expect(pageA.getByText("Message copied")).toBeVisible();
-      const message = await pageA.evaluate(() =>
-        navigator.clipboard.readText(),
-      );
-      expect(message).toContain(
-        '"Clothes" is yours for Winter week by the sea.',
-      );
-      expect(message).toMatch(
-        new RegExp(`/vacations/${vacationId}\\?task=[0-9a-f-]{36}$`),
-      );
-
-      // The line has no timer; it goes when it is closed.
-      const row = pageA.locator(".q-item").filter({
-        has: vacationTask(pageA, "Clothes"),
-      });
-      await row.getByRole("button", { name: "Close" }).click();
-      await expect(row.getByRole("status")).toHaveCount(0);
-    });
-
     await test.step("B rejects it with a reason; the focus moves to the row's person button", async () => {
       await chooseFromTaskMenu(pageB, "Clothes", "Reject");
       const dialog = pageB.getByRole("dialog");
@@ -443,7 +408,6 @@ test.describe("a vacation's tasks, shared between its people", () => {
       await expect(
         pageB.getByRole("button", { name: "Nobody yet: Clothes" }),
       ).toBeFocused();
-      await expect(rowB.getByRole("status")).toContainText("Back to nobody.");
     });
 
     await test.step("A sees the rejection without reloading, and takes the task", async () => {
@@ -462,8 +426,6 @@ test.describe("a vacation's tasks, shared between its people", () => {
         pageA.getByRole("button", { name: "Yours: Clothes" }),
       ).toBeVisible();
       await expect(row).not.toContainText("said no");
-      // Nobody sends a message to themselves.
-      await expect(row.getByRole("status")).toHaveCount(0);
       await expect(whoHasWhat(pageA).first()).toHaveText(/1$/);
     });
 
@@ -485,14 +447,6 @@ test.describe("a vacation's tasks, shared between its people", () => {
         );
         await page.keyboard.press("Escape");
       }
-      // Nor a message: a small child can't open the link.
-      await expect(
-        pageA
-          .locator(".q-item")
-          .filter({ has: vacationTask(pageA, "Books") })
-          .getByRole("status"),
-      ).toHaveCount(0);
-
       await vacationTask(pageB, "Books").click();
       await expect(vacationTask(pageA, "Books")).toBeChecked();
     });
@@ -511,24 +465,6 @@ test.describe("a vacation's tasks, shared between its people", () => {
       );
       await pageA.getByRole("checkbox", { name: "Only my tasks" }).click();
       await expect(before.getByRole("checkbox")).toHaveCount(23);
-    });
-
-    await test.step("a link to a task opens its phase and lands at its row, once", async () => {
-      const { data: task } = await admin
-        .from("vacation_tasks")
-        .select("id")
-        .eq("vacation_id", vacationId)
-        .eq("title", "Return the key")
-        .single();
-      await pageB.goto(`/vacations/${vacationId}?task=${task!.id}`);
-      await expect(phaseButton(pageB, "During")).toHaveAttribute(
-        "aria-expanded",
-        "true",
-      );
-      await expect(vacationTask(pageB, "Return the key")).toBeFocused();
-      await expect(vacationTask(pageB, "Return the key")).toBeInViewport();
-      // The parameter is read once and taken out of the address.
-      await expect(pageB).toHaveURL(new RegExp(`/vacations/${vacationId}$`));
     });
 
     await test.step('a person who is taken off leaves "Who has what", and their task is nobody\'s', async () => {

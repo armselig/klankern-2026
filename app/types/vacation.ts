@@ -89,12 +89,4 @@ export interface TaskRowState {
   rejecter: VacationPerson | null;
   /** The task is the signed-in member's. */
   mine: boolean;
-  /** The line that offers "Tell them" after the member gave or rejected
-   * the task ("Given to sam."), or null. */
-  tellLine: string | null;
-  /** Whether a message about the task has someone to go to: its assignee
-   * with an account, or everyone after a rejection. */
-  canTell: boolean;
-  /** The row a link led to, marked for a moment. */
-  marked: boolean;
 }

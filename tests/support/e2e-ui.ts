@@ -429,7 +429,7 @@ export function taskMoreButton(page: Page, title: string) {
 export async function chooseFromTaskMenu(
   page: Page,
   title: string,
-  entry: "Edit" | "Reject" | "Tell them" | "Remove",
+  entry: "Edit" | "Reject" | "Remove",
 ) {
   await taskMoreButton(page, title).click();
   await page

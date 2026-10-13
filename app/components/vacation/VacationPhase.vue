@@ -39,8 +39,6 @@ const emit = defineEmits<{
   remove: [id: string];
   give: [id: string, personId: string | null];
   reject: [id: string];
-  tell: [id: string];
-  closeTell: [id: string];
 }>();
 /** Whether the phase is unfolded. The page decides how it starts (it
  * follows the trip); a press here changes it for the visit. */
@@ -53,7 +51,6 @@ const addInput = useTemplateRef<{ focus: () => void }>("addInput");
 interface TaskRow {
   focusTickBox: () => void;
   focusOffer: () => void;
-  arrive: () => void;
 }
 /** The rows by task id, to put the focus on one after the list changed. */
 const rows = new Map<string, TaskRow>();
@@ -95,10 +92,8 @@ async function remove(id: string) {
 }
 
 defineExpose({
-  /** Puts the focus on a row's first offer, after its task was rejected. */
+  /** Puts the focus on a row's person button, after its task was rejected. */
   focusOffer: (id: string) => rows.get(id)?.focusOffer(),
-  /** Scrolls to a row and focuses it: where a link to its task lands. */
-  arrive: (id: string) => rows.get(id)?.arrive(),
 });
 </script>
 
@@ -136,8 +131,6 @@ defineExpose({
           @remove="remove"
           @give="(id, personId) => emit('give', id, personId)"
           @reject="(id) => emit('reject', id)"
-          @tell="(id) => emit('tell', id)"
-          @close-tell="(id) => emit('closeTell', id)"
         />
       </q-list>
 

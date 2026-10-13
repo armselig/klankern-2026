@@ -90,8 +90,8 @@ test.describe("auth", () => {
   test("a link opened signed out leads to its page after sign-in, and sign-out forgets it", async ({
     page,
   }) => {
-    // What "Tell them" sends: a vacation's page with a task in the address.
-    // On a phone the link opens in the browser, which may not be signed in.
+    // A link someone was sent: a page of the app with a parameter in the
+    // address. On a phone it opens in the browser, which may not be signed in.
     const asked = `${ROUTES.vacation("some-id")}?task=some-task`;
     const remembered = async () =>
       (await page.context().cookies()).find((cookie) =>
