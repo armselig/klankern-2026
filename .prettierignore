@@ -12,3 +12,5 @@ CHANGELOG.md
 # them.
 .agents
 skills-lock.json
+# gstack's own state on this machine; the folder ignores itself for git.
+.gstack
