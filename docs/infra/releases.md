@@ -54,3 +54,9 @@ Still open: the fast-forward step's failure paths (`develop` moved on, or workfl
 On the user's request `CHANGELOG.md` moved from the git root to `app/CHANGELOG.md`: `changelogFile` and the git plugin's `assets` in `.releaserc.yaml` point there, and `app/.prettierignore` lists the file, because Prettier rejects the generated format and `format:check` would fail on every release commit. `--dry-run` doesn't write the changelog, so the first real run of this path was the next release, 1.1.0, the same day: it and the three releases after it wrote `app/CHANGELOG.md` and committed it with the version bump.
 
 Back at the git root since 2026-10-12, still beside `package.json`, which moved there with the whole Nuxt project (see "The move to the git root" in [`infra/project-layout.md`](project-layout.md)).
+
+## A scope in every commit message (2026-10-14)
+
+At the user's request commitlint requires a scope (`scope-empty: [2, "never"]` in `package.json`): `fix(auth): …`, never `fix: …`. Two commits of the same day had none (`docs: record releases 1.8.0 and 1.8.1 …` and `fix: take the user id from the session …`) and were already pushed to `develop`; they were left as they are.
+
+Checked against messages piped into `npx commitlint`: one without a scope fails; one with a scope, the release workflow's `chore(release): 1.8.2` and a `Revert "…"` pass (commitlint ignores reverts and merges by default).
