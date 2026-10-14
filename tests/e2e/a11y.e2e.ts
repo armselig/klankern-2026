@@ -380,14 +380,17 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       // A notice is gone after a few seconds, so it is scanned while it
       // shows, once it has faded in.
       await page.getByRole("button", { name: "Add to shopping list" }).click();
-      await expect(
-        page.getByText("2 items added to the shopping list"),
-      ).toBeVisible();
+      const notice = page.getByText("2 items added to the shopping list");
+      await expect(notice).toBeVisible();
       await untilFadesEnd(page);
       await expectNoBlockingViolations(
         page,
         "a recipe with the notice of added items",
       );
+      // Gone before the next scans: a notice that is fading out is
+      // translucent, and on a slow runner one was still there when the
+      // empty list of vacations was scanned, below 4.5:1.
+      await expect(notice).toHaveCount(0);
 
       await page.getByRole("link", { name: "All recipes" }).click();
       await expect(recipeLink(page, "Pancakes")).toBeVisible();
