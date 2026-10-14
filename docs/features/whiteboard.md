@@ -50,7 +50,7 @@ One whiteboard per household at `ROUTES.whiteboard` ("Whiteboard" button on the 
 
 - A long-running `nuxt dev` did not pick up the new page file (`/whiteboard` answered 404) until the file was moved away and back.
 - **The `pwa` project failed once in the working tree** (all 4 tests, blank page): the HTML in `dist` referenced `/_nuxt/*.js` files that the same build had not written. A fresh copy of the same tree built correctly and passed all 4. Not explained then: Playwright always runs `nuxt dev` and the production build side by side, in CI too, so that alone is not the cause. Explained and fixed on 2026-10-11, see "The `pwa` e2e project and a leftover `.output`" in [`infra/testing.md`](../infra/testing.md).
-- `dragOnWhiteboard` (`tests/support/e2e-ui.ts`) scrolls the board into view first: Playwright's mouse doesn't scroll, and a position under the fixed footer hits the footer.
+- `dragOnWhiteboard` (`tests/support/e2e-ui.ts`) scrolls the board into view first: Playwright's mouse doesn't scroll, and a position under the fixed header hits the header.
 
 **Noticed, not changed** (the lists):
 

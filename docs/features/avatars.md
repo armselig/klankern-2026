@@ -62,5 +62,5 @@ Decided with the user:
 
 ### Found on the way
 
-- **A long-running `nuxt dev` keeps showing the old version in the footer**, and `app-version.e2e.ts` then fails locally. The version is read from `package.json` when the process starts. A dev server started before a release was pulled still served `0.0.0` after `package.json` said `1.0.0`, and the reload Nuxt does by itself after a change to `nuxt.config.ts` did not re-read it. Stop and start `npm run dev`. CI starts a fresh server, and the production build from the same run had `1.0.0`.
+- **A long-running `nuxt dev` keeps showing the old version in the menus**, and `app-version.e2e.ts` then fails locally. The version is read from `package.json` when the process starts. A dev server started before a release was pulled still served `0.0.0` after `package.json` said `1.0.0`, and the reload Nuxt does by itself after a change to `nuxt.config.ts` did not re-read it. Stop and start `npm run dev`. CI starts a fresh server, and the production build from the same run had `1.0.0`.
 - The member row made the dashboard card taller, which uncovered the contrast problem of "Hover and focus contrast on the primary color" in [`ui/theme-and-contrast.md`](../ui/theme-and-contrast.md).

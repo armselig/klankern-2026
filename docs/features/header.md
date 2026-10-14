@@ -41,3 +41,16 @@ Tests:
 - `signOut` and the invite steps open the account menu first (`openAccountMenu`). `a11y.e2e.ts` scans the open menu, and checks the dark hover highlight on the account button instead of on "Sign out".
 - **A scan right after the menu opens fails on contrast**: the menu fades in, and axe measures the half-transparent text. The same happens to the invite dialog's scan while the menu fades out. `untilFadesEnd` in `a11y.e2e.ts` waits for the page's animations.
 - axe still can't judge the header itself (see "Hover and focus contrast on the primary color" in [`ui/theme-and-contrast.md`](../ui/theme-and-contrast.md)), so the wordmark's contrast is not scanned. It is white on the primary color, like the header's text before.
+
+## The version moved from the footer into the menus (2026-10-14, user decision)
+
+The layout's footer ("© armselig · Version X.Y.Z") is gone, and the copyright with it. The version is at the bottom of the account menu, under a separator, in a smaller (0.8125rem) muted line (`<app-version>`, `components/layout/`).
+
+- **Signed out, a "About" button (info icon) sits in the header** (`<version-menu>`), beside "Log in" and alone on `/login` and `/join/<code>`, where "Log in" is hidden. Its menu holds only the version. The user wanted the version to stay readable without an account, which the account menu alone could not give.
+- The test ids stayed in `TEST_IDS.layout` (`appVersion`, plus `versionButton` and `versionMenu`).
+
+Tests:
+
+- `app-version.e2e.ts` has two tests: the version menu on `/login` (no sign-in), and the account menu of a disposable member. Both compare with `package.json`.
+- `a11y.e2e.ts` scans the open version menu in both modes, and the open account menu with the version in it (the muted text passed).
+- Not looked at by eye: the two menus at 375px in light and dark mode.

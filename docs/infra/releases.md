@@ -12,7 +12,7 @@ Decisions:
 - **The first release is 1.0.0 and lists the whole history** (the 20 `feat` and `fix` commits so far, plus whatever the first push adds). semantic-release has no 0.x mode: without a tag it starts at 1.0.0.
 - **Not gated on CI.** Netlify doesn't wait for CI either, so the tag marks what was deployed. Gating would also delay the release commit by a full CI run, and `develop` would more often have moved on by then.
 - **Own package in `.github/release`.** In `app/package.json` the tooling would add 348 lockfile entries (it bundles the npm CLI) to every Netlify build and to the CI job that holds the secret key. The release job installs only this package, with `--ignore-scripts` and without the npm cache, because it can write to the repository.
-- **The version is shown in the footer** (`Version X.Y.Z`, from `runtimeConfig.public.appVersion`, read from `package.json` at build time). So the release commit has no `[skip ci]`: Netlify builds twice per release, and until the second build is live the site shows the previous version.
+- **The version is shown in a menu** (`Version X.Y.Z`; since 2026-10-14 not in a footer, see "The version moved from the footer into the menus" in [`features/header.md`](../features/header.md); from `runtimeConfig.public.appVersion`, read from `package.json` at build time). So the release commit has no `[skip ci]`: Netlify builds twice per release, and until the second build is live the site shows the previous version.
 - **commitlint in a `commit-msg` hook** (`@commitlint/config-conventional`, 45 lockfile entries, none with install scripts). All 59 earlier commit messages pass it unchanged.
 - The GitHub plugin's comments and labels on issues and pull requests are off, so the job needs only `contents: write`.
 
