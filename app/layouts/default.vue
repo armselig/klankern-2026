@@ -5,7 +5,6 @@ const user = useSupabaseUser();
 const client = useSupabaseClient();
 const router = useRouter();
 const route = useRoute();
-const { appVersion } = useRuntimeConfig().public;
 
 // Before useHouseholdRealtime, so it never sees a new user with old data.
 useResetStoresOnUserChange();
@@ -85,25 +84,23 @@ async function signOut() {
           :email="user.email"
           @sign-out="signOut"
         />
-        <q-btn
-          v-else-if="showLoginButton"
-          flat
-          :icon="mdiLogin"
-          label="Log in"
-          :data-testid="TEST_IDS.layout.loginLink"
-          :to="ROUTES.login"
-        />
+        <template v-else>
+          <version-menu />
+          <q-btn
+            v-if="showLoginButton"
+            flat
+            :icon="mdiLogin"
+            label="Log in"
+            :data-testid="TEST_IDS.layout.loginLink"
+            :to="ROUTES.login"
+          />
+        </template>
       </q-toolbar>
     </q-header>
 
     <q-page-container>
       <slot />
     </q-page-container>
-
-    <q-footer>
-      &copy; armselig &middot; Version
-      <span :data-testid="TEST_IDS.layout.appVersion">{{ appVersion }}</span>
-    </q-footer>
   </q-layout>
 </template>
 

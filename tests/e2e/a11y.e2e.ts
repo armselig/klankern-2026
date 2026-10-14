@@ -13,6 +13,7 @@ import {
   listItem,
   memberAvatar,
   openAccountMenu,
+  openVersionMenu,
   openList,
   openRecipes,
   openVacations,
@@ -160,6 +161,9 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       // Otherwise a scan in dark mode could pass on the light palette.
       await expect(page.locator("body")).toHaveClass(bodyClass);
       await expectNoBlockingViolations(page, "the login page");
+      await openVersionMenu(page);
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "the version menu");
 
       await page.goto(ROUTES.join("some-code"));
       await expect(

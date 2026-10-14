@@ -111,6 +111,8 @@ function requestSignOut() {
           :data-testid="TEST_IDS.account.signOut"
           @click="requestSignOut"
         />
+        <q-separator />
+        <app-version />
       </div>
     </q-menu>
   </q-btn>

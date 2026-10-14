@@ -138,6 +138,13 @@ export async function openAccountMenu(page: Page) {
   await expect(page.getByTestId(TEST_IDS.account.menu)).toBeVisible();
 }
 
+/** Opens the header's version menu, the signed-out counterpart of the
+ * account menu. */
+export async function openVersionMenu(page: Page) {
+  await page.getByTestId(TEST_IDS.layout.versionButton).click();
+  await expect(page.getByTestId(TEST_IDS.layout.versionMenu)).toBeVisible();
+}
+
 /** Signs out through the account menu and waits for the login page. */
 export async function signOut(page: Page) {
   await openAccountMenu(page);

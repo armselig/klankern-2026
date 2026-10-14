@@ -156,9 +156,9 @@ function cancelGesture(event: PointerEvent) {
 .whiteboard-surface {
   display: block;
   width: 100%;
-  /* Leaves room for the header, the toolbar and the fixed footer, so the
-     whole board is on screen at once; on a very low screen it keeps a usable
-     size and the page scrolls instead. */
+  /* Leaves room for the header, the toolbar, so the whole board is on screen
+     at once; on a very low screen it keeps a usable size and the page
+     scrolls instead. */
   max-height: max(calc(100vh - 18rem), 16rem);
   /* Without this a touch scrolls the page instead of drawing. */
   touch-action: none;

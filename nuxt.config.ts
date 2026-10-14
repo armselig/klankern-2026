@@ -29,7 +29,7 @@ export default defineNuxtConfig({
   ],
   runtimeConfig: {
     public: {
-      // Shown in the footer. semantic-release writes the version into
+      // Shown in the menus. semantic-release writes the version into
       // package.json with each release (.releaserc.yaml at the git root), so
       // the build of a release commit carries that release's number.
       appVersion: packageJson.version,

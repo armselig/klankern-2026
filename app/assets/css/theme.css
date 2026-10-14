@@ -138,8 +138,8 @@ body.body--dark,
 }
 
 /*
- * Quasar writes white on every filled control and on the layout's header
- * and footer. On Mocha's pastel accents white is at about 2:1.
+ * Quasar writes white on every filled control and on the layout's header.
+ * On Mocha's pastel accents white is at about 2:1.
  */
 .q-layout__section--marginal,
 .q-checkbox__svg {

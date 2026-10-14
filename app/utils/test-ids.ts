@@ -22,6 +22,8 @@ export const TEST_IDS = {
     installButton: "layout-install-button",
     loginLink: "layout-login-link",
     appVersion: "layout-app-version",
+    versionButton: "layout-version-button",
+    versionMenu: "layout-version-menu",
   },
   /** `public/offline.html` is static and has this value written out. */
   offlinePage: { heading: "offline-heading" },
