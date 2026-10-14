@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.8.0](https://github.com/armselig/klankern-2026/compare/v1.7.0...v1.8.0) (2026-10-14)
+
+### Features
+
+* **vacations:** give a task added under a person's line to that person ([4f0960d](https://github.com/armselig/klankern-2026/commit/4f0960d06353f95406136e23bffddce02851b8f2))
+* **vacations:** put a frame around "Who has what" ([4d0c6a0](https://github.com/armselig/klankern-2026/commit/4d0c6a098f5989970a023dab842e3f884e4199e1))
+* **vacations:** sort "Who has what" by open tasks ([40407f9](https://github.com/armselig/klankern-2026/commit/40407f9e3ba2dfd051e34102ff012585d0189373))
+* **vacations:** start a vacation empty or with an earlier trip's tasks ([2e31ad0](https://github.com/armselig/klankern-2026/commit/2e31ad0db6f6b472f76b81c564255fdd68e9a1de))
+
+### Bug Fixes
+
+* **vacations:** show a member's name as text in "Change people" ([435b83f](https://github.com/armselig/klankern-2026/commit/435b83f28c6eb248aafc549048322aa20f5192e0))
+
 ## [1.7.0](https://github.com/armselig/klankern-2026/compare/v1.6.0...v1.7.0) (2026-10-13)
 
 ### Features
