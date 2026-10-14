@@ -12,6 +12,7 @@ import {
   removeListItem,
   removeListItemButton,
   openSignedIn,
+  untilAdded,
   untilSaved,
 } from "../support/e2e-ui";
 import {
@@ -115,7 +116,9 @@ test.describe("lists for a single member", () => {
         page.getByTestId(TEST_IDS.shopping.quantityInput),
       ).toHaveValue("");
       await addShoppingItem(page, "Bread");
-      await addShoppingItem(page, "Milk");
+      // Saved before the reload below: nothing else waits for this one, as
+      // ticking and removing wait for the other two.
+      await untilAdded(page, () => addShoppingItem(page, "Milk"));
       await expect(listItems(page)).toHaveText(["Apples (6)", "Bread", "Milk"]);
     });
 

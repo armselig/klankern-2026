@@ -261,6 +261,22 @@ export async function untilSaved(page: Page, action: () => Promise<void>) {
 }
 
 /**
+ * Does what adds a list item and waits until the server has answered its
+ * insert. A reload right after an add cancels an insert still on its way,
+ * and the item is then never saved; on CI one took more than two seconds.
+ * The item shows at once either way, since the add is optimistic.
+ */
+export async function untilAdded(page: Page, action: () => Promise<void>) {
+  const added = page.waitForResponse(
+    (response) =>
+      /\/rest\/v1\/(todo|shopping)_items/.test(response.url()) &&
+      response.request().method() === "POST",
+  );
+  await action();
+  expect((await added).ok()).toBe(true);
+}
+
+/**
  * Holds back every list-item insert for `ms` before sending it, so a test
  * can act on an item whose add is still being saved, like on a slow network.
  */

@@ -89,3 +89,11 @@ Later the same day CI failed three more times, in three other tests, all with Su
 - The same re-run (`a11y.e2e.ts`, light mode): the scan of the empty list of vacations found a Quasar notification below 4.5:1 (`.q-notification__message`). It is most likely the notice of the step before, about ingredients put on the shopping list, still fading out on a slow runner; a fading notice is translucent. Not looked into further; the scan of that notice itself passes. (At the user's request the test now waits until that notice is gone before it goes on, the same day.)
 
 Not known: why the auth service was slow; it was again a day with several hundred disposable users and sign-ins from tests.
+
+## A reload that cancelled an insert (2026-10-14)
+
+CI on `main` for v1.9.0 failed in `lists.e2e.ts`, "shopping: add with and without quantity, check and remove are saved": after the reload only "Milk" and not "Apples (6)" was expected, and only one of the two was there. The trace showed three inserts, Apples, Bread and Milk. Two were answered; Milk's had no answer 2.3 seconds later, when the test reloaded the page, and the reload cancelled it. Milk was never saved. The test waited for its tick of Apples and its removal of Bread, and each of those waits for its own item's insert, but nothing waited for Milk's. The same code passed on `develop`.
+
+- **`untilAdded`** (`tests/support/e2e-ui.ts`, beside `untilSaved`) does what adds a list item and waits until the server has answered its insert. The test adds Milk with it.
+- **The other reloads were checked** and need no such wait: the to-do test's reload follows a tick and a removal of its only two items; the tests of an add still being saved poll the database first; and in the whiteboard, recipe and vacation journeys every change before a reload has first shown up on the other member's page, so the server had it.
+- **Not explained:** in one local run after the change, "checking or removing an item while its add is saving" failed once, after its reload: the database already had the item ticked, but the page did not show it within 15 seconds. The re-run passed, as did the whole spec once more (4); its trace was overwritten by the re-run before it was read.
