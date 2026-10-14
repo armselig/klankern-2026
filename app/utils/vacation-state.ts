@@ -2,16 +2,23 @@ import type { VacationTileLines } from "~/types/dashboard";
 import type { ItemsById } from "~/types/list";
 import type { RowRealtimeEvent, SyncedRow } from "~/types/synced-row";
 import type {
+  NewVacationTask,
   Vacation,
   VacationDetails,
+  VacationDetailsProblem,
   VacationGroups,
   VacationKind,
   VacationPhase,
   VacationTask,
 } from "~/types/vacation";
 import { upsertListItem } from "./list-state";
-import { addDays, daysBetween, formatDay, type LocalDate } from "./local-date";
-import { VACATION_PHASES } from "./vacation-templates";
+import {
+  addDays,
+  daysBetween,
+  formatDay,
+  isLocalDate,
+  type LocalDate,
+} from "./local-date";
 
 // Vacations and their tasks follow the same rules as list items
 // (client-generated ids, soft deletes, resync); the store uses the reducers
@@ -21,6 +28,17 @@ import { VACATION_PHASES } from "./vacation-templates";
 //
 // Every function that depends on the day takes it as a parameter, so the
 // tile, the list and the page can't disagree and the tests need no clock.
+
+/** The kinds of stay, in the order the form for a new vacation offers them. */
+export const VACATION_KINDS: readonly VacationKind[] = ["house", "hotel"];
+
+/** The phases in the order a trip goes through them, which is also the
+ * order of a vacation's page. */
+export const VACATION_PHASES: readonly VacationPhase[] = [
+  "before",
+  "during",
+  "after",
+];
 
 /** What a member reads for a kind of stay. */
 export const VACATION_KIND_LABELS: Record<VacationKind, string> = {
@@ -125,6 +143,40 @@ export function tasksOfVacation(
 ): VacationTask[] {
   return Object.values(tasksById).filter(
     (task) => task.vacation_id === vacationId && !task.deleted_at,
+  );
+}
+
+/** The live vacations, the one added last first: what the form for a new
+ * vacation offers to copy the tasks of. The order is the one of
+ * lastCreatedVacationId, whose trip the form picks to start with. */
+export function vacationsByCreation(
+  vacationsById: ItemsById<Vacation>,
+): Vacation[] {
+  return Object.values(vacationsById)
+    .filter((vacation) => !vacation.deleted_at)
+    .sort(
+      (a, b) =>
+        b.created_at.localeCompare(a.created_at) || b.id.localeCompare(a.id),
+    );
+}
+
+/**
+ * The tasks a new vacation starts with when it copies an earlier one's: the
+ * live ones, each in its phase and in the order it had there, but open and
+ * nobody's. What was done, given or rejected last time says nothing about
+ * this trip, and the people on it may be others. The positions are counted
+ * anew from 1, so the edits of the earlier trip leave no fractions behind.
+ */
+export function tasksToCopy(tasks: readonly VacationTask[]): NewVacationTask[] {
+  return VACATION_PHASES.flatMap((phase) =>
+    tasks
+      .filter((task) => task.phase === phase && !task.deleted_at)
+      .sort((a, b) => a.position - b.position || a.id.localeCompare(b.id))
+      .map((task, index) => ({
+        phase,
+        title: task.title,
+        position: index + 1,
+      })),
   );
 }
 
@@ -347,19 +399,23 @@ export function vacationTilePreview(
 
 /** What is wrong with a vacation's details as a form holds them, or null.
  * The fields are required in the form already; this catches what `required`
- * lets through, a title of spaces and an end before the start. */
+ * lets through: a title of spaces, a typed day that is no calendar day, and
+ * an end before the start. */
 export function vacationDetailsProblem(
   details: VacationDetails,
-): "title" | "dates" | null {
+): VacationDetailsProblem | null {
   if (details.title.trim() === "") return "title";
   if (!details.starts_on || !details.ends_on) return "dates";
+  if (!isLocalDate(details.starts_on) || !isLocalDate(details.ends_on))
+    return "day";
   return details.ends_on < details.starts_on ? "dates" : null;
 }
 
-/** The texts of the two problems, the same in the form for a new vacation
- * and in the edit of an existing one. */
+/** The texts of the problems, the same in the form for a new vacation and
+ * in the edit of an existing one. */
 export const VACATION_DETAILS_MESSAGES = {
   title: "Give the vacation a title.",
+  day: "Give each day as year, month and day: YYYY-MM-DD.",
   dates: "The trip can't end before it starts.",
 } as const;
 

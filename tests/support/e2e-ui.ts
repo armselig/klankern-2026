@@ -4,7 +4,7 @@ import type { WhiteboardTool } from "../../app/types/whiteboard";
 import { INK_VALUES } from "../../app/utils/ink";
 import { ROUTES } from "../../app/utils/routes";
 import { TEST_IDS, type DashboardTileKey } from "../../app/utils/test-ids";
-import { VACATION_KINDS } from "../../app/utils/vacation-templates";
+import { VACATION_KINDS } from "../../app/utils/vacation-state";
 import {
   PEN_COLORS,
   PEN_WIDTHS,
@@ -467,6 +467,9 @@ export interface VacationFormEntry {
   kind?: VacationKind;
   from: string;
   until: string;
+  /** The title of the trip the form chose by itself to copy the tasks
+   * of, checked before the save. */
+  expectCopyFrom?: string;
 }
 
 /** Adds a vacation from the list of vacations and waits for its own page,
@@ -478,6 +481,12 @@ export async function addVacation(page: Page, entry: VacationFormEntry) {
   if (entry.kind) await vacationKindRadio(page, entry.kind).click();
   await page.getByTestId(form.from).fill(entry.from);
   await page.getByTestId(form.until).fill(entry.until);
+  if (entry.expectCopyFrom !== undefined)
+    // Quasar's select keeps the chosen option's label, the title and the
+    // dates, as the value of the element with the test id.
+    await expect(page.getByTestId(form.copyFrom)).toHaveValue(
+      new RegExp(`^${RegExp.escape(entry.expectCopyFrom)} \\(`),
+    );
   await page.getByTestId(form.submit).click();
   await expect(page).toHaveURL(
     new RegExp(`${ROUTES.vacations}/[0-9a-f-]{36}$`),

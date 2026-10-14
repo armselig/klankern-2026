@@ -103,7 +103,7 @@ function vacationJson(householdId: string) {
   };
 }
 
-/** A template task as the app hands it to create_vacation. */
+/** A task as the app hands it to create_vacation. */
 function taskJson(position: number, title: string, phase = "before") {
   return { id: randomUUID(), phase, title, position };
 }

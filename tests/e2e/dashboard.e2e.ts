@@ -154,11 +154,11 @@ test.describe("the dashboard's tiles", () => {
         from: addDays(today, 20),
         until: addDays(today, 24),
       });
-      // The hotel template's tasks, all open, after the trip and its day.
+      // The household's first vacation starts without tasks.
       await expect(dashboardTileEntries(pageA, "vacations")).toHaveText([
         "Easter at grandma's",
         "in 20 days",
-        "25 tasks open",
+        "No tasks open",
       ]);
     });
 
@@ -173,7 +173,7 @@ test.describe("the dashboard's tiles", () => {
       await expect(dashboardTileEntries(pageA, "vacations")).toHaveText([
         "Easter at grandma's",
         "in 20 days",
-        "25 tasks open",
+        "No tasks open",
         "and 1 more vacation",
       ]);
     });
@@ -196,7 +196,7 @@ test.describe("the dashboard's tiles", () => {
       ).toHaveText("1 saved");
 
       await expect(dashboardTileEntries(pageB, "vacations").nth(2)).toHaveText(
-        "25 tasks open",
+        "No tasks open",
       );
     });
 

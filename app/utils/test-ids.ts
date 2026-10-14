@@ -156,6 +156,7 @@ export const TEST_IDS = {
       until: "vacation-form-until",
       person: "vacation-form-person",
       addName: "vacation-form-add-name",
+      copyFrom: "vacation-form-copy-from",
       submit: "vacation-form-submit",
     },
     view: {
@@ -167,6 +168,7 @@ export const TEST_IDS = {
       summary: "vacation-header-summary",
       edit: "vacation-header-edit",
       titleInput: "vacation-header-title-input",
+      from: "vacation-header-from",
       until: "vacation-header-until",
       save: "vacation-header-save",
       cancel: "vacation-header-cancel",

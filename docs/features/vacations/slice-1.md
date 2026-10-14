@@ -4,7 +4,7 @@ How the first slice of the vacation planner was built. The design is "Design: a 
 
 ## Slice 1: a trip checklist from a template (built 2026-10-13)
 
-A member adds a vacation with a title, a kind and two dates, and it is filled with the tasks of the house or the hotel template. Its page shows the three phases as lists; a task is added, ticked, renamed and removed, the vacation is edited in place and removed after a confirmation, and all of it reaches the other members live. The dashboard has a fifth tile, and `/vacations` lists the trips. People, assignment and meals are slices 2 and 3.
+A member adds a vacation with a title, a kind and two dates, and it is filled with the tasks of the house or the hotel template. (Since 2026-10-14 it starts empty or with an earlier trip's tasks, see "A new vacation starts empty or with an earlier one's tasks" in [`features/vacations/copy-tasks.md`](./copy-tasks.md).) Its page shows the three phases as lists; a task is added, ticked, renamed and removed, the vacation is edited in place and removed after a confirmation, and all of it reaches the other members live. The dashboard has a fifth tile, and `/vacations` lists the trips. People, assignment and meals are slices 2 and 3.
 
 The user approved the order of the build beforehand: the migration and its isolation tests, the pure logic, the database calls, the store, the pages, the browser tests, the docs.
 

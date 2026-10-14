@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { mdiDeleteOutline, mdiPencilOutline } from "@quasar/extras/mdi-v7";
-import type { Vacation, VacationDetails } from "~/types/vacation";
+import type {
+  Vacation,
+  VacationDetails,
+  VacationDetailsProblem,
+} from "~/types/vacation";
 import type { LocalDate } from "~/utils/local-date";
 
 /**
@@ -31,7 +35,7 @@ const draft = reactive<VacationDetails>({
   starts_on: "",
   ends_on: "",
 });
-const problem = ref<"title" | "dates" | null>(null);
+const problem = ref<VacationDetailsProblem | null>(null);
 
 const titleInput = useTemplateRef<{ focus: () => void }>("titleInput");
 const editButton = useTemplateRef<{ $el: HTMLElement }>("editButton");
@@ -106,38 +110,33 @@ function submit() {
         required
         autofocus
       />
-      <!-- Said, not offered: the kind decided the tasks the vacation was
-           filled with. -->
+      <!-- Said, not offered: the kind is chosen when the vacation is
+           added. -->
       <p class="text-muted q-mb-none">
         {{ VACATION_KIND_DESCRIPTIONS[vacation.kind] }}
       </p>
       <div class="vacation-header__dates">
-        <q-input
+        <vacation-date-field
           v-model="draft.starts_on"
-          type="date"
           label="From"
-          stack-label
-          required
+          :test-id="TEST_IDS.vacation.header.from"
           class="col"
         />
-        <q-input
+        <vacation-date-field
           v-model="draft.ends_on"
-          type="date"
           label="Until"
-          :data-testid="TEST_IDS.vacation.header.until"
-          stack-label
-          required
-          :min="draft.starts_on"
+          :test-id="TEST_IDS.vacation.header.until"
+          :min="draft.starts_on || undefined"
           class="col"
         />
       </div>
       <p
-        v-if="problem === 'dates'"
+        v-if="problem && problem !== 'title'"
         role="alert"
         class="text-negative q-mb-none"
         :data-testid="TEST_IDS.errorMessage"
       >
-        {{ VACATION_DETAILS_MESSAGES.dates }}
+        {{ VACATION_DETAILS_MESSAGES[problem] }}
       </p>
       <div class="vacation-header__actions">
         <q-btn

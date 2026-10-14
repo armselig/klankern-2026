@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { addDays, daysBetween, formatDay, localDateOf } from "./local-date";
+import {
+  addDays,
+  daysBetween,
+  formatDay,
+  isLocalDate,
+  localDateOf,
+} from "./local-date";
 
 describe("localDateOf", () => {
   // The dates are built from local parts, so the tests hold in any time zone.
@@ -71,6 +77,24 @@ describe("addDays", () => {
 
   it("is undone by daysBetween", () => {
     expect(daysBetween("2026-12-05", addDays("2026-12-05", 400))).toBe(400);
+  });
+});
+
+describe("isLocalDate", () => {
+  it("takes a day that exists", () => {
+    expect(isLocalDate("2026-12-05")).toBe(true);
+    expect(isLocalDate("2028-02-29")).toBe(true);
+  });
+
+  it("refuses a day that has the form but doesn't exist", () => {
+    expect(isLocalDate("2026-02-29")).toBe(false);
+    expect(isLocalDate("2026-13-01")).toBe(false);
+    expect(isLocalDate("2026-12-00")).toBe(false);
+  });
+
+  it("refuses a day typed only partly", () => {
+    expect(isLocalDate("2026-12")).toBe(false);
+    expect(isLocalDate("")).toBe(false);
   });
 });
 

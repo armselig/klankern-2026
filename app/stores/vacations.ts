@@ -49,9 +49,9 @@ import {
   revertRowEdit,
   tasksInPhase,
   tasksOfVacation,
+  tasksToCopy,
 } from "~/utils/vacation-state";
 import { peopleOfVacation } from "~/utils/vacation-share";
-import { templateTasks } from "~/utils/vacation-templates";
 
 // One store for the vacations, their tasks and their people, and one of each
 // piece of bookkeeping for all three: they are keyed by a row's id, and ids
@@ -237,8 +237,8 @@ export const useVacationStore = defineStore("vacations", {
     },
 
     /**
-     * Adds a vacation, filled with the tasks of its kind's template and with
-     * the people who are coming. Not
+     * Adds a vacation with the people who are coming, and with copies of
+     * the tasks of an earlier vacation or with none (see tasksToCopy). Not
      * optimistic, unlike an added task: the form waits for the result, so
      * that a failed save leaves the member on the form with what they typed,
      * and no member sees a vacation that then fails to save. The ids are
@@ -250,12 +250,15 @@ export const useVacationStore = defineStore("vacations", {
     async add(
       vacation: NewVacation,
       people: NewVacationPerson[],
+      /** The vacation whose tasks are copied, or null to start empty. */
+      copyTasksFrom: string | null,
     ): Promise<string | null> {
       const householdId = this.householdId;
       if (!householdId) throw new Error("not_initialized");
       this.error = null;
       const id = crypto.randomUUID();
-      const tasks = templateTasks(vacation.kind).map((task) => ({
+      const source = copyTasksFrom ? this.tasksOf(copyTasksFrom) : [];
+      const tasks = tasksToCopy(source).map((task) => ({
         ...task,
         id: crypto.randomUUID(),
       }));

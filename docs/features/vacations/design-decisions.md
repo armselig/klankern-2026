@@ -34,7 +34,7 @@ Before any code, the user writes the "before" list of the household's last trip 
 - **More to-do lists per household**: the to-do list is one per household by a constraint, and `fetchOrCreateTodoList` relies on it (see migration 0014).
 - **One row per vacation**, with tasks, people and meals as JSON, as a recipe carries its ingredients: two people ticking tasks at the same moment overwrite each other, in the days before a trip when that is most likely.
 - **An accept step**: one more tap on every task, and tasks nobody answers pile up as waiting.
-- **Left for later**: notifications, a household's own templates and "copy from the last trip", deadlines relative to the departure, a shopping list per trip, reordering tasks by dragging.
+- **Left for later**: notifications, a household's own templates and "copy from the last trip" (copying is built since 2026-10-14, see "A new vacation starts empty or with an earlier one's tasks" in [`features/vacations/copy-tasks.md`](./copy-tasks.md)), deadlines relative to the departure, a shopping list per trip, reordering tasks by dragging.
 
 ### Not verified
 

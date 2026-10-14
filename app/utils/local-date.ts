@@ -23,6 +23,13 @@ function dayNumber(day: LocalDate): number {
   return Date.UTC(Number(year), Number(month) - 1, Number(date)) / DAY_MS;
 }
 
+/** Whether a value is a calendar day that exists, such as one typed into a
+ * field: "2026-02-30" has the form of one but is no day. */
+export function isLocalDate(value: string): boolean {
+  if (!LOCAL_DATE.test(value)) return false;
+  return addDays(value, 0) === value;
+}
+
 /** The calendar day a moment falls on where the device is. */
 export function localDateOf(moment: Date): LocalDate {
   const year = String(moment.getFullYear()).padStart(4, "0");

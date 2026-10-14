@@ -10,7 +10,7 @@ Read the design first, then the file of the slice you are about to touch. The re
 
 - [`design.md`](./design.md): the vacation planner: its design, with tasks by phase, assignment that can be rejected and a meal plan. Slices 1 and 2 are built.
 - [`design-decisions.md`](./design-decisions.md): the rest of that design: its open decisions and how each was answered, what counts as done, and what was considered and not chosen.
-- [`templates.md`](./templates.md): what its house and hotel templates hold: the list the user handed over, how its entries are worded, and the tasks added for the two later phases.
+- [`templates.md`](./templates.md): what its house and hotel templates held, until they were replaced by copying (see `features/vacations/copy-tasks.md`): the list the user handed over, how its entries are worded, and the tasks added for the two later phases.
 
 ### The reviews of the design, in the order they ran
 
@@ -25,6 +25,7 @@ Read the design first, then the file of the slice you are about to touch. The re
 - [`slice-1.md`](./slice-1.md): how slice 1 was built, the trip checklist from a template: migration 0015, what was decided and found during the build, its tests, "When it breaks" and "After a deploy".
 - [`slice-2.md`](./slice-2.md): how slice 2 was built, fair share: migration 0016, people and assignment, the gap in the live sync that was narrowed for every feature, its tests, "When it breaks" and "After a deploy".
 - [`slice-2-after-trying.md`](./slice-2-after-trying.md): what the user changed in slice 2 after trying it, before its release: the task's row back on one line, "Tell them" removed, "Who has what" as a strip of names, those names as buttons that filter the tasks in place of "Only my tasks", "Edit" beside the title, a picture of two letters for a person without an account, and a member's name as text in "Change people".
+- [`copy-tasks.md`](./copy-tasks.md): the templates replaced (2026-10-14): a new vacation starts empty or with copies of an earlier trip's tasks, open and nobody's; what was decided, how it is built and how the tests get their tasks now; then Quasar's date picker and select in the form, and frames around the dates and the tasks.
 
 ## Writing here
 

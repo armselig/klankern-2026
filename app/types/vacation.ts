@@ -1,16 +1,16 @@
 import type { Database } from "./database.types";
 import type { RowRealtimeEvent } from "./synced-row";
 
-/** The kind of stay. It decides which template fills a new vacation, and a
- * house gets a meal plan. The column is text with a check constraint, so the
- * generated type only says `string`. */
+/** The kind of stay: a house gets a meal plan. The column is text with a
+ * check constraint, so the generated type only says `string`. */
 export type VacationKind = "house" | "hotel";
 
 /** When a task is due: a task has a phase, not a date. */
 export type VacationPhase = "before" | "during" | "after";
 
-/** A task as a template holds it, before a vacation gives it an id. */
-export interface VacationTemplateTask {
+/** A task a new vacation starts with, copied from an earlier one, before
+ * it gets an id of its own. */
+export interface NewVacationTask {
   phase: VacationPhase;
   title: string;
   /** Its place within its phase, counted from 1. */
@@ -29,13 +29,16 @@ export type VacationTask = Omit<VacationTaskRow, "phase"> & {
   phase: VacationPhase;
 };
 
-/** What a member can change about a vacation after it is added. Its kind is
- * not among it: the old kind's tasks would stay, and none would be added. */
+/** What a member can change about a vacation after it is added. */
 export interface VacationDetails {
   title: string;
   starts_on: string;
   ends_on: string;
 }
+
+/** What keeps a vacation's details from being saved: no title, a day that
+ * is no calendar day, or an end before the start. */
+export type VacationDetailsProblem = "title" | "day" | "dates";
 
 /** What the form for a new vacation collects. */
 export interface NewVacation extends VacationDetails {

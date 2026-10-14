@@ -17,11 +17,14 @@ import {
   stageOf,
   tasksInPhase,
   tasksOfVacation,
+  tasksToCopy,
   vacationDates,
+  vacationsByCreation,
   vacationDetailsProblem,
   vacationTilePreview,
   openTasksLine,
 } from "./vacation-state";
+import { lastCreatedVacationId } from "./vacation-share";
 
 const HOUSEHOLD = "house-1";
 
@@ -216,6 +219,85 @@ describe("tasksOfVacation", () => {
     expect(tasksOfVacation(state, "vacation-1").map((t) => t.id)).toEqual([
       "task-1",
     ]);
+  });
+});
+
+describe("tasksToCopy", () => {
+  it("copies the titles by phase, open and nobody's", () => {
+    const copied = tasksToCopy([
+      task({
+        id: "a",
+        title: "Clothes",
+        done: true,
+        assignee_id: "person-1",
+      }),
+      task({
+        id: "b",
+        title: "Return the key",
+        phase: "during",
+        rejected_by: "person-2",
+        rejection_reason: "No time.",
+      }),
+      task({ id: "c", title: "Unpack the car", phase: "after" }),
+    ]);
+    expect(copied).toEqual([
+      { phase: "before", title: "Clothes", position: 1 },
+      { phase: "during", title: "Return the key", position: 1 },
+      { phase: "after", title: "Unpack the car", position: 1 },
+    ]);
+  });
+
+  it("leaves out removed tasks", () => {
+    const copied = tasksToCopy([
+      task({ id: "a", title: "Clothes" }),
+      task({ id: "b", title: "Old tent", deleted_at: "2026-10-02T00:00:00Z" }),
+    ]);
+    expect(copied.map((copy) => copy.title)).toEqual(["Clothes"]);
+  });
+
+  it("keeps the order within a phase, done or not, and counts it anew from 1", () => {
+    const copied = tasksToCopy([
+      task({ id: "c", title: "Books", position: 3 }),
+      task({ id: "a", title: "Clothes", position: 0.5, done: true }),
+      task({ id: "b", title: "iPad", position: 1.25 }),
+      task({ id: "d", title: "Headphones", position: 3 }),
+    ]);
+    expect(copied).toEqual([
+      { phase: "before", title: "Clothes", position: 1 },
+      { phase: "before", title: "iPad", position: 2 },
+      { phase: "before", title: "Books", position: 3 },
+      { phase: "before", title: "Headphones", position: 4 },
+    ]);
+  });
+
+  it("gives nothing for a vacation without tasks", () => {
+    expect(tasksToCopy([])).toEqual([]);
+  });
+});
+
+describe("vacationsByCreation", () => {
+  it("lists the live vacations, the one added last first", () => {
+    const first = vacation({ id: "v1", created_at: "2026-01-01T00:00:00Z" });
+    const second = vacation({ id: "v2", created_at: "2026-03-01T00:00:00Z" });
+    const removed = vacation({
+      id: "v3",
+      created_at: "2026-05-01T00:00:00Z",
+      deleted_at: "2026-05-02T00:00:00Z",
+    });
+    expect(
+      vacationsByCreation(byId(first, removed, second)).map((v) => v.id),
+    ).toEqual(["v2", "v1"]);
+  });
+
+  it("starts with the trip lastCreatedVacationId picks", () => {
+    const rows = [
+      vacation({ id: "v1", created_at: "2026-03-01T00:00:00Z" }),
+      vacation({ id: "v2", created_at: "2026-03-01T00:00:00Z" }),
+      vacation({ id: "v0", created_at: "2026-01-01T00:00:00Z" }),
+    ];
+    expect(vacationsByCreation(byId(...rows))[0]!.id).toBe(
+      lastCreatedVacationId(rows),
+    );
   });
 });
 
@@ -631,5 +713,14 @@ describe("vacationDetailsProblem", () => {
       "dates",
     );
     expect(vacationDetailsProblem({ ...details, starts_on: "" })).toBe("dates");
+  });
+
+  it("refuses a typed day that is no calendar day", () => {
+    expect(vacationDetailsProblem({ ...details, starts_on: "2026-12" })).toBe(
+      "day",
+    );
+    expect(vacationDetailsProblem({ ...details, ends_on: "2026-02-30" })).toBe(
+      "day",
+    );
   });
 });

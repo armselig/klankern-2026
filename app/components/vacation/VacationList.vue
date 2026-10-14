@@ -37,7 +37,8 @@ function currentLine(vacation: Vacation): string {
         class="text-muted"
         :data-testid="TEST_IDS.vacation.list.empty"
       >
-        No vacations yet. Add your next trip, and the app fills in the tasks.
+        No vacations yet. Add your next trip, then what has to be done before,
+        during and after it.
       </p>
 
       <q-btn

@@ -117,6 +117,20 @@ body.body--dark,
   background: var(--theme-surface);
 }
 
+/* Quasar's calendar fades the names of the weekdays and the days it doesn't
+   offer with opacity, which leaves them below 4.5:1. The muted text is
+   above it. In light mode it is too close to the text to tell a day that
+   can't be picked from one that can, so such a day is struck through. */
+.q-date__calendar-weekdays > div,
+.q-date__calendar-item--out {
+  opacity: 1;
+  color: var(--theme-text-muted);
+}
+
+.q-date__calendar-item--out {
+  text-decoration: line-through;
+}
+
 /* The other way round, so a tooltip stands out on page and surface alike. */
 .q-tooltip {
   background: var(--theme-text);

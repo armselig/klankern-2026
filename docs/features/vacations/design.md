@@ -6,7 +6,7 @@ The history of the vacation planner, oldest first. The current state is in [`pro
 
 (Slice 1 was built on 2026-10-13, see "Slice 1: a trip checklist from a template" in [`features/vacations/slice-1.md`](./slice-1.md).)
 
-A member adds a vacation to the household. The app fills in tasks for before, during and after the trip from a template that fits the kind of stay: a house where the household cooks, or a hotel. Members add, edit and remove tasks freely. A task can be given to a person on the trip, and that person can reject it with a reason ("I'm already busy enough washing all the clothes").
+A member adds a vacation to the household. The app fills in tasks for before, during and after the trip from a template that fits the kind of stay: a house where the household cooks, or a hotel. Members add, edit and remove tasks freely. A task can be given to a person on the trip, and that person can reject it with a reason ("I'm already busy enough washing all the clothes"). (Since 2026-10-14 a new vacation starts empty or with the tasks of an earlier one, and the templates are gone, see "A new vacation starts empty or with an earlier one's tasks" in [`features/vacations/copy-tasks.md`](./copy-tasks.md).)
 
 Designed with the user on 2026-10-12. The first real use is a stay in a house, about two months after that date, so the house template is written first. The feature may be offered to other households later, so nothing in it may be specific to one. (One exception since 2026-10-13, entries of the house template, see "The house and hotel templates" in [`features/vacations/templates.md`](./templates.md).)
 
@@ -65,7 +65,7 @@ All rows are small, so an UPDATE event carries the whole row and the reducers ca
 
 ### Templates
 
-`utils/vacation-templates.ts` holds plain data: for each kind, a list of tasks with a phase and a title. The hotel list is the shared tasks; the house list adds what cooking and a house bring (plan meals, shop for the first evening, bring what a rented kitchen lacks, clean before leaving, return the key). No table and no migration. (What both lists hold was decided on 2026-10-13, see "The house and hotel templates" in [`features/vacations/templates.md`](./templates.md).)
+`utils/vacation-templates.ts` holds plain data: for each kind, a list of tasks with a phase and a title. The hotel list is the shared tasks; the house list adds what cooking and a house bring (plan meals, shop for the first evening, bring what a rented kitchen lacks, clean before leaving, return the key). No table and no migration. (What both lists hold was decided on 2026-10-13, see "The house and hotel templates" in [`features/vacations/templates.md`](./templates.md). Replaced on 2026-10-14 by copying an earlier trip's tasks, see "A new vacation starts empty or with an earlier one's tasks" in [`features/vacations/copy-tasks.md`](./copy-tasks.md).)
 
 ### Screens
 

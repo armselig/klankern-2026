@@ -4,6 +4,8 @@ What the two templates of the vacation planner hold and how that was decided. Th
 
 ## The house and hotel templates (decided 2026-10-13, not built yet)
 
+(The templates were deleted on 2026-10-14: a new vacation starts empty or with the tasks of an earlier one, see "A new vacation starts empty or with an earlier one's tasks" in [`features/vacations/copy-tasks.md`](./copy-tasks.md).)
+
 The design asked the user for the "before" list of the household's last trip as the first draft of the house template. The user handed it over on 2026-10-13: 21 entries in German, with a mark on the two that a hotel stay does not need. The names of who did each task, which the design also asked for as a first "Who has what", were not on it; they are needed for slice 2 at the earliest.
 
 Most entries are things to pack ("Sleeping bags"), three are tasks ("Book the ferry"). The list covers the time before the trip only.

@@ -29,6 +29,7 @@ import {
   vacationTask,
   whiteboardPreview,
 } from "../support/e2e-ui";
+import { EARLIER_TRIP_TITLE, addEarlierTrip } from "../support/earlier-trip";
 import {
   createHousehold,
   createTestUser,
@@ -398,13 +399,38 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       await expect(vacationListEmpty(page)).toBeVisible();
       await expectNoBlockingViolations(page, "the empty list of vacations");
 
+      // An earlier trip, whose tasks the new one starts with.
+      // Loaded afresh, so the page holds all of its tasks (see vacations.e2e.ts).
+      await addEarlierTrip(user, householdId);
+      await page.reload();
+      await expect(vacationLink(page, EARLIER_TRIP_TITLE)).toBeVisible();
+
       const today = localDateOf(new Date());
       await page.getByRole("link", { name: "Add vacation" }).click();
       await expect(page).toHaveTitle("New vacation · Klankern");
       // Saved with a title of spaces first, to scan the form with its error.
       await page.getByLabel("Title").fill(" ");
-      await page.getByLabel("From").fill(addDays(today, 10));
-      await page.getByLabel("Until").fill(addDays(today, 17));
+      await page.getByLabel("From", { exact: true }).fill(addDays(today, 10));
+
+      // Quasar's calendar for a day, and its select for the tasks.
+      await page.getByRole("button", { name: "Until: pick a day" }).click();
+      const calendar = page.getByRole("dialog", { name: "Until: pick a day" });
+      await expect(calendar).toBeVisible();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "the calendar for a day");
+      await page.keyboard.press("Escape");
+      await expect(calendar).toHaveCount(0);
+      await page.getByLabel("Until", { exact: true }).fill(addDays(today, 17));
+
+      await page
+        .getByRole("combobox", { name: "Start with the tasks of" })
+        .click();
+      await expect(page.getByRole("listbox")).toBeVisible();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "the choice of tasks to copy");
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("listbox")).toHaveCount(0);
+
       await page.getByRole("button", { name: "Add vacation" }).click();
       await expect(page.getByText("Give the vacation a title.")).toBeVisible();
       await untilFadesEnd(page);

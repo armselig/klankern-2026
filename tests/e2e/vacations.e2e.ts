@@ -1,7 +1,14 @@
 import { expect, test } from "@playwright/test";
 import { addDays, localDateOf } from "../../app/utils/local-date";
 import { TEST_IDS } from "../../app/utils/test-ids";
+import { VACATION_DETAILS_MESSAGES } from "../../app/utils/vacation-state";
 
+import {
+  EARLIER_TRIP_DONE_TASK,
+  EARLIER_TRIP_REMOVED_TASK,
+  EARLIER_TRIP_TITLE,
+  addEarlierTrip,
+} from "../support/earlier-trip";
 import { controlRealtimeSocket } from "../support/realtime-socket";
 import {
   addTaskField,
@@ -36,8 +43,8 @@ import {
   type TestUser,
 } from "../support/supabase-fixtures";
 
-// The vacation planner, one journey per slice. Slice 1: a trip checklist
-// from a template, which two members see and change live.
+// The vacation planner, one journey per slice. Slice 1: a trip checklist,
+// copied from an earlier trip, which two members see and change live.
 
 test.describe("a vacation's checklist, for two members", () => {
   let userA: TestUser;
@@ -57,7 +64,7 @@ test.describe("a vacation's checklist, for two members", () => {
     await deleteTestData([householdId], [userA, userB]);
   });
 
-  test("a vacation is added from the house template and changed by both members", async ({
+  test("a vacation is added with an earlier trip's tasks and changed by both members", async ({
     browser,
   }) => {
     const contextA = await browser.newContext();
@@ -81,8 +88,21 @@ test.describe("a vacation's checklist, for two members", () => {
       await expect(vacationListEmpty(pageA)).toBeVisible();
     });
 
-    await test.step("A adds a vacation, and it is filled from the house template", async () => {
-      await addVacation(pageA, { title, from, until });
+    await test.step("A adds a vacation, and it starts with the earlier trip's tasks", async () => {
+      await addEarlierTrip(userA, householdId);
+      // Loaded afresh: Realtime delivers the trip's rows out of order, and
+      // the form copies the tasks the page holds when it is saved.
+      await pageA.reload();
+      await expect(vacationLink(pageA, EARLIER_TRIP_TITLE)).toBeVisible();
+
+      // The trip added last is the form's choice to start with, which the
+      // helper leaves as it is.
+      await addVacation(pageA, {
+        title,
+        from,
+        until,
+        expectCopyFrom: EARLIER_TRIP_TITLE,
+      });
       await expect(
         pageA.getByTestId(TEST_IDS.vacation.header.title),
       ).toHaveText(title);
@@ -100,7 +120,13 @@ test.describe("a vacation's checklist, for two members", () => {
       await expect(phaseSummary(pageA, "before")).toHaveText("23 open");
       await expect(phaseTasks(pageA, "before")).toHaveCount(23);
 
-      await expect(vacationTask(pageA, "Clothes")).toBeVisible();
+      // Ticked there, open here; removed there, not copied.
+      await expect(
+        vacationTask(pageA, EARLIER_TRIP_DONE_TASK),
+      ).not.toBeChecked();
+      await expect(vacationTask(pageA, EARLIER_TRIP_REMOVED_TASK)).toHaveCount(
+        0,
+      );
       await expect(
         vacationTask(pageA, "Coffee pot and espresso powder"),
       ).toBeVisible();
@@ -228,15 +254,10 @@ test.describe("a vacation's checklist, for two members", () => {
 
       await untilField.fill(addDays(from, -1));
       await pageA.getByTestId(TEST_IDS.vacation.header.save).click();
-      // Chrome refuses the form itself, by the field's `min`; the app's own
-      // message is for a browser that doesn't (see vacationDetailsProblem).
-      await expect
-        .poll(() =>
-          untilField.evaluate(
-            (field: HTMLInputElement) => field.validity.rangeUnderflow,
-          ),
-        )
-        .toBe(true);
+      // The app's own message: a typed day has no `min` the browser checks.
+      await expect(pageA.getByTestId(TEST_IDS.errorMessage)).toHaveText(
+        VACATION_DETAILS_MESSAGES.dates,
+      );
       await expect(untilField).toBeVisible();
       await pageA.getByTestId(TEST_IDS.vacation.header.cancel).click();
       await expect(
@@ -273,7 +294,7 @@ test.describe("a vacation's checklist, for two members", () => {
       await expect(vacationTask(pageA, "Sunscreen for the kids")).toBeVisible();
       await expect(vacationTask(pageA, "Passports")).toBeVisible();
       await expect(vacationTask(pageA, "Toothbrushes")).toHaveCount(0);
-      // 23 of the template, two added, one removed, two ticked.
+      // 23 copied, two added, one removed, two ticked.
       await expect(phaseSummary(pageA, "before")).toHaveText("22 open");
     });
 
@@ -281,20 +302,22 @@ test.describe("a vacation's checklist, for two members", () => {
       await pageA.getByTestId(TEST_IDS.vacation.header.edit).click();
       await pageA.getByTestId(TEST_IDS.vacation.header.remove).click();
       const dialog = pageA.getByRole("dialog");
-      // 33 of the template, two added, one removed.
+      // 33 copied, two added, one removed.
       await expect(dialog).toContainText(
         'This removes "Week by the sea" and its 34 tasks for the whole family.',
       );
       await dialog.getByTestId(TEST_IDS.confirmDialog.ok).click();
       await expect(pageA).toHaveURL(/\/vacations$/);
-      await expect(vacationListEmpty(pageA)).toBeVisible();
+      await expect(vacationLink(pageA, "Week by the sea")).toHaveCount(0);
+      await expect(vacationLink(pageA, EARLIER_TRIP_TITLE)).toBeVisible();
 
       await expect(
         pageB.getByTestId(TEST_IDS.vacation.view.notFound),
       ).toBeVisible();
 
       await pageB.getByTestId(TEST_IDS.vacation.view.back).click();
-      await expect(vacationListEmpty(pageB)).toBeVisible();
+      await expect(vacationLink(pageB, EARLIER_TRIP_TITLE)).toBeVisible();
+      await expect(vacationLink(pageB, "Week by the sea")).toHaveCount(0);
     });
 
     await contextA.close();
@@ -317,6 +340,8 @@ test.describe("a vacation's tasks, shared between its people", () => {
     ]);
     householdId = await createHousehold(userA.client, `E2E fair ${runId}`);
     await joinHousehold(userA, userB, householdId);
+    // The trip's tasks are copied from it by the form's own choice.
+    await addEarlierTrip(userA, householdId);
   });
 
   test.afterAll(async () => {
