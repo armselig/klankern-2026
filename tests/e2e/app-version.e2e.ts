@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { ROUTES } from "../../app/utils/routes";
+import { TEST_IDS } from "../../app/utils/test-ids";
 
 // The footer shows the version that semantic-release writes into package.json
 // with each release, so a deployed build can be matched to its entry in
@@ -12,7 +13,7 @@ const { version } = JSON.parse(
 
 test("the footer shows the version from package.json", async ({ page }) => {
   await page.goto(ROUTES.login);
-  await expect(page.getByRole("contentinfo")).toContainText(
-    `Version ${version}`,
+  await expect(page.getByTestId(TEST_IDS.layout.appVersion)).toHaveText(
+    version,
   );
 });

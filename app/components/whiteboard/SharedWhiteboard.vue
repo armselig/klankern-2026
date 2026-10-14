@@ -21,8 +21,14 @@ function confirmClear() {
     // on a surface below 4.5:1. Without one it is a plain flat button in
     // the text's color, with the theme's highlight for those
     // (assets/css/hover-contrast.css).
-    cancel: { label: "Cancel", flat: true, color: undefined },
-    ok: { label: "Clear", color: "negative", unelevated: true },
+    cancel: withTestId(
+      { label: "Cancel", flat: true, color: undefined },
+      TEST_IDS.confirmDialog.cancel,
+    ),
+    ok: withTestId(
+      { label: "Clear", color: "negative", unelevated: true },
+      TEST_IDS.confirmDialog.ok,
+    ),
   }).onOk(() => whiteboardStore.clear());
 }
 </script>
@@ -52,7 +58,11 @@ function confirmClear() {
       />
     </template>
 
-    <p v-if="whiteboardStore.error" class="text-negative">
+    <p
+      v-if="whiteboardStore.error"
+      class="text-negative"
+      :data-testid="TEST_IDS.errorMessage"
+    >
       {{ whiteboardStore.error }}
     </p>
   </div>

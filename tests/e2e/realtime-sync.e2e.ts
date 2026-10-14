@@ -3,8 +3,9 @@ import { controlRealtimeSocket } from "../support/realtime-socket";
 import {
   addShoppingItem,
   addTodo,
-  EMPTY_LIST_TEXT,
+  listEmpty,
   listItem,
+  listItems,
   openList,
   removeListItem,
   openSignedIn,
@@ -30,12 +31,12 @@ import {
 async function openListForBoth(
   pages: Page[],
   users: TestUser[],
-  linkName: "To-dos" | "Shopping",
+  list: "todos" | "shopping",
 ) {
   for (const [index, page] of pages.entries()) {
     await openSignedIn(page, users[index]!);
-    await openList(page, linkName);
-    await expect(page.getByText(EMPTY_LIST_TEXT)).toBeVisible();
+    await openList(page, list);
+    await expect(listEmpty(page)).toBeVisible();
   }
 }
 
@@ -66,7 +67,7 @@ test.describe("realtime sync between two members", () => {
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
 
-    await openListForBoth([pageA, pageB], [userA, userB], "To-dos");
+    await openListForBoth([pageA, pageB], [userA, userB], "todos");
 
     await test.step("an item added by B appears on A", async () => {
       await addTodo(pageB, "Milk from B");
@@ -132,29 +133,23 @@ test.describe("realtime sync between two members", () => {
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
 
-    await openListForBoth([pageA, pageB], [userA, userB], "Shopping");
+    await openListForBoth([pageA, pageB], [userA, userB], "shopping");
 
     await test.step("items added by B appear on A, with their quantity", async () => {
       await addShoppingItem(pageB, "Apples", "6");
       await addShoppingItem(pageB, "Bread");
-      await expect(pageA.getByRole("checkbox")).toHaveText([
-        "Apples (6)",
-        "Bread",
-      ]);
+      await expect(listItems(pageA)).toHaveText(["Apples (6)", "Bread"]);
     });
 
     await test.step("an item checked by B is checked on A and moves to the bottom", async () => {
       await listItem(pageB, "Apples (6)").click();
       await expect(listItem(pageA, "Apples (6)")).toBeChecked();
-      await expect(pageA.getByRole("checkbox")).toHaveText([
-        "Bread",
-        "Apples (6)",
-      ]);
+      await expect(listItems(pageA)).toHaveText(["Bread", "Apples (6)"]);
     });
 
     await test.step("an item removed by B disappears on A", async () => {
       await removeListItem(pageB, "Bread");
-      await expect(pageA.getByRole("checkbox")).toHaveText(["Apples (6)"]);
+      await expect(listItems(pageA)).toHaveText(["Apples (6)"]);
     });
 
     await contextA.close();
@@ -172,7 +167,7 @@ test.describe("realtime sync between two members", () => {
     const title = `Resync race ${runId}`;
 
     await openSignedIn(page, userA);
-    await openList(page, "Shopping");
+    await openList(page, "shopping");
     const added = page.waitForResponse(
       (response) =>
         response.url().includes("/shopping_items") &&
@@ -258,7 +253,7 @@ test.describe("realtime sync between two members", () => {
       frame.includes(`"${eventType}"`) && frame.includes(title);
 
     await openSignedIn(page, userA);
-    await openList(page, "Shopping");
+    await openList(page, "shopping");
     await expect
       .poll(() =>
         socket.receivedFrames.some((frame) =>

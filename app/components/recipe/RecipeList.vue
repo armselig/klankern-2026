@@ -14,6 +14,7 @@ onMounted(() => recipeStore.load(props.householdId));
       color="primary"
       :icon="mdiPlus"
       label="New recipe"
+      :data-testid="TEST_IDS.recipe.list.add"
       unelevated
       class="q-mb-md"
     />
@@ -22,9 +23,16 @@ onMounted(() => recipeStore.load(props.householdId));
 
     <!-- A list of links, so a plain ul: a q-item that is a link is no list
          item to a screen reader, and a q-list would hold no items. -->
-    <ul v-else-if="recipeStore.visible.length > 0" class="recipe-list">
+    <ul
+      v-else-if="recipeStore.visible.length > 0"
+      class="recipe-list"
+      :data-testid="TEST_IDS.recipe.list.items"
+    >
       <li v-for="recipe in recipeStore.visible" :key="recipe.id">
-        <q-item :to="ROUTES.recipe(recipe.id)">
+        <q-item
+          :to="ROUTES.recipe(recipe.id)"
+          :data-testid="TEST_IDS.recipe.list.link"
+        >
           <q-item-section class="recipe-list__title">
             {{ recipe.title }}
           </q-item-section>
@@ -32,11 +40,19 @@ onMounted(() => recipeStore.load(props.householdId));
       </li>
     </ul>
 
-    <p v-else-if="recipeStore.householdId" class="text-muted">
+    <p
+      v-else-if="recipeStore.householdId"
+      class="text-muted"
+      :data-testid="TEST_IDS.recipe.list.empty"
+    >
       No recipes yet.
     </p>
 
-    <p v-if="recipeStore.error" class="text-negative">
+    <p
+      v-if="recipeStore.error"
+      class="text-negative"
+      :data-testid="TEST_IDS.errorMessage"
+    >
       {{ recipeStore.error }}
     </p>
   </div>

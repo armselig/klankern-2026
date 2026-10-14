@@ -1,12 +1,16 @@
 import { expect, test } from "@playwright/test";
+import { TEST_IDS } from "../../app/utils/test-ids";
+
 import {
   addShoppingItem,
   addTodo,
   delayItemInserts,
-  EMPTY_LIST_TEXT,
+  listEmpty,
   listItem,
+  listItems,
   openList,
   removeListItem,
+  removeListItemButton,
   openSignedIn,
   untilSaved,
 } from "../support/e2e-ui";
@@ -40,14 +44,14 @@ test.describe("lists for a single member", () => {
     page,
   }) => {
     await openSignedIn(page, user);
-    await openList(page, "To-dos");
-    await expect(page.getByText(EMPTY_LIST_TEXT)).toBeVisible();
-    const input = page.getByLabel("Add a to-do");
+    await openList(page, "todos");
+    await expect(listEmpty(page)).toBeVisible();
+    const input = page.getByTestId(TEST_IDS.todos.titleInput);
 
     await test.step("an empty title is ignored", async () => {
       await input.fill("   ");
-      await page.getByRole("button", { name: "Add", exact: true }).click();
-      await expect(page.getByText(EMPTY_LIST_TEXT)).toBeVisible();
+      await page.getByTestId(TEST_IDS.todos.addButton).click();
+      await expect(listEmpty(page)).toBeVisible();
     });
 
     await test.step("Enter adds and keeps focus in the input", async () => {
@@ -59,8 +63,8 @@ test.describe("lists for a single member", () => {
 
     await test.step("the Add button adds too, in list order", async () => {
       await input.fill("Take out the bins");
-      await page.getByRole("button", { name: "Add", exact: true }).click();
-      await expect(page.getByRole("checkbox")).toHaveText([
+      await page.getByTestId(TEST_IDS.todos.addButton).click();
+      await expect(listItems(page)).toHaveText([
         "Water the plants",
         "Take out the bins",
       ]);
@@ -68,7 +72,9 @@ test.describe("lists for a single member", () => {
 
     // A string icon name would render as text (or need an icon font) instead.
     await test.step("the remove button is a drawn icon, named for screen readers", async () => {
-      const removeButton = page.getByRole("button", { name: "Remove" }).first();
+      const removeButton = removeListItemButton(page, "Water the plants");
+      await expect(removeButton).toHaveAccessibleName("Remove");
+
       await expect(removeButton.locator("svg")).toBeVisible();
       await expect(removeButton).toHaveText("");
     });
@@ -83,7 +89,7 @@ test.describe("lists for a single member", () => {
     await test.step("a reload shows the saved state", async () => {
       await page.reload();
       await expect(listItem(page, "Water the plants")).toBeChecked();
-      await expect(page.getByRole("checkbox")).toHaveCount(1);
+      await expect(listItems(page)).toHaveCount(1);
     });
   });
 
@@ -91,13 +97,13 @@ test.describe("lists for a single member", () => {
     page,
   }) => {
     await openSignedIn(page, user);
-    await openList(page, "Shopping");
-    await expect(page.getByText(EMPTY_LIST_TEXT)).toBeVisible();
-    const input = page.getByLabel("Item", { exact: true });
+    await openList(page, "shopping");
+    await expect(listEmpty(page)).toBeVisible();
+    const input = page.getByTestId(TEST_IDS.shopping.titleInput);
 
     await test.step("an empty item is ignored", async () => {
       await addShoppingItem(page, "   ", "2");
-      await expect(page.getByText(EMPTY_LIST_TEXT)).toBeVisible();
+      await expect(listEmpty(page)).toBeVisible();
     });
 
     await test.step("adding clears both fields and keeps focus in the item field", async () => {
@@ -105,31 +111,23 @@ test.describe("lists for a single member", () => {
       await expect(listItem(page, "Apples (6)")).toBeVisible();
       await expect(input).toBeFocused();
       await expect(input).toHaveValue("");
-      await expect(page.getByLabel("Quantity (optional)")).toHaveValue("");
+      await expect(
+        page.getByTestId(TEST_IDS.shopping.quantityInput),
+      ).toHaveValue("");
       await addShoppingItem(page, "Bread");
       await addShoppingItem(page, "Milk");
-      await expect(page.getByRole("checkbox")).toHaveText([
-        "Apples (6)",
-        "Bread",
-        "Milk",
-      ]);
+      await expect(listItems(page)).toHaveText(["Apples (6)", "Bread", "Milk"]);
     });
 
     await test.step("check one, remove another", async () => {
       await untilSaved(page, () => listItem(page, "Apples (6)").click());
       await untilSaved(page, () => removeListItem(page, "Bread"));
-      await expect(page.getByRole("checkbox")).toHaveText([
-        "Milk",
-        "Apples (6)",
-      ]);
+      await expect(listItems(page)).toHaveText(["Milk", "Apples (6)"]);
     });
 
     await test.step("a reload shows the saved state, checked items last", async () => {
       await page.reload();
-      await expect(page.getByRole("checkbox")).toHaveText([
-        "Milk",
-        "Apples (6)",
-      ]);
+      await expect(listItems(page)).toHaveText(["Milk", "Apples (6)"]);
       await expect(listItem(page, "Apples (6)")).toBeChecked();
     });
   });
@@ -156,21 +154,29 @@ test.describe("lists for a single member", () => {
   // network). The check must not be undone when the add is confirmed, and
   // neither change may reach the server before the item exists there.
   for (const list of [
-    { name: "To-dos", table: "todo_items", flag: "done", add: addTodo },
     {
-      name: "Shopping",
+      key: "todos",
+      name: "to-dos",
+      table: "todo_items",
+      flag: "done",
+      add: addTodo,
+    },
+
+    {
+      key: "shopping",
+      name: "shopping",
       table: "shopping_items",
       flag: "checked",
       add: addShoppingItem,
     },
   ] as const) {
-    test(`${list.name.toLowerCase()}: checking or removing an item while its add is saving`, async ({
+    test(`${list.name}: checking or removing an item while its add is saving`, async ({
       page,
     }) => {
       const checkedTitle = `Checked early ${runId}`;
       const removedTitle = `Removed early ${runId}`;
       await openSignedIn(page, user);
-      await openList(page, list.name);
+      await openList(page, list.key);
       await delayItemInserts(page, 1_500);
 
       await list.add(page, checkedTitle);

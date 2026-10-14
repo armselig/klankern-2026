@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { mdiPlus } from "@quasar/extras/mdi-v7";
-import type {
-  NewVacation,
-  NewVacationPerson,
-  VacationKind,
-} from "~/types/vacation";
+import type { NewVacation, NewVacationPerson } from "~/types/vacation";
 
 /** The form for a new vacation. It waits for the save: the vacation is
  * added with its tasks in one step, and a failed save leaves the member
@@ -78,8 +74,7 @@ const saving = ref(false);
 
 const titleInput = useTemplateRef<{ focus: () => void }>("titleInput");
 
-const KINDS: VacationKind[] = ["house", "hotel"];
-const kindOptions = KINDS.map((kind) => ({
+const kindOptions = VACATION_KINDS.map((kind) => ({
   value: kind,
   label: VACATION_KIND_DESCRIPTIONS[kind],
 }));
@@ -116,6 +111,7 @@ async function submit() {
         ref="titleInput"
         v-model="draft.title"
         label="Title"
+        :data-testid="TEST_IDS.vacation.form.title"
         :maxlength="VACATION_TITLE_LIMIT"
         :error="problem === 'title'"
         :error-message="VACATION_DETAILS_MESSAGES.title"
@@ -131,6 +127,7 @@ async function submit() {
         <q-option-group
           v-model="draft.kind"
           :options="kindOptions"
+          :data-testid="TEST_IDS.vacation.form.kinds"
           type="radio"
         />
       </fieldset>
@@ -140,6 +137,7 @@ async function submit() {
           v-model="draft.starts_on"
           type="date"
           label="From"
+          :data-testid="TEST_IDS.vacation.form.from"
           stack-label
           required
           class="col"
@@ -148,13 +146,19 @@ async function submit() {
           v-model="draft.ends_on"
           type="date"
           label="Until"
+          :data-testid="TEST_IDS.vacation.form.until"
           stack-label
           required
           :min="draft.starts_on"
           class="col"
         />
       </div>
-      <p v-if="problem === 'dates'" role="alert" class="text-negative">
+      <p
+        v-if="problem === 'dates'"
+        role="alert"
+        class="text-negative"
+        :data-testid="TEST_IDS.errorMessage"
+      >
         {{ VACATION_DETAILS_MESSAGES.dates }}
       </p>
 
@@ -166,6 +170,7 @@ async function submit() {
           <li v-for="(person, index) in candidates" :key="index">
             <q-checkbox
               v-model="person.coming"
+              :data-testid="TEST_IDS.vacation.form.person"
               :label="
                 person.user_id === user?.sub
                   ? `${person.name} (you)`
@@ -181,6 +186,7 @@ async function submit() {
             ref="nameInput"
             v-model="newName"
             label="Add a name"
+            :data-testid="TEST_IDS.vacation.form.addName"
             :maxlength="VACATION_PERSON_NAME_LIMIT"
             class="col"
             @keydown.enter.prevent="addName"
@@ -200,7 +206,12 @@ async function submit() {
         </p>
       </fieldset>
 
-      <p v-if="vacationStore.error" role="alert" class="text-negative">
+      <p
+        v-if="vacationStore.error"
+        role="alert"
+        class="text-negative"
+        :data-testid="TEST_IDS.errorMessage"
+      >
         {{ vacationStore.error }}
       </p>
 
@@ -216,6 +227,7 @@ async function submit() {
           type="submit"
           color="primary"
           label="Add vacation"
+          :data-testid="TEST_IDS.vacation.form.submit"
           unelevated
           class="touch-target"
           :loading="saving"
@@ -223,7 +235,12 @@ async function submit() {
       </div>
     </q-form>
 
-    <p v-else-if="vacationStore.error" role="alert" class="text-negative">
+    <p
+      v-else-if="vacationStore.error"
+      role="alert"
+      class="text-negative"
+      :data-testid="TEST_IDS.errorMessage"
+    >
       {{ vacationStore.error }}
     </p>
   </div>

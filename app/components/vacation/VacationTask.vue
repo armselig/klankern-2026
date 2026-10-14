@@ -118,7 +118,7 @@ defineExpose({
 </script>
 
 <template>
-  <q-item class="vacation-task">
+  <q-item class="vacation-task" :data-testid="TEST_IDS.vacation.task.row">
     <q-item-section>
       <q-form
         v-if="editing"
@@ -129,6 +129,7 @@ defineExpose({
         <q-input
           v-model="draftTitle"
           label="Task"
+          :data-testid="TEST_IDS.vacation.task.titleInput"
           :maxlength="VACATION_TITLE_LIMIT"
           autofocus
         />
@@ -158,6 +159,7 @@ defineExpose({
             :model-value="task.done"
             :label="task.title"
             class="vacation-task__tick"
+            :data-testid="TEST_IDS.vacation.task.checkbox"
             :class="{ 'text-strike text-muted': task.done }"
             @update:model-value="emit('toggle', task.id)"
           />
@@ -171,6 +173,7 @@ defineExpose({
             flat
             round
             :aria-label="`${whoLabel}: ${task.title}`"
+            :data-testid="TEST_IDS.vacation.task.who"
             :aria-expanded="giveOpen"
             class="touch-target"
             @click="giveOpen = !giveOpen"
@@ -193,6 +196,7 @@ defineExpose({
               self="top right"
               role="group"
               :aria-label="`Give to…: ${task.title}`"
+              :data-testid="TEST_IDS.vacation.giveMenu.group"
             >
               <div class="column vacation-task__menu">
                 <!-- The member first: taking a task is as close as giving
@@ -203,6 +207,7 @@ defineExpose({
                   no-caps
                   align="left"
                   class="touch-target"
+                  :data-testid="TEST_IDS.vacation.giveMenu.me"
                   @click="emit('give', task.id, me.id)"
                 >
                   <person-avatar :email="emailOf(me)" :person="me" :size="24" />
@@ -215,6 +220,7 @@ defineExpose({
                   no-caps
                   align="left"
                   class="touch-target"
+                  :data-testid="TEST_IDS.vacation.giveMenu.person"
                   @click="emit('give', task.id, person.id)"
                 >
                   <person-avatar
@@ -248,6 +254,7 @@ defineExpose({
             :icon="mdiDotsVertical"
             :aria-label="`More: ${task.title}`"
             :aria-expanded="menuOpen"
+            :data-testid="TEST_IDS.vacation.task.more"
             class="touch-target"
             @click="menuOpen = !menuOpen"
           >
@@ -255,6 +262,7 @@ defineExpose({
                  have no role that says they can be pressed. -->
             <q-menu
               v-model="menuOpen"
+              :data-testid="TEST_IDS.vacation.taskMenu.group"
               no-parent-event
               auto-close
               anchor="bottom right"
@@ -268,6 +276,7 @@ defineExpose({
                   no-caps
                   align="left"
                   label="Edit"
+                  :data-testid="TEST_IDS.vacation.taskMenu.edit"
                   class="touch-target"
                   @click="startEditing"
                 />
@@ -277,6 +286,7 @@ defineExpose({
                   no-caps
                   align="left"
                   label="Reject"
+                  :data-testid="TEST_IDS.vacation.taskMenu.reject"
                   class="touch-target"
                   @click="emit('reject', task.id)"
                 />
@@ -285,6 +295,7 @@ defineExpose({
                   no-caps
                   align="left"
                   label="Remove"
+                  :data-testid="TEST_IDS.vacation.taskMenu.remove"
                   class="touch-target"
                   @click="emit('remove', task.id)"
                 />
@@ -298,6 +309,7 @@ defineExpose({
         <p
           v-if="showsWho && isFree && state.rejecter && task.rejection_reason"
           class="vacation-task__reason text-muted"
+          :data-testid="TEST_IDS.vacation.task.reason"
         >
           {{ state.rejecter.name }} said no: “{{ task.rejection_reason }}”
         </p>

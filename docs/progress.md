@@ -39,7 +39,7 @@ app/
                     inserts-in-flight.ts, changes-during-fetch.ts, realtime-event-order.ts,
                     whiteboard-state.ts, whiteboard-geometry.ts, recipe-state.ts, recipe-draft.ts,
                     gravatar.ts, avatar-rosette.ts, person-badge.ts, email.ts (+ .spec.ts siblings),
-                    whiteboard-pen.ts, ink.ts (+ .spec.ts), routes.ts,
+                    whiteboard-pen.ts, ink.ts (+ .spec.ts), routes.ts, test-ids.ts,
                     list-preview.ts, whiteboard-preview.ts (+ .spec.ts siblings),
                     vacation-state.ts, vacation-templates.ts, vacation-share.ts,
                     local-date.ts, in-app-path.ts (+ .spec.ts siblings)
@@ -61,7 +61,7 @@ public/                 offline.html, icons, favicon.ico, robots.txt, _redirects
 scripts/                generate-pwa-icons.mjs (writes the app icons and the favicon in `public/`)
 supabase/migrations/    0001_households.sql … 0016_vacation_people.sql
 tests/support/          supabase-fixtures.ts (disposable users/households/invites via the Admin API, shared by RLS + e2e),
-                        e2e-ui.ts (sign-in and list steps through the real UI), realtime-socket.ts (cut/watch the Realtime socket, hold back frames),
+                        e2e-ui.ts (the steps through the real UI, which find every element by its test id), realtime-socket.ts (cut/watch the Realtime socket, hold back frames),
                         fake-supabase-client.ts (fake query builder + client for the `*-actions.spec.ts` unit tests)
 tests/rls/              household-isolation.spec.ts (two-JWT RLS proof against Supabase Cloud)
 tests/unit/             environment.spec.ts (the Vitest environment mounts a Vue component)
@@ -74,7 +74,7 @@ docs/                   this documentation
 
 **Design pattern used throughout**: business logic lives in plain `composables/*-actions.ts` functions that take a `SupabaseClient` as a parameter, unit-tested with a mocked client (no Nuxt runtime needed). Pinia stores are thin — they call `useSupabaseClient()`/`useSupabaseUser()` and delegate to those functions. State-transition logic that needs testing on its own (optimistic add/dedup, soft-delete, sort order) is further extracted into pure reducer functions in `utils/`. List logic that doesn't depend on the item type (dedup, soft delete, Realtime events, reconnect merge) is **generic** over `ListItem` (`types/list.ts`) in `utils/list-state.ts` and shared by every list; only the actions, store, components and list-specific ordering are per list. The whiteboard follows it too (see "Milestone 9" in [`features/whiteboard.md`](features/whiteboard.md)), and so do the recipes (see "Milestone 10" in [`features/recipes.md`](features/recipes.md)).
 
-**Testing**: Vitest, 499 tests in 34 files passing (including the RLS suite) (`npm test`, run 2026-10-13). Playwright e2e (`npm run test:e2e`, 34 tests in 13 files and two projects; see "Milestone 5" in [`features/lists-and-realtime.md`](features/lists-and-realtime.md), "Milestone 7" in [`infra/deploy-and-pwa.md`](infra/deploy-and-pwa.md) and "E2E gap review" in [`infra/testing.md`](infra/testing.md)) is separate and not in the pre-push hook; CI runs it on every push to `main` and `develop` (see "CI" in [`infra/ci.md`](infra/ci.md)). Husky pre-commit (lint-staged: eslint --fix + prettier, and markdownlint-cli2 --fix before prettier on Markdown files), commit-msg (commitlint) and pre-push (type check and full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. The hooks are in `.husky`, and `npm ci` points `core.hooksPath` at `.husky/_`. The Markdown files (`docs/`, the root `CLAUDE.md`) are formatted by Prettier and linted for their structure by `npm run lint:md`, in CI too.
+**Testing**: Vitest, 499 tests in 34 files passing (including the RLS suite) (`npm test`, run 2026-10-13). Playwright e2e (`npm run test:e2e`, 34 tests in 13 files and two projects; see "Milestone 5" in [`features/lists-and-realtime.md`](features/lists-and-realtime.md), "Milestone 7" in [`infra/deploy-and-pwa.md`](infra/deploy-and-pwa.md) and "E2E gap review" in [`infra/testing.md`](infra/testing.md)) is separate and not in the pre-push hook; CI runs it on every push to `main` and `develop` (see "CI" in [`infra/ci.md`](infra/ci.md)). Husky pre-commit (lint-staged: eslint --fix + prettier, and markdownlint-cli2 --fix before prettier on Markdown files), commit-msg (commitlint) and pre-push (type check, of the tests too, and full test suite) are wired and verified firing through git's actual hook dispatcher — not just callable manually. The hooks are in `.husky`, and `npm ci` points `core.hooksPath` at `.husky/_`. The Markdown files (`docs/`, the root `CLAUDE.md`) are formatted by Prettier and linted for their structure by `npm run lint:md`, in CI too.
 
 **Database types**: generated from the live schema via `supabase gen types typescript`, saved to `app/types/database.types.ts`, picked up automatically by `@nuxtjs/supabase`'s default `types` path. Re-run after any migration changes:
 
@@ -91,6 +91,7 @@ npx prettier --write app/types/database.types.ts
 - **Component path prefixing disabled** (`components: [{ path: '~/components', pathPrefix: false }]` in `nuxt.config.ts`) so `components/household/CreateHouseholdForm.vue` registers as `<CreateHouseholdForm>` rather than Nuxt's default `<HouseholdCreateHouseholdForm>`. Keep using subfolders per feature (`components/todo/`, `components/shopping/`, …) — this config makes that free.
 - **Icons are SVG, not an icon font** (`quasar.iconSet: 'svg-mdi-v7'` in `nuxt.config.ts`). See "Icon strategy" in [`ui/icons-fonts-and-markup.md`](ui/icons-fonts-and-markup.md).
 - **Route paths live in `ROUTES`** (`app/utils/routes.ts`, auto-imported; `nuxt.config.ts` imports it explicitly for the auth redirect config). Never write a literal path like `'/login'` in pages, components or config. Routing itself stays file-based, so renaming a route means changing `ROUTES` **and** renaming the file in `pages/`.
+- **The e2e tests find elements by `data-testid`**, not by their text (since 2026-10-13). The ids are in `TEST_IDS` (`app/utils/test-ids.ts`), which the templates bind and the tests import; `a11y.e2e.ts` alone still goes by role and name. See "Test ids instead of text" in [`infra/test-ids.md`](infra/test-ids.md).
 - **`household_id` is denormalized onto every item table** (`todo_items`, `shopping_items`, etc.) per the plan, specifically so RLS policies and Realtime channel filters don't need a join.
 
 ## Environment / secrets

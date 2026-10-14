@@ -39,7 +39,11 @@ async function signOut() {
         <!-- The app's name is every page's first heading and the way back
              to the dashboard. -->
         <h1 class="wordmark">
-          <nuxt-link :to="ROUTES.home" class="wordmark__link">
+          <nuxt-link
+            :to="ROUTES.home"
+            class="wordmark__link"
+            :data-testid="TEST_IDS.layout.homeLink"
+          >
             Klankern
             <!-- A pen stroke, as on the whiteboard and in the avatars.
                  Stretched to the word's width; the line keeps its
@@ -71,6 +75,7 @@ async function signOut() {
           class="header-control"
           :icon="mdiDownload"
           aria-label="Install app"
+          :data-testid="TEST_IDS.layout.installButton"
           @click="$pwa.install()"
         >
           <q-tooltip>Install app</q-tooltip>
@@ -85,6 +90,7 @@ async function signOut() {
           flat
           :icon="mdiLogin"
           label="Log in"
+          :data-testid="TEST_IDS.layout.loginLink"
           :to="ROUTES.login"
         />
       </q-toolbar>
@@ -94,7 +100,10 @@ async function signOut() {
       <slot />
     </q-page-container>
 
-    <q-footer>&copy; armselig &middot; Version {{ appVersion }}</q-footer>
+    <q-footer>
+      &copy; armselig &middot; Version
+      <span :data-testid="TEST_IDS.layout.appVersion">{{ appVersion }}</span>
+    </q-footer>
   </q-layout>
 </template>
 

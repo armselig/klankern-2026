@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium, expect, test, type Page } from "@playwright/test";
 import { ROUTES } from "../../app/utils/routes";
+import { TEST_IDS } from "../../app/utils/test-ids";
 
 // Milestone 7: replaces the Lighthouse PWA audit (Lighthouse dropped its PWA
 // category in v12) with the checks Chrome itself uses, run against a
@@ -140,17 +141,15 @@ test.describe("PWA", () => {
     context,
   }) => {
     await loadControlledPage(page);
-    await expect(page.getByText("Sign in to Klankern")).toBeVisible();
+    await expect(page.getByTestId(TEST_IDS.login.heading)).toBeVisible();
 
     await context.setOffline(true);
     await page.reload();
-    await expect(
-      page.getByRole("heading", { name: "You're offline" }),
-    ).toBeVisible();
+    await expect(page.getByTestId(TEST_IDS.offlinePage.heading)).toBeVisible();
 
     await context.setOffline(false);
     await page.reload();
-    await expect(page.getByText("Sign in to Klankern")).toBeVisible();
+    await expect(page.getByTestId(TEST_IDS.login.heading)).toBeVisible();
   });
 
   test('a new version shows the update notice, and "Reload" switches to it', async ({
@@ -167,14 +166,15 @@ test.describe("PWA", () => {
         await registration?.update();
       });
 
-      const notice = page.getByText("A new version of Klankern is available.");
+      const notice = page.getByTestId(TEST_IDS.pwa.updateNotice);
+
       await expect(notice).toBeVisible();
 
       // Marks this page load, to tell whether "Reload" really reloaded.
       await page.evaluate(
         () => ((window as { beforeUpdate?: boolean }).beforeUpdate = true),
       );
-      await page.getByRole("button", { name: "Reload" }).click();
+      await page.getByTestId(TEST_IDS.pwa.updateReload).click();
 
       // An evaluate that lands in the middle of the reload itself throws
       // ("execution context was destroyed"): not reloaded yet, so poll again.
@@ -188,7 +188,8 @@ test.describe("PWA", () => {
             .catch(() => true),
         )
         .toBe(false);
-      await expect(page.getByText("Sign in to Klankern")).toBeVisible();
+      await expect(page.getByTestId(TEST_IDS.login.heading)).toBeVisible();
+
       await expect(notice).toHaveCount(0);
       const waiting = await page.evaluate(
         async () =>
@@ -204,8 +205,10 @@ test.describe("PWA", () => {
     page,
   }) => {
     await page.goto(ROUTES.login);
-    await expect(page.getByText("Sign in to Klankern")).toBeVisible();
-    const installButton = page.getByRole("button", { name: "Install app" });
+    await expect(page.getByTestId(TEST_IDS.login.heading)).toBeVisible();
+
+    const installButton = page.getByTestId(TEST_IDS.layout.installButton);
+
     await expect(installButton).toHaveCount(0);
 
     // Chrome only fires beforeinstallprompt after its engagement heuristic,

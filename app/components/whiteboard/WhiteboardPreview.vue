@@ -14,6 +14,7 @@ const previewStrokes = computed(() => props.strokes.map(strokeForPreview));
   <svg
     role="img"
     aria-label="Preview of the whiteboard"
+    :data-testid="TEST_IDS.whiteboard.preview"
     :viewBox="`0 0 ${BOARD_WIDTH} ${BOARD_HEIGHT}`"
     class="whiteboard-preview"
   >

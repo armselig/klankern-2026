@@ -60,6 +60,7 @@ defineExpose({
         ref="changeButton"
         flat
         label="Change people"
+        :data-testid="TEST_IDS.vacation.share.changePeople"
         class="touch-target"
         @click="emit('changePeople')"
       />
@@ -82,6 +83,7 @@ defineExpose({
             flat
             no-caps
             class="touch-target fair-share__line"
+            :data-testid="TEST_IDS.vacation.share.line"
             :class="{ 'fair-share__line--shown': isShown(share) }"
             :aria-pressed="isShown(share)"
             @click="toggleShown(share)"
@@ -108,7 +110,13 @@ defineExpose({
           </q-btn>
         </li>
       </ul>
-      <p v-if="hint" class="fair-share__hint text-muted">{{ hint }}</p>
+      <p
+        v-if="hint"
+        class="fair-share__hint text-muted"
+        :data-testid="TEST_IDS.vacation.share.hint"
+      >
+        {{ hint }}
+      </p>
     </template>
   </section>
 </template>

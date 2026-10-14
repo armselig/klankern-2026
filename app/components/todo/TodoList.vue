@@ -27,6 +27,7 @@ async function add() {
         ref="titleInput"
         v-model="newTitle"
         label="Add a to-do"
+        :data-testid="TEST_IDS.todos.titleInput"
         class="col"
         autofocus
       />
@@ -35,13 +36,14 @@ async function add() {
         color="primary"
         :icon="mdiPlus"
         label="Add"
+        :data-testid="TEST_IDS.todos.addButton"
         unelevated
       />
     </q-form>
 
     <q-spinner v-if="todoStore.loading" color="primary" />
 
-    <q-list v-else bordered separator>
+    <q-list v-else bordered separator :data-testid="TEST_IDS.list.items">
       <todo-item
         v-for="item in todoStore.visible"
         :key="item.id"
@@ -50,12 +52,18 @@ async function add() {
         @remove="todoStore.remove"
       />
       <q-item v-if="todoStore.visible.length === 0">
-        <q-item-section class="text-muted"
+        <q-item-section class="text-muted" :data-testid="TEST_IDS.list.empty"
           >Nothing on the list yet.</q-item-section
         >
       </q-item>
     </q-list>
 
-    <p v-if="todoStore.error" class="text-negative">{{ todoStore.error }}</p>
+    <p
+      v-if="todoStore.error"
+      class="text-negative"
+      :data-testid="TEST_IDS.errorMessage"
+    >
+      {{ todoStore.error }}
+    </p>
   </div>
 </template>

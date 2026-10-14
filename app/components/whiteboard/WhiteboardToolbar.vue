@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { mdiDeleteSweepOutline, mdiUndo } from "@quasar/extras/mdi-v7";
 import type { WhiteboardTool } from "~/types/whiteboard";
-import type { PenOption } from "~/utils/whiteboard-pen";
 
 defineProps<{ canUndo: boolean; canClear: boolean }>();
 const emit = defineEmits<{ undo: []; clear: [] }>();
@@ -9,11 +8,6 @@ const emit = defineEmits<{ undo: []; clear: [] }>();
 const tool = defineModel<WhiteboardTool>("tool", { required: true });
 const color = defineModel<string>("color", { required: true });
 const width = defineModel<number>("width", { required: true });
-
-const TOOLS: PenOption<WhiteboardTool>[] = [
-  { label: "Pen", value: "pen" },
-  { label: "Eraser", value: "eraser" },
-];
 </script>
 
 <template>
@@ -24,10 +18,11 @@ const TOOLS: PenOption<WhiteboardTool>[] = [
   >
     <q-option-group
       v-model="tool"
-      :options="TOOLS"
+      :options="WHITEBOARD_TOOLS"
       type="radio"
       inline
       aria-label="Tool"
+      :data-testid="TEST_IDS.whiteboard.tools"
     />
     <q-option-group
       v-model="color"
@@ -36,6 +31,7 @@ const TOOLS: PenOption<WhiteboardTool>[] = [
       type="radio"
       inline
       aria-label="Pen color"
+      :data-testid="TEST_IDS.whiteboard.colors"
     />
     <q-option-group
       v-model="width"
@@ -44,11 +40,13 @@ const TOOLS: PenOption<WhiteboardTool>[] = [
       type="radio"
       inline
       aria-label="Pen width"
+      :data-testid="TEST_IDS.whiteboard.widths"
     />
     <q-btn
       flat
       :icon="mdiUndo"
       label="Undo"
+      :data-testid="TEST_IDS.whiteboard.undo"
       :disable="!canUndo"
       @click="emit('undo')"
     />
@@ -56,6 +54,7 @@ const TOOLS: PenOption<WhiteboardTool>[] = [
       flat
       :icon="mdiDeleteSweepOutline"
       label="Clear board"
+      :data-testid="TEST_IDS.whiteboard.clear"
       :disable="!canClear"
       @click="emit('clear')"
     />

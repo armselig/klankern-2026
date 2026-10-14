@@ -15,9 +15,13 @@ onMounted(async () => {
       <h2 class="text-h6">New recipe</h2>
       <recipe-editor :household-id="householdStore.household.id" />
     </div>
-    <p v-else>
+    <p v-else :data-testid="TEST_IDS.household.requiredNotice">
       You need a household first -- go to
-      <nuxt-link :to="ROUTES.home">the dashboard</nuxt-link>
+      <nuxt-link
+        :to="ROUTES.home"
+        :data-testid="TEST_IDS.household.requiredLink"
+        >the dashboard</nuxt-link
+      >
       to create or join one.
     </p>
   </q-page>

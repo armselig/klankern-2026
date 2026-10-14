@@ -60,14 +60,25 @@ function addName() {
   <section>
     <h3 class="vacation-people__heading">
       <span>Who is coming</span>
-      <q-btn flat label="Done" class="touch-target" @click="emit('done')" />
+      <q-btn
+        flat
+        label="Done"
+        :data-testid="TEST_IDS.vacation.people.done"
+        class="touch-target"
+        @click="emit('done')"
+      />
     </h3>
 
     <!-- role="list": see FairShare.vue. -->
     <ul role="list" class="vacation-people">
-      <li v-for="person in people" :key="person.id">
+      <li
+        v-for="person in people"
+        :key="person.id"
+        :data-testid="TEST_IDS.vacation.people.row"
+      >
         <q-checkbox
           :model-value="true"
+          :data-testid="TEST_IDS.vacation.people.coming"
           :aria-label="`${person.name} is coming`"
           class="touch-target"
           @update:model-value="emit('remove', person.id)"
@@ -84,6 +95,7 @@ function addName() {
           v-else
           :model-value="person.name"
           :aria-label="`Name of ${person.name}`"
+          :data-testid="TEST_IDS.vacation.people.nameInput"
           dense
           :maxlength="VACATION_PERSON_NAME_LIMIT"
           class="col"
@@ -128,7 +140,12 @@ function addName() {
         class="touch-target"
       />
     </q-form>
-    <p v-if="addError" role="alert" class="text-negative q-mt-sm q-mb-none">
+    <p
+      v-if="addError"
+      role="alert"
+      class="text-negative q-mt-sm q-mb-none"
+      :data-testid="TEST_IDS.errorMessage"
+    >
       {{ addError }}
     </p>
   </section>

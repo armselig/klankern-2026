@@ -61,12 +61,14 @@ function requestSignOut() {
     class="account-menu__trigger"
     :class="{ 'account-menu__trigger--open': menuOpen }"
     :aria-label="triggerLabel"
+    :data-testid="TEST_IDS.account.button"
     :aria-expanded="menuOpen"
   >
     <user-avatar
       :email="email"
       :size="AVATAR_SIZE"
       class="account-menu__avatar"
+      :data-testid="TEST_IDS.account.avatar"
     />
     <q-icon
       :name="mdiChevronDown"
@@ -85,6 +87,7 @@ function requestSignOut() {
       :offset="[0, 4]"
       role="group"
       aria-label="Account"
+      :data-testid="TEST_IDS.account.menu"
     >
       <div class="account-menu column">
         <p class="account-menu__email">{{ email }}</p>
@@ -97,6 +100,7 @@ function requestSignOut() {
           align="left"
           :icon="mdiAccountPlusOutline"
           label="Invite a family member"
+          :data-testid="TEST_IDS.account.invite"
           @click="openInviteDialog"
         />
         <q-btn
@@ -104,6 +108,7 @@ function requestSignOut() {
           align="left"
           :icon="mdiLogout"
           label="Sign out"
+          :data-testid="TEST_IDS.account.signOut"
           @click="requestSignOut"
         />
       </div>

@@ -30,12 +30,14 @@ async function add() {
         ref="titleInput"
         v-model="newTitle"
         label="Item"
+        :data-testid="TEST_IDS.shopping.titleInput"
         class="col"
         autofocus
       />
       <q-input
         v-model="newQuantity"
         label="Quantity (optional)"
+        :data-testid="TEST_IDS.shopping.quantityInput"
         class="col-4"
       />
       <q-btn
@@ -49,7 +51,7 @@ async function add() {
 
     <q-spinner v-if="shoppingStore.loading" color="primary" />
 
-    <q-list v-else bordered separator>
+    <q-list v-else bordered separator :data-testid="TEST_IDS.list.items">
       <shopping-item
         v-for="item in shoppingStore.visible"
         :key="item.id"
@@ -58,13 +60,17 @@ async function add() {
         @remove="shoppingStore.remove"
       />
       <q-item v-if="shoppingStore.visible.length === 0">
-        <q-item-section class="text-muted"
+        <q-item-section class="text-muted" :data-testid="TEST_IDS.list.empty"
           >Nothing on the list yet.</q-item-section
         >
       </q-item>
     </q-list>
 
-    <p v-if="shoppingStore.error" class="text-negative">
+    <p
+      v-if="shoppingStore.error"
+      class="text-negative"
+      :data-testid="TEST_IDS.errorMessage"
+    >
       {{ shoppingStore.error }}
     </p>
   </div>

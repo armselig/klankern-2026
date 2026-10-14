@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { TEST_IDS } from "../../app/utils/test-ids";
+
 import { memberAvatar, memberRoster, openSignedIn } from "../support/e2e-ui";
 import {
   createHousehold,
@@ -49,13 +51,13 @@ async function answerGravatarFor(page: Page, usersWithPicture: TestUser[]) {
 }
 
 async function expectDrawing(avatar: Locator) {
-  await expect(avatar.locator("svg polyline")).toBeVisible();
-  await expect(avatar.locator("img")).toHaveCount(0);
+  await expect(avatar.getByTestId(TEST_IDS.whiteboard.stroke)).toBeVisible();
+  await expect(avatar.getByTestId(TEST_IDS.avatar.photo)).toHaveCount(0);
 }
 
 async function expectPhoto(avatar: Locator) {
-  await expect(avatar.locator("img")).toBeVisible();
-  await expect(avatar.locator("svg")).toHaveCount(0);
+  await expect(avatar.getByTestId(TEST_IDS.avatar.photo)).toBeVisible();
+  await expect(avatar.getByTestId(TEST_IDS.avatar.drawing)).toHaveCount(0);
 }
 
 test.describe("avatars", () => {
@@ -79,9 +81,9 @@ test.describe("avatars", () => {
   test("every member has an avatar: their Gravatar, or the drawing", async ({
     page,
   }) => {
-    // Decoration to assistive technology (the account button around it
-    // carries the name), so it has no role to find it by.
-    const headerAvatar = page.getByRole("banner").locator(".q-avatar");
+    // Decoration to assistive technology: the account button around it
+    // carries the name.
+    const headerAvatar = page.getByTestId(TEST_IDS.account.avatar);
 
     await test.step("without a Gravatar, everyone gets the drawing", async () => {
       const requested = await answerGravatarFor(page, []);
@@ -92,10 +94,9 @@ test.describe("avatars", () => {
       await expectDrawing(memberAvatar(page, member.email));
       // Whoever has been in the household longest comes first; each is
       // named by the part of their address before the @.
-      await expect(memberRoster(page).getByRole("listitem")).toHaveText([
-        owner.email.split("@")[0]!,
-        member.email.split("@")[0]!,
-      ]);
+      await expect(
+        memberRoster(page).getByTestId(TEST_IDS.household.member),
+      ).toHaveText([owner.email.split("@")[0]!, member.email.split("@")[0]!]);
 
       // The pictures are asked for by the hash of the address, at twice the
       // avatar's size (32 px in the header, 48 px in the list).

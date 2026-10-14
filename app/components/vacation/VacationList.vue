@@ -32,7 +32,11 @@ function currentLine(vacation: Vacation): string {
     <q-spinner v-if="vacationStore.loading" color="primary" />
 
     <template v-else-if="vacationStore.householdId">
-      <p v-if="isEmpty" class="text-muted">
+      <p
+        v-if="isEmpty"
+        class="text-muted"
+        :data-testid="TEST_IDS.vacation.list.empty"
+      >
         No vacations yet. Add your next trip, and the app fills in the tasks.
       </p>
 
@@ -41,6 +45,7 @@ function currentLine(vacation: Vacation): string {
         color="primary"
         :icon="mdiPlus"
         label="Add vacation"
+        :data-testid="TEST_IDS.vacation.list.add"
         unelevated
         class="touch-target q-mb-md"
       />
@@ -51,7 +56,10 @@ function currentLine(vacation: Vacation): string {
            running and what is over but not unpacked. -->
       <ul v-if="groups.current.length > 0" role="list" class="vacation-list">
         <li v-for="vacation in groups.current" :key="vacation.id">
-          <q-item :to="ROUTES.vacation(vacation.id)">
+          <q-item
+            :to="ROUTES.vacation(vacation.id)"
+            :data-testid="TEST_IDS.vacation.list.link"
+          >
             <q-item-section>
               <q-item-label class="vacation-list__title">
                 {{ vacation.title }}
@@ -68,7 +76,10 @@ function currentLine(vacation: Vacation): string {
         <h3 class="vacation-list__heading">Past</h3>
         <ul role="list" class="vacation-list">
           <li v-for="vacation in groups.past" :key="vacation.id">
-            <q-item :to="ROUTES.vacation(vacation.id)">
+            <q-item
+              :to="ROUTES.vacation(vacation.id)"
+              :data-testid="TEST_IDS.vacation.list.link"
+            >
               <q-item-section>
                 <q-item-label class="vacation-list__title">
                   {{ vacation.title }}
@@ -83,7 +94,12 @@ function currentLine(vacation: Vacation): string {
       </template>
     </template>
 
-    <p v-if="vacationStore.error" role="alert" class="text-negative q-mt-md">
+    <p
+      v-if="vacationStore.error"
+      role="alert"
+      class="text-negative q-mt-md"
+      :data-testid="TEST_IDS.errorMessage"
+    >
       {{ vacationStore.error }}
     </p>
   </div>

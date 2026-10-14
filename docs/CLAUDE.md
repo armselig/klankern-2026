@@ -29,6 +29,7 @@ Start with `progress.md`, then read the topic files for what you are about to to
 **Tests, build and delivery** (`infra/`)
 
 - [`testing.md`](./infra/testing.md): the review of the e2e tests' gaps with the bugs it found, running e2e tests repeatedly, the `pwa` project and a leftover `.output`.
+- [`test-ids.md`](./infra/test-ids.md): how the e2e tests find elements, by `data-testid` and no longer by text: what was decided, what Quasar made of it, and the type check for the tests.
 - [`ci.md`](./infra/ci.md): the checks on GitHub.
 - [`deploy-and-pwa.md`](./infra/deploy-and-pwa.md): milestones 7 and 8, the installable app and its deployment to Netlify; the broken deploy after the move to the git root.
 - [`releases.md`](./infra/releases.md): the automated releases, each release so far, the changelog.

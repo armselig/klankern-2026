@@ -74,7 +74,9 @@ async function join() {
   <q-page class="flex flex-center">
     <q-card style="width: 100%; max-width: 360px">
       <q-card-section>
-        <h2 class="text-h6 q-my-none">Join your household</h2>
+        <h2 class="text-h6 q-my-none" :data-testid="TEST_IDS.join.heading">
+          Join your household
+        </h2>
       </q-card-section>
 
       <q-card-section v-if="step === 'email'">
@@ -83,22 +85,32 @@ async function join() {
             v-model="email"
             type="email"
             label="Email address"
+            :data-testid="TEST_IDS.signIn.email"
             autocomplete="email"
             autofocus
             required
           />
           <div class="q-mt-md">
-            <q-btn type="submit" color="primary" label="Send code" unelevated />
+            <q-btn
+              type="submit"
+              color="primary"
+              label="Send code"
+              :data-testid="TEST_IDS.signIn.sendCode"
+              unelevated
+            />
           </div>
         </q-form>
       </q-card-section>
 
       <q-card-section v-else-if="step === 'code'">
-        <p>We sent a login code to {{ email }}.</p>
+        <p :data-testid="TEST_IDS.signIn.sentNotice">
+          We sent a login code to {{ email }}.
+        </p>
         <q-form @submit.prevent="verifyCode">
           <q-input
             v-model="otp"
             label="Code from the email"
+            :data-testid="TEST_IDS.signIn.code"
             inputmode="numeric"
             autocomplete="one-time-code"
             autofocus
@@ -109,6 +121,7 @@ async function join() {
               type="submit"
               color="primary"
               label="Join household"
+              :data-testid="TEST_IDS.signIn.submit"
               unelevated
             />
           </div>
@@ -119,7 +132,11 @@ async function join() {
         <q-spinner color="primary" size="2em" />
       </q-card-section>
 
-      <q-card-section v-if="error" class="text-negative">
+      <q-card-section
+        v-if="error"
+        class="text-negative"
+        :data-testid="TEST_IDS.errorMessage"
+      >
         {{ error }}
       </q-card-section>
     </q-card>

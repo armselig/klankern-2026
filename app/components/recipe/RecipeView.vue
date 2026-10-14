@@ -25,8 +25,14 @@ function confirmRemove() {
     title: "Delete this recipe?",
     message: `This removes "${title}" for the whole family.`,
     // No color for the flat button; see SharedWhiteboard.vue.
-    cancel: { label: "Cancel", flat: true, color: undefined },
-    ok: { label: "Delete", color: "negative", unelevated: true },
+    cancel: withTestId(
+      { label: "Cancel", flat: true, color: undefined },
+      TEST_IDS.confirmDialog.cancel,
+    ),
+    ok: withTestId(
+      { label: "Delete", color: "negative", unelevated: true },
+      TEST_IDS.confirmDialog.ok,
+    ),
   }).onOk(async () => {
     void recipeStore.remove(props.recipeId);
     await router.replace(ROUTES.recipes);
@@ -60,6 +66,7 @@ async function addToShoppingList(ingredients: RecipeIngredient[]) {
         // an accent is, in both modes (assets/css/theme.css).
         color: "primary",
         textColor: "on-accent",
+        attrs: { "data-testid": TEST_IDS.recipe.addedNotice },
       });
     }
   } finally {
@@ -77,14 +84,24 @@ async function addToShoppingList(ingredients: RecipeIngredient[]) {
       :to="ROUTES.recipes"
       :icon="mdiArrowLeft"
       label="All recipes"
+      :data-testid="TEST_IDS.recipe.view.back"
       class="q-mb-sm"
     />
 
     <div v-if="recipeStore.loading"><q-spinner color="primary" /></div>
 
     <article v-else-if="recipe">
-      <h2 class="text-h6 recipe-view__text">{{ recipe.title }}</h2>
-      <p v-if="recipe.servings" class="text-muted recipe-view__text">
+      <h2
+        class="text-h6 recipe-view__text"
+        :data-testid="TEST_IDS.recipe.view.title"
+      >
+        {{ recipe.title }}
+      </h2>
+      <p
+        v-if="recipe.servings"
+        class="text-muted recipe-view__text"
+        :data-testid="TEST_IDS.recipe.view.servings"
+      >
         Servings: {{ recipe.servings }}
       </p>
 
@@ -94,12 +111,14 @@ async function addToShoppingList(ingredients: RecipeIngredient[]) {
           color="primary"
           :icon="mdiPencilOutline"
           label="Edit"
+          :data-testid="TEST_IDS.recipe.view.edit"
           unelevated
         />
         <q-btn
           flat
           :icon="mdiDeleteOutline"
           label="Delete"
+          :data-testid="TEST_IDS.recipe.view.remove"
           @click="confirmRemove"
         />
       </div>
@@ -112,24 +131,39 @@ async function addToShoppingList(ingredients: RecipeIngredient[]) {
         @add="addToShoppingList"
       />
       <p v-else class="text-muted">No ingredients listed.</p>
-      <p v-if="shoppingStore.error" class="text-negative">
+      <p
+        v-if="shoppingStore.error"
+        class="text-negative"
+        :data-testid="TEST_IDS.errorMessage"
+      >
         {{ shoppingStore.error }}
       </p>
 
       <h3 class="text-subtitle1 text-weight-medium">Instructions</h3>
-      <p v-if="recipe.instructions" class="recipe-view__instructions">
+      <p
+        v-if="recipe.instructions"
+        class="recipe-view__instructions"
+        :data-testid="TEST_IDS.recipe.view.instructions"
+      >
         {{ recipe.instructions }}
       </p>
       <p v-else class="text-muted">No instructions written yet.</p>
     </article>
 
     <!-- Also for another household's recipe: RLS returns no row for it. -->
-    <div v-else-if="recipeStore.householdId">
+    <div
+      v-else-if="recipeStore.householdId"
+      :data-testid="TEST_IDS.recipe.view.notFound"
+    >
       <h2 class="text-h6">Recipe not found</h2>
       <p>This recipe doesn't exist, or it was removed.</p>
     </div>
 
-    <p v-if="recipeStore.error" class="text-negative">
+    <p
+      v-if="recipeStore.error"
+      class="text-negative"
+      :data-testid="TEST_IDS.errorMessage"
+    >
       {{ recipeStore.error }}
     </p>
   </div>

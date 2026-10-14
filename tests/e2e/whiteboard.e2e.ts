@@ -1,10 +1,16 @@
 import { expect, test, type Page } from "@playwright/test";
+import { TEST_IDS } from "../../app/utils/test-ids";
+import { PEN_WIDTHS } from "../../app/utils/whiteboard-pen";
+
 import {
   dragOnWhiteboard,
   expectStrokeCount,
   openWhiteboard,
   openSignedIn,
+  penColorRadio,
+  penWidthRadio,
   whiteboardStrokes,
+  whiteboardToolRadio,
   type BoardFraction,
 } from "../support/e2e-ui";
 import {
@@ -46,6 +52,9 @@ const ZIGZAG: BoardFraction[] = [
 ];
 const ZIGZAG_STEPS_PER_SEGMENT = 80;
 
+/** The widest pen, in board units. */
+const THICK = Math.max(...PEN_WIDTHS.map((option) => option.value));
+
 test.describe("shared whiteboard", () => {
   let userA: TestUser;
   let userB: TestUser;
@@ -82,15 +91,14 @@ test.describe("shared whiteboard", () => {
       await openSignedIn(page, user);
       await openWhiteboard(page);
       await expectStrokeCount(page, 0);
-      await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();
-      await expect(
-        page.getByRole("button", { name: "Clear board" }),
-      ).toBeDisabled();
+      await expect(page.getByTestId(TEST_IDS.whiteboard.undo)).toBeDisabled();
+      await expect(page.getByTestId(TEST_IDS.whiteboard.clear)).toBeDisabled();
     }
 
     await test.step("a stroke drawn by A appears on B, with its shape, color and width", async () => {
-      await pageA.getByRole("radio", { name: "Red" }).click();
-      await pageA.getByRole("radio", { name: "Thick" }).click();
+      await penColorRadio(pageA, "red").click();
+      await penWidthRadio(pageA, THICK).click();
+
       await dragOnWhiteboard(pageA, [
         [0.1, 0.1],
         [0.4, 0.3],
@@ -101,7 +109,8 @@ test.describe("shared whiteboard", () => {
       await expectStrokeCount(pageA, 1);
       const onB = whiteboardStrokes(pageB).first();
       await expect(onB).toHaveAttribute("stroke", "#c62828");
-      await expect(onB).toHaveAttribute("stroke-width", "64");
+      await expect(onB).toHaveAttribute("stroke-width", String(THICK));
+
       const points = await strokePoints(pageA, 0);
       expect(points!.split(" ").length).toBeGreaterThanOrEqual(4);
       expect(await strokePoints(pageB, 0)).toBe(points);
@@ -115,12 +124,12 @@ test.describe("shared whiteboard", () => {
         "circle",
       );
 
-      await pageB.getByRole("button", { name: "Undo" }).click();
+      await pageB.getByTestId(TEST_IDS.whiteboard.undo).click();
       await expectStrokeCount(pageB, 1);
       await expectStrokeCount(pageA, 1);
       // B has nothing of its own left; A's stroke is not B's to undo.
-      await expect(pageB.getByRole("button", { name: "Undo" })).toBeDisabled();
-      await expect(pageA.getByRole("button", { name: "Undo" })).toBeEnabled();
+      await expect(pageB.getByTestId(TEST_IDS.whiteboard.undo)).toBeDisabled();
+      await expect(pageA.getByTestId(TEST_IDS.whiteboard.undo)).toBeEnabled();
     });
 
     await test.step("the board is the same after a reload", async () => {
@@ -136,7 +145,8 @@ test.describe("shared whiteboard", () => {
       const points = await strokePoints(pageA, 1);
       expect(points!.split(" ").length).toBeGreaterThan(600);
 
-      await pageA.getByRole("radio", { name: "Eraser" }).click();
+      await whiteboardToolRadio(pageA, "eraser").click();
+
       // Straight down through the zigzag, clear of A's own stroke.
       await dragOnWhiteboard(pageA, [
         [0.5, 0.5],
@@ -152,12 +162,14 @@ test.describe("shared whiteboard", () => {
     });
 
     await test.step("clearing the board asks first, then empties it for both", async () => {
-      await pageB.getByRole("button", { name: "Clear board" }).click();
-      await pageB.getByRole("button", { name: "Cancel" }).click();
+      await pageB.getByTestId(TEST_IDS.whiteboard.clear).click();
+      await pageB.getByTestId(TEST_IDS.confirmDialog.cancel).click();
+
       await expectStrokeCount(pageB, 1);
 
-      await pageB.getByRole("button", { name: "Clear board" }).click();
-      await pageB.getByRole("button", { name: "Clear", exact: true }).click();
+      await pageB.getByTestId(TEST_IDS.whiteboard.clear).click();
+      await pageB.getByTestId(TEST_IDS.confirmDialog.ok).click();
+
       await expectStrokeCount(pageB, 0);
       await expectStrokeCount(pageA, 0);
 

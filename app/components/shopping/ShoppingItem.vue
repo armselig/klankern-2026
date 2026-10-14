@@ -14,11 +14,12 @@ const label = computed(() =>
 </script>
 
 <template>
-  <q-item>
+  <q-item :data-testid="TEST_IDS.list.row">
     <q-item-section>
       <q-checkbox
         :model-value="item.checked"
         :label="label"
+        :data-testid="TEST_IDS.list.checkbox"
         :class="{ 'text-strike text-muted': item.checked }"
         @update:model-value="emit('toggle', item.id)"
       />
@@ -31,6 +32,7 @@ const label = computed(() =>
         round
         :icon="mdiDeleteOutline"
         aria-label="Remove"
+        :data-testid="TEST_IDS.list.remove"
         @click="emit('remove', item.id)"
       />
     </q-item-section>

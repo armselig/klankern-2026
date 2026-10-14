@@ -1,0 +1,11 @@
+{
+  // The tests and the root's config files are in none of Nuxt's own
+  // projects (see ../tsconfig.json), so `nuxt typecheck` never read them.
+  // The app's settings come along because the tests import files of the
+  // app, with its aliases and auto-imports.
+  "extends": "../.nuxt/tsconfig.app.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["../.nuxt/nuxt.d.ts", "./**/*", "../playwright.config.ts"]
+}

@@ -32,7 +32,10 @@ watch(
       initialDraft.value = recipeDraftFrom(current);
     } else if (!current && original.value && recipeStore.householdId) {
       // Another member removed the recipe: there is nothing left to save to.
-      Notify.create({ message: "This recipe was removed." });
+      Notify.create({
+        message: "This recipe was removed.",
+        attrs: { "data-testid": TEST_IDS.recipe.removedNotice },
+      });
       void router.replace(ROUTES.recipes);
     }
   },
@@ -81,11 +84,18 @@ async function save(content: RecipeContent) {
     />
 
     <template v-else>
-      <p v-if="recipeStore.householdId">
+      <p
+        v-if="recipeStore.householdId"
+        :data-testid="TEST_IDS.recipe.form.notFound"
+      >
         This recipe doesn't exist, or it was removed.
         <nuxt-link :to="ROUTES.recipes">All recipes</nuxt-link>
       </p>
-      <p v-if="recipeStore.error" class="text-negative">
+      <p
+        v-if="recipeStore.error"
+        class="text-negative"
+        :data-testid="TEST_IDS.errorMessage"
+      >
         {{ recipeStore.error }}
       </p>
     </template>

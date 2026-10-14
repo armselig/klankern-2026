@@ -57,6 +57,7 @@ function submit() {
             ref="reasonInput"
             v-model="reason"
             label="Why not?"
+            :data-testid="TEST_IDS.vacation.reject.reason"
             :maxlength="REJECTION_REASON_LIMIT"
             :error="reasonMissing"
             error-message="Say why, so the others know."
@@ -69,7 +70,12 @@ function submit() {
           <p class="reject-dialog__limit text-muted">
             {{ REJECTION_REASON_LIMIT }} characters at most.
           </p>
-          <p v-if="error" role="alert" class="text-negative q-mt-sm q-mb-none">
+          <p
+            v-if="error"
+            role="alert"
+            class="text-negative q-mt-sm q-mb-none"
+            :data-testid="TEST_IDS.errorMessage"
+          >
             {{ error }}
           </p>
         </q-card-section>
@@ -87,6 +93,7 @@ function submit() {
             type="submit"
             color="primary"
             label="Reject task"
+            :data-testid="TEST_IDS.vacation.reject.submit"
             unelevated
             class="touch-target"
             :loading="saving"

@@ -18,10 +18,19 @@ defineProps<{
          named "To-dos", not by everything the tile shows. -->
     <h3 class="dashboard-tile__heading">
       <q-icon :name="icon" size="24px" color="primary" aria-hidden="true" />
-      <nuxt-link :to="to" class="dashboard-tile__link">{{ title }}</nuxt-link>
+      <nuxt-link
+        :to="to"
+        class="dashboard-tile__link"
+        :data-testid="TEST_IDS.dashboard.tileLink"
+        >{{ title }}</nuxt-link
+      >
     </h3>
     <q-spinner v-if="loading" color="primary" />
-    <p v-else-if="failed" class="text-negative q-my-none">
+    <p
+      v-else-if="failed"
+      class="text-negative q-my-none"
+      :data-testid="TEST_IDS.errorMessage"
+    >
       Couldn't load this. Reload the page to try again.
     </p>
     <slot v-else />

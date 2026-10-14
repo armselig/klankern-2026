@@ -100,7 +100,7 @@ defineExpose({
 </script>
 
 <template>
-  <section class="vacation-phase">
+  <section class="vacation-phase" :data-testid="TEST_IDS.vacation.phase[phase]">
     <!-- A heading whose button says whether the phase is open, with the
          count beside it rather than in the button's name. -->
     <h3 class="vacation-phase__heading">
@@ -111,10 +111,15 @@ defineExpose({
         :label="VACATION_PHASE_LABELS[phase]"
         :aria-expanded="open"
         :aria-controls="bodyId"
+        :data-testid="TEST_IDS.vacation.phaseToggle"
         class="touch-target vacation-phase__fold"
         @click="open = !open"
       />
-      <span class="vacation-phase__summary text-muted">{{ summary }}</span>
+      <span
+        class="vacation-phase__summary text-muted"
+        :data-testid="TEST_IDS.vacation.phaseSummary"
+        >{{ summary }}</span
+      >
     </h3>
 
     <div v-if="open" :id="bodyId">
@@ -141,6 +146,7 @@ defineExpose({
           ref="addInput"
           v-model="newTitle"
           :label="VACATION_ADD_TASK_LABELS[phase]"
+          :data-testid="TEST_IDS.vacation.addTask"
           :maxlength="VACATION_TITLE_LIMIT"
           class="col"
         />
@@ -153,7 +159,12 @@ defineExpose({
           class="touch-target"
         />
       </q-form>
-      <p v-if="addError" role="alert" class="text-negative q-mt-sm q-mb-none">
+      <p
+        v-if="addError"
+        role="alert"
+        class="text-negative q-mt-sm q-mb-none"
+        :data-testid="TEST_IDS.errorMessage"
+      >
         {{ addError }}
       </p>
     </div>

@@ -1,3 +1,4 @@
+import type { WhiteboardTool } from "~/types/whiteboard";
 import { INK_VALUES } from "./ink";
 
 /** A choice in the whiteboard toolbar: what is stored with the stroke, and
@@ -12,6 +13,11 @@ export interface PenOption<T> {
 export interface PenColorOption extends PenOption<string> {
   color: string;
 }
+
+export const WHITEBOARD_TOOLS: PenOption<WhiteboardTool>[] = [
+  { label: "Pen", value: "pen" },
+  { label: "Eraser", value: "eraser" },
+];
 
 export const DEFAULT_PEN_COLOR: string = INK_VALUES.black;
 

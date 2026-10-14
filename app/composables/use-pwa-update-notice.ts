@@ -20,12 +20,16 @@ export function usePwaUpdateNotice() {
         // (assets/css/theme.css); Quasar's default is white.
         textColor: "on-accent",
         timeout: 0,
+        attrs: { "data-testid": TEST_IDS.pwa.updateNotice },
         actions: [
-          {
-            label: "Reload",
-            color: "on-accent",
-            handler: () => void $pwa?.updateServiceWorker(true),
-          },
+          withTestId(
+            {
+              label: "Reload",
+              color: "on-accent",
+              handler: () => void $pwa?.updateServiceWorker(true),
+            },
+            TEST_IDS.pwa.updateReload,
+          ),
           { label: "Later", color: "on-accent" },
         ],
       });

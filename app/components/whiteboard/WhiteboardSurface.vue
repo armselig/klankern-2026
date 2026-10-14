@@ -124,6 +124,7 @@ function cancelGesture(event: PointerEvent) {
     ref="surface"
     role="img"
     :aria-label="label"
+    :data-testid="TEST_IDS.whiteboard.surface"
     :viewBox="`0 0 ${BOARD_WIDTH} ${BOARD_HEIGHT}`"
     preserveAspectRatio="xMinYMin meet"
     class="whiteboard-surface"
@@ -136,6 +137,7 @@ function cancelGesture(event: PointerEvent) {
          board is scaled down; half of it lies outside the viewBox. -->
     <rect
       class="whiteboard-surface__board"
+      :data-testid="TEST_IDS.whiteboard.board"
       :width="BOARD_WIDTH"
       :height="BOARD_HEIGHT"
       stroke-width="2"

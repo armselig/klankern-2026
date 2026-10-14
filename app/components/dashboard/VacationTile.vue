@@ -27,15 +27,32 @@ defineProps<{
     <!-- The link is the title's text alone and is stretched over the lines
          (see the style), as the tile's own link is over the card: all of
          them can be pressed, and the link is named by the trip. -->
-    <li class="vacation-tile__title">
+    <li
+      class="vacation-tile__title"
+      :data-testid="TEST_IDS.dashboard.tileEntry"
+    >
       <nuxt-link :to="ROUTES.vacation(lines.id)" class="vacation-tile__link">{{
         lines.title
       }}</nuxt-link>
     </li>
-    <li>{{ lines.when }}</li>
-    <li class="text-muted">{{ lines.tasks }}</li>
-    <li v-if="lines.share" class="text-muted">{{ lines.share }}</li>
-    <li v-if="lines.more" class="text-muted">{{ lines.more }}</li>
+    <li :data-testid="TEST_IDS.dashboard.tileEntry">{{ lines.when }}</li>
+    <li class="text-muted" :data-testid="TEST_IDS.dashboard.tileEntry">
+      {{ lines.tasks }}
+    </li>
+    <li
+      v-if="lines.share"
+      class="text-muted"
+      :data-testid="TEST_IDS.dashboard.tileEntry"
+    >
+      {{ lines.share }}
+    </li>
+    <li
+      v-if="lines.more"
+      class="text-muted"
+      :data-testid="TEST_IDS.dashboard.tileEntry"
+    >
+      {{ lines.more }}
+    </li>
   </ul>
   <!-- Named in full for a screen reader: "See all" alone doesn't say of
        what, away from the tile's heading. No color: see hover-contrast.css. -->
@@ -45,6 +62,7 @@ defineProps<{
     :icon-right="mdiArrowRight"
     label="See all"
     aria-label="See all vacations"
+    :data-testid="TEST_IDS.dashboard.vacationsAll"
     class="touch-target vacation-tile__all"
   />
 </template>

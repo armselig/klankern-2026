@@ -58,13 +58,22 @@ async function copy() {
         <q-spinner color="primary" />
       </q-card-section>
 
-      <q-card-section v-else-if="error" class="text-negative">
+      <q-card-section
+        v-else-if="error"
+        class="text-negative"
+        :data-testid="TEST_IDS.errorMessage"
+      >
         {{ error }}
       </q-card-section>
 
       <q-card-section v-else>
         <p>Share this link or code -- it works for 7 days.</p>
-        <q-input :model-value="inviteUrl" readonly label="Invite link">
+        <q-input
+          :model-value="inviteUrl"
+          readonly
+          label="Invite link"
+          :data-testid="TEST_IDS.invite.link"
+        >
           <template #append>
             <q-btn
               flat

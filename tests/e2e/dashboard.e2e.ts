@@ -1,14 +1,19 @@
 import { expect, test } from "@playwright/test";
 import { addDays, localDateOf } from "../../app/utils/local-date";
 import { ROUTES } from "../../app/utils/routes";
+import { TEST_IDS } from "../../app/utils/test-ids";
+
 import {
   addShoppingItem,
   addTodo,
   addVacation,
   dashboardTile,
+  dashboardTileEmpty,
+  dashboardTileEntries,
   dragOnWhiteboard,
   expectStrokeCount,
   fillRecipeForm,
+  homeLink,
   listItem,
   openList,
   openRecipes,
@@ -62,48 +67,47 @@ test.describe("the dashboard's tiles", () => {
     await openSignedIn(pageB, userB);
 
     await test.step("a new household's tiles say that there is nothing yet", async () => {
-      await expect(dashboardTile(pageA, "To-dos")).toContainText(
-        "Nothing to do.",
-      );
-      await expect(dashboardTile(pageA, "Shopping")).toContainText(
-        "Nothing to buy.",
-      );
-      await expect(dashboardTile(pageA, "Whiteboard")).toContainText(
-        "Nothing drawn yet.",
-      );
-      await expect(dashboardTile(pageA, "Recipes")).toContainText(
-        "None saved yet.",
-      );
-      await expect(dashboardTile(pageA, "Vacations")).toContainText(
-        "No vacation planned.",
-      );
+      await expect(dashboardTileEmpty(pageA, "todos")).toBeVisible();
+
+      await expect(dashboardTileEmpty(pageA, "shopping")).toBeVisible();
+
+      await expect(dashboardTileEmpty(pageA, "whiteboard")).toBeVisible();
+
+      await expect(dashboardTileEmpty(pageA, "recipes")).toBeVisible();
+
+      await expect(dashboardTileEmpty(pageA, "vacations")).toBeVisible();
     });
 
     await test.step("a to-do added by B is counted and named, and gone once done", async () => {
-      await openList(pageB, "To-dos");
+      await openList(pageB, "todos");
       await addTodo(pageB, "Call the plumber");
-      const todos = dashboardTile(pageA, "To-dos");
-      await expect(todos).toContainText("1 open");
-      await expect(todos.getByRole("listitem")).toHaveText([
+      const todosCount = dashboardTile(pageA, "todos").getByTestId(
+        TEST_IDS.dashboard.tileCount,
+      );
+      await expect(todosCount).toHaveText("1 open");
+      await expect(dashboardTileEntries(pageA, "todos")).toHaveText([
         "Call the plumber",
       ]);
 
       await untilSaved(pageB, () =>
         listItem(pageB, "Call the plumber").click(),
       );
-      await expect(todos).toContainText("Nothing to do.");
+      await expect(dashboardTileEmpty(pageA, "todos")).toBeVisible();
     });
 
     await test.step("a longer list is cut short, and says by how much", async () => {
-      await pageB.getByRole("link", { name: "Klankern" }).click();
-      await openList(pageB, "Shopping");
+      await homeLink(pageB).click();
+      await openList(pageB, "shopping");
       for (const title of ["Milk", "Bread", "Tomatoes", "Butter", "Coffee"]) {
         await addShoppingItem(pageB, title);
         await expect(listItem(pageB, title)).toBeVisible();
       }
-      const shopping = dashboardTile(pageA, "Shopping");
-      await expect(shopping).toContainText("5 to buy");
-      await expect(shopping.getByRole("listitem")).toHaveText([
+      await expect(
+        dashboardTile(pageA, "shopping").getByTestId(
+          TEST_IDS.dashboard.tileCount,
+        ),
+      ).toHaveText("5 to buy");
+      await expect(dashboardTileEntries(pageA, "shopping")).toHaveText([
         "Milk",
         "Bread",
         "Tomatoes",
@@ -112,7 +116,7 @@ test.describe("the dashboard's tiles", () => {
     });
 
     await test.step("a stroke drawn by B shows in the whiteboard's tile", async () => {
-      await pageB.getByRole("link", { name: "Klankern" }).click();
+      await homeLink(pageB).click();
       await openWhiteboard(pageB);
       await dragOnWhiteboard(pageB, [
         [0.2, 0.2],
@@ -120,34 +124,38 @@ test.describe("the dashboard's tiles", () => {
       ]);
       await expectStrokeCount(pageB, 1);
       await expect(
-        whiteboardPreview(pageA).locator("polyline, circle"),
+        whiteboardPreview(pageA).getByTestId(TEST_IDS.whiteboard.stroke),
       ).toHaveCount(1);
     });
 
     await test.step("a recipe saved by B is counted and named", async () => {
-      await pageB.getByRole("link", { name: "Klankern" }).click();
+      await homeLink(pageB).click();
       await openRecipes(pageB);
-      await pageB.getByRole("link", { name: "New recipe" }).click();
+      await pageB.getByTestId(TEST_IDS.recipe.list.add).click();
       await fillRecipeForm(pageB, { title: "Pancakes", instructions: "Fry." });
       await saveRecipeForm(pageB);
-      const recipes = dashboardTile(pageA, "Recipes");
-      await expect(recipes).toContainText("1 saved");
-      await expect(recipes.getByRole("listitem")).toHaveText(["Pancakes"]);
+      await expect(
+        dashboardTile(pageA, "recipes").getByTestId(
+          TEST_IDS.dashboard.tileCount,
+        ),
+      ).toHaveText("1 saved");
+      await expect(dashboardTileEntries(pageA, "recipes")).toHaveText([
+        "Pancakes",
+      ]);
     });
 
     await test.step("a vacation added by B is named with where it stands and its open tasks", async () => {
       const today = localDateOf(new Date());
-      await pageB.getByRole("link", { name: "Klankern" }).click();
+      await homeLink(pageB).click();
       await openVacations(pageB);
       await addVacation(pageB, {
         title: "Easter at grandma's",
-        kind: "Hotel",
+        kind: "hotel",
         from: addDays(today, 20),
         until: addDays(today, 24),
       });
-      const vacations = dashboardTile(pageA, "Vacations");
       // The hotel template's tasks, all open, after the trip and its day.
-      await expect(vacations.getByRole("listitem")).toHaveText([
+      await expect(dashboardTileEntries(pageA, "vacations")).toHaveText([
         "Easter at grandma's",
         "in 20 days",
         "25 tasks open",
@@ -156,15 +164,13 @@ test.describe("the dashboard's tiles", () => {
 
     await test.step("a second vacation that starts later is only counted", async () => {
       const today = localDateOf(new Date());
-      await pageB.getByRole("link", { name: "All vacations" }).click();
+      await pageB.getByTestId(TEST_IDS.vacation.view.back).click();
       await addVacation(pageB, {
         title: "Summer at the lake",
         from: addDays(today, 200),
         until: addDays(today, 214),
       });
-      await expect(
-        dashboardTile(pageA, "Vacations").getByRole("listitem"),
-      ).toHaveText([
+      await expect(dashboardTileEntries(pageA, "vacations")).toHaveText([
         "Easter at grandma's",
         "in 20 days",
         "25 tasks open",
@@ -173,34 +179,45 @@ test.describe("the dashboard's tiles", () => {
     });
 
     await test.step("B's own dashboard shows the same without a page load", async () => {
-      await pageB.getByRole("link", { name: "Klankern" }).click();
-      await expect(dashboardTile(pageB, "To-dos")).toContainText(
-        "Nothing to do.",
-      );
-      await expect(dashboardTile(pageB, "Shopping")).toContainText("5 to buy");
+      await homeLink(pageB).click();
+      await expect(dashboardTileEmpty(pageB, "todos")).toBeVisible();
+
+      await expect(
+        dashboardTile(pageB, "shopping").getByTestId(
+          TEST_IDS.dashboard.tileCount,
+        ),
+      ).toHaveText("5 to buy");
+
       await expect(whiteboardPreview(pageB)).toBeVisible();
-      await expect(dashboardTile(pageB, "Recipes")).toContainText("1 saved");
-      await expect(dashboardTile(pageB, "Vacations")).toContainText(
+      await expect(
+        dashboardTile(pageB, "recipes").getByTestId(
+          TEST_IDS.dashboard.tileCount,
+        ),
+      ).toHaveText("1 saved");
+
+      await expect(dashboardTileEntries(pageB, "vacations").nth(2)).toHaveText(
         "25 tasks open",
       );
     });
 
     await test.step("the roster's button opens the invite dialog and gets the focus back", async () => {
       // With the keyboard, whose user has to find the focus again afterwards.
-      const invite = pageA.getByRole("button", { name: "Invite", exact: true });
+      const invite = pageA.getByTestId(TEST_IDS.household.inviteButton);
+
       await invite.focus();
       await pageA.keyboard.press("Enter");
-      await expect(pageA.getByLabel("Invite link")).toHaveValue(
+      await expect(pageA.getByTestId(TEST_IDS.invite.link)).toHaveValue(
         new RegExp(`${ROUTES.joinPrefix}.+`),
       );
       await pageA.keyboard.press("Escape");
-      await expect(pageA.getByLabel("Invite link")).toHaveCount(0);
+      await expect(pageA.getByTestId(TEST_IDS.invite.link)).toHaveCount(0);
       await expect(invite).toBeFocused();
     });
 
     await test.step("a tile leads to its page wherever it is pressed", async () => {
       // On the count, far from the link's own text in the heading.
-      const shopping = dashboardTile(pageA, "Shopping");
+      const shopping = dashboardTile(pageA, "shopping");
+
       const box = await shopping.boundingBox();
       if (!box) throw new Error("the shopping tile is not on screen");
       await shopping.click({
@@ -212,25 +229,29 @@ test.describe("the dashboard's tiles", () => {
     });
 
     await test.step("the vacations' tile leads to the trip from its lines, and to the list from the rest", async () => {
-      await pageA.getByRole("link", { name: "Klankern" }).click();
-      const tile = dashboardTile(pageA, "Vacations");
+      await homeLink(pageA).click();
+      const tile = dashboardTile(pageA, "vacations");
 
       // On the line about the tasks, away from the link's own text. By
       // position, as a finger presses: the link lies over the line. The
       // tile is the last one and below the fold of a small screen.
       await tile.scrollIntoViewIfNeeded();
-      const line = await tile.getByText("25 tasks open").boundingBox();
+      // The third line: after the title and the day.
+      const line = await dashboardTileEntries(pageA, "vacations")
+        .nth(2)
+        .boundingBox();
+
       if (!line) throw new Error("the tile's line is not on screen");
       await pageA.mouse.click(line.x + 20, line.y + line.height / 2);
       await expect(pageA).toHaveURL(
         new RegExp(`${ROUTES.vacations}/[0-9a-f-]{36}$`),
       );
       await expect(
-        pageA.getByRole("heading", { name: "Easter at grandma's" }),
-      ).toBeVisible();
+        pageA.getByTestId(TEST_IDS.vacation.header.title),
+      ).toHaveText("Easter at grandma's");
 
-      await pageA.getByRole("link", { name: "Klankern" }).click();
-      await tile.getByRole("link", { name: "See all vacations" }).click();
+      await homeLink(pageA).click();
+      await tile.getByTestId(TEST_IDS.dashboard.vacationsAll).click();
       await expect(pageA).toHaveURL(new RegExp(`${ROUTES.vacations}$`));
       await expect(vacationLink(pageA, "Summer at the lake")).toBeVisible();
     });

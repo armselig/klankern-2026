@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { ROUTES } from "../../app/utils/routes";
+import { TEST_IDS } from "../../app/utils/test-ids";
+
 import {
   accountButton,
   enterLoginCode,
@@ -54,15 +56,14 @@ test.describe("auth", () => {
       await test.step(`${path} redirects`, async () => {
         await page.goto(path);
         await expect(page).toHaveURL(LOGIN_URL);
-        await expect(page.getByText("Sign in to Klankern")).toBeVisible();
+        await expect(page.getByTestId(TEST_IDS.login.heading)).toBeVisible();
       });
     }
 
     await test.step("a join link stays on the join page", async () => {
       await page.goto(ROUTES.join("some-code"));
-      await expect(
-        page.getByText("Join your household", { exact: true }),
-      ).toBeVisible();
+      await expect(page.getByTestId(TEST_IDS.join.heading)).toBeVisible();
+
       await expect(page).toHaveURL(new RegExp(`${ROUTES.join("some-code")}$`));
     });
   });
@@ -75,7 +76,13 @@ test.describe("auth", () => {
     await test.step("a full reload keeps the user signed in", async () => {
       await page.reload();
       await expect(accountButton(page, user.email)).toBeVisible();
-      await expect(page.getByText(`E2E auth ${runId}`)).toBeVisible();
+      // The button shows only a picture; its name says whose account it is.
+      await expect(accountButton(page, user.email)).toHaveAccessibleName(
+        `Account, ${user.email}`,
+      );
+      await expect(page.getByTestId(TEST_IDS.household.name)).toHaveText(
+        `E2E auth ${runId}`,
+      );
     });
 
     await test.step("after sign-out, protected pages redirect again", async () => {
@@ -104,7 +111,7 @@ test.describe("auth", () => {
 
     // Filled in here and not by signIn, which expects the dashboard: where
     // sign-in leads is what this case is about.
-    await enterLoginCode(page, user.email, "Verify");
+    await enterLoginCode(page, user.email);
     await expect(page).toHaveURL(new RegExp(`${ROUTES.vacation("some-id")}`));
     expect(new URL(page.url()).search).toBe("?task=some-task");
     await expect(accountButton(page, user.email)).toBeVisible();
@@ -119,7 +126,7 @@ test.describe("auth", () => {
       expect(decodeURIComponent((await remembered()) ?? "")).toBe(ROUTES.todos);
       // Someone signs in elsewhere on the page, as the join page does, and
       // out again: the remembered page must not wait for the next person.
-      await enterLoginCode(page, user.email, "Verify");
+      await enterLoginCode(page, user.email);
       await expect(page).toHaveURL(new RegExp(`${ROUTES.todos}$`));
       await page.goto(ROUTES.home);
       await signOut(page);
@@ -132,26 +139,31 @@ test.describe("auth", () => {
   }) => {
     await stubOtpRequest(page);
     await page.goto(ROUTES.login);
-    await page.getByLabel("Email address").fill(user.email);
-    await page.getByRole("button", { name: "Send code" }).click();
-    await expect(
-      page.getByText(`We sent a login code to ${user.email}.`),
-    ).toBeVisible();
+    await page.getByTestId(TEST_IDS.signIn.email).fill(user.email);
+    await page.getByTestId(TEST_IDS.signIn.sendCode).click();
+
+    await expect(page.getByTestId(TEST_IDS.signIn.sentNotice)).toContainText(
+      user.email,
+    );
 
     await test.step("a wrong code is rejected by the auth server", async () => {
-      await page.getByLabel("Code from the email").fill("00000000");
-      await page.getByRole("button", { name: "Verify" }).click();
-      await expect(page.getByText(/expired or is invalid/i)).toBeVisible();
-      await expect(page.getByLabel("Code from the email")).toBeVisible();
+      await page.getByTestId(TEST_IDS.signIn.code).fill("00000000");
+      await page.getByTestId(TEST_IDS.signIn.submit).click();
+      // The auth server's own words, shown as they come.
+      await expect(page.getByTestId(TEST_IDS.errorMessage)).toContainText(
+        /expired or is invalid/i,
+      );
+
+      await expect(page.getByTestId(TEST_IDS.signIn.code)).toBeVisible();
       await expect(page).toHaveURL(LOGIN_URL);
     });
 
     await test.step('"Use a different email" returns to the email step', async () => {
-      await page.getByRole("button", { name: "Use a different email" }).click();
-      await expect(page.getByLabel("Email address")).toHaveValue(user.email);
-      await expect(
-        page.getByRole("button", { name: "Send code" }),
-      ).toBeVisible();
+      await page.getByTestId(TEST_IDS.signIn.changeEmail).click();
+      await expect(page.getByTestId(TEST_IDS.signIn.email)).toHaveValue(
+        user.email,
+      );
+      await expect(page.getByTestId(TEST_IDS.signIn.sendCode)).toBeVisible();
     });
   });
 });

@@ -1,7 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 import { ROUTES } from "../../app/utils/routes";
+import { TEST_IDS } from "../../app/utils/test-ids";
+
 import {
   accountButton,
+  dashboardTileLink,
   enterLoginCode,
   memberAvatar,
   openAccountMenu,
@@ -31,7 +34,7 @@ const INVALID_INVITE_TEXT =
 async function joinSignedOut(page: Page, code: string, user: TestUser) {
   await stubOtpRequest(page);
   await page.goto(ROUTES.join(code));
-  await enterLoginCode(page, user.email, "Join household");
+  await enterLoginCode(page, user.email);
 }
 
 test.describe("household setup and invites", () => {
@@ -67,24 +70,29 @@ test.describe("household setup and invites", () => {
 
     await test.step("a list page without a household points to the dashboard", async () => {
       await page.goto(ROUTES.todos);
-      await expect(page.getByText("You need a household first")).toBeVisible();
-      await page.getByRole("link", { name: "the dashboard" }).click();
+      await expect(
+        page.getByTestId(TEST_IDS.household.requiredNotice),
+      ).toBeVisible();
+      await page.getByTestId(TEST_IDS.household.requiredLink).click();
     });
 
     await test.step("the dashboard asks for a household name and creates it", async () => {
-      await expect(page.getByText("Set up your household")).toBeVisible();
-      await page.getByLabel("Household name").fill(name);
-      await page.getByRole("button", { name: "Create household" }).click();
-      await expect(page.getByText(name)).toBeVisible();
-      await expect(page.getByRole("link", { name: "To-dos" })).toBeVisible();
-      await expect(page.getByRole("link", { name: "Shopping" })).toBeVisible();
+      await expect(
+        page.getByTestId(TEST_IDS.household.createForm),
+      ).toBeVisible();
+      await page.getByTestId(TEST_IDS.household.nameInput).fill(name);
+      await page.getByTestId(TEST_IDS.household.createButton).click();
+      await expect(page.getByTestId(TEST_IDS.household.name)).toHaveText(name);
+      await expect(dashboardTileLink(page, "todos")).toBeVisible();
+      await expect(dashboardTileLink(page, "shopping")).toBeVisible();
+
       // The new household's only member so far, without a page load.
       await expect(memberAvatar(page, user.email)).toBeVisible();
     });
 
     await test.step("the household is still there after a reload", async () => {
       await page.reload();
-      await expect(page.getByText(name)).toBeVisible();
+      await expect(page.getByTestId(TEST_IDS.household.name)).toHaveText(name);
     });
   });
 
@@ -102,10 +110,9 @@ test.describe("household setup and invites", () => {
     const inviteUrl =
       await test.step("the owner gets an invite link", async () => {
         await openAccountMenu(ownerPage);
-        await ownerPage
-          .getByRole("button", { name: "Invite a family member" })
-          .click();
-        const linkField = ownerPage.getByLabel("Invite link");
+        await ownerPage.getByTestId(TEST_IDS.account.invite).click();
+
+        const linkField = ownerPage.getByTestId(TEST_IDS.invite.link);
         await expect(linkField).toHaveValue(
           new RegExp(`${ROUTES.joinPrefix}.+`),
         );
@@ -118,18 +125,20 @@ test.describe("household setup and invites", () => {
     await test.step('the join page has its own sign-in and no "Log in" detour', async () => {
       await stubOtpRequest(memberPage);
       await memberPage.goto(inviteUrl.pathname);
+      await expect(memberPage.getByTestId(TEST_IDS.join.heading)).toBeVisible();
+
       await expect(
-        memberPage.getByText("Join your household", { exact: true }),
-      ).toBeVisible();
-      await expect(
-        memberPage.getByRole("link", { name: "Log in" }),
+        memberPage.getByTestId(TEST_IDS.layout.loginLink),
       ).toHaveCount(0);
     });
 
     await test.step("signing in on the join page joins the household", async () => {
-      await enterLoginCode(memberPage, member.email, "Join household");
+      await enterLoginCode(memberPage, member.email);
       await expect(memberPage).toHaveURL(HOME_URL);
-      await expect(memberPage.getByText(name)).toBeVisible();
+      await expect(memberPage.getByTestId(TEST_IDS.household.name)).toHaveText(
+        name,
+      );
+
       await expect(accountButton(memberPage, member.email)).toBeVisible();
       expect(await findHouseholdId(member)).toBe(householdId);
     });
@@ -147,11 +156,12 @@ test.describe("household setup and invites", () => {
     const code = await createInviteCode(owner, householdId);
 
     await signIn(page, member);
-    await expect(page.getByText("Set up your household")).toBeVisible();
+    await expect(page.getByTestId(TEST_IDS.household.createForm)).toBeVisible();
 
     await page.goto(ROUTES.join(code));
     await expect(page).toHaveURL(HOME_URL);
-    await expect(page.getByText(name)).toBeVisible();
+    await expect(page.getByTestId(TEST_IDS.household.name)).toHaveText(name);
+
     expect(await findHouseholdId(member)).toBe(householdId);
   });
 
@@ -175,14 +185,19 @@ test.describe("household setup and invites", () => {
 
     await test.step("signed out: the code is rejected after signing in", async () => {
       await joinSignedOut(page, codes.unknown, member);
-      await expect(page.getByText(INVALID_INVITE_TEXT)).toBeVisible();
+      await expect(page.getByTestId(TEST_IDS.errorMessage)).toHaveText(
+        INVALID_INVITE_TEXT,
+      );
+
       await waitForSessionCookie(page);
     });
 
     for (const kind of ["expired", "used up"] as const) {
       await test.step(`signed in: an ${kind} code is rejected`, async () => {
         await page.goto(ROUTES.join(codes[kind]));
-        await expect(page.getByText(INVALID_INVITE_TEXT)).toBeVisible();
+        await expect(page.getByTestId(TEST_IDS.errorMessage)).toHaveText(
+          INVALID_INVITE_TEXT,
+        );
       });
     }
 

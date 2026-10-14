@@ -92,7 +92,9 @@ const vacationsFailed = computed(
     <create-household-form v-else-if="!householdStore.household" />
 
     <div v-else class="dashboard">
-      <h2 class="text-h6 q-my-none">{{ householdStore.household.name }}</h2>
+      <h2 class="text-h6 q-my-none" :data-testid="TEST_IDS.household.name">
+        {{ householdStore.household.name }}
+      </h2>
       <member-roster @invite="inviteOpen = true" />
 
       <!-- A list of links, as a navigation is; a plain ul, because a q-list
@@ -102,7 +104,7 @@ const vacationsFailed = computed(
            other four are what a household looks up, and they come first. -->
       <nav aria-label="Lists, recipes, vacations and whiteboard">
         <ul role="list" class="dashboard__tiles">
-          <li>
+          <li :data-testid="TEST_IDS.dashboard.tile.todos">
             <dashboard-tile
               title="To-dos"
               :to="ROUTES.todos"
@@ -117,7 +119,7 @@ const vacationsFailed = computed(
               />
             </dashboard-tile>
           </li>
-          <li>
+          <li :data-testid="TEST_IDS.dashboard.tile.shopping">
             <dashboard-tile
               title="Shopping"
               :to="ROUTES.shopping"
@@ -132,7 +134,7 @@ const vacationsFailed = computed(
               />
             </dashboard-tile>
           </li>
-          <li>
+          <li :data-testid="TEST_IDS.dashboard.tile.recipes">
             <dashboard-tile
               title="Recipes"
               :to="ROUTES.recipes"
@@ -147,7 +149,7 @@ const vacationsFailed = computed(
               />
             </dashboard-tile>
           </li>
-          <li>
+          <li :data-testid="TEST_IDS.dashboard.tile.vacations">
             <dashboard-tile
               title="Vacations"
               :to="ROUTES.vacations"
@@ -160,10 +162,16 @@ const vacationsFailed = computed(
                 :lines="vacationPreview"
                 :all-to="ROUTES.vacations"
               />
-              <p v-else class="text-muted q-my-none">No vacation planned.</p>
+              <p
+                v-else
+                class="text-muted q-my-none"
+                :data-testid="TEST_IDS.dashboard.tileEmpty"
+              >
+                No vacation planned.
+              </p>
             </dashboard-tile>
           </li>
-          <li>
+          <li :data-testid="TEST_IDS.dashboard.tile.whiteboard">
             <dashboard-tile
               title="Whiteboard"
               :to="ROUTES.whiteboard"
@@ -175,7 +183,13 @@ const vacationsFailed = computed(
                 v-if="whiteboardStore.visible.length > 0"
                 :strokes="whiteboardStore.visible"
               />
-              <p v-else class="text-muted q-my-none">Nothing drawn yet.</p>
+              <p
+                v-else
+                class="text-muted q-my-none"
+                :data-testid="TEST_IDS.dashboard.tileEmpty"
+              >
+                Nothing drawn yet.
+              </p>
             </dashboard-tile>
           </li>
         </ul>

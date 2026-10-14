@@ -47,6 +47,7 @@ watch(hash, () => {
          transparent, and the rosette would show through it. -->
     <svg
       v-if="rosette && photo !== 'loaded'"
+      :data-testid="TEST_IDS.avatar.drawing"
       :viewBox="`0 0 ${ROSETTE_BOX} ${ROSETTE_BOX}`"
       width="100%"
       height="100%"
@@ -75,6 +76,7 @@ watch(hash, () => {
       loading="lazy"
       referrerpolicy="no-referrer"
       class="user-avatar__photo"
+      :data-testid="TEST_IDS.avatar.photo"
       @load="photo = 'loaded'"
       @error="photo = 'missing'"
     />

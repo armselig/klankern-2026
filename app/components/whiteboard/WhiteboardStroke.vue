@@ -14,6 +14,7 @@ const paint = computed(() => inkPaint(props.stroke.color));
 <template>
   <circle
     v-if="isDot"
+    :data-testid="TEST_IDS.whiteboard.stroke"
     :cx="stroke.points[0]"
     :cy="stroke.points[1]"
     :r="stroke.width / 2"
@@ -22,6 +23,7 @@ const paint = computed(() => inkPaint(props.stroke.color));
   />
   <polyline
     v-else
+    :data-testid="TEST_IDS.whiteboard.stroke"
     :points="stroke.points.join(' ')"
     :stroke="stroke.color"
     :style="{ stroke: paint }"

@@ -21,5 +21,7 @@ The first run passed everything except one e2e test: "a new version shows the up
 
 `signIn` now waits for the home URL and looks for the email inside the header (`getByRole('banner')`) before it waits for the cookie. The next CI run passed. Why the race started to lose every time in CI, without a code change, was not found.
 
+Since 2026-10-13 `signIn` finds the header's account button by its test id and no longer by role and name; see "Test ids instead of text" in [`infra/test-ids.md`](./test-ids.md).
+
 - The same CI run on `develop` once also failed "a signed-out family member joins through the invite link" (`household.e2e.ts`) with the 120 s test timeout, in the step where the member opens the join link. It overlapped with a local e2e run; not explained, and it has not recurred.
 - Not changed: a signed-in user who opens `/login` directly sees the login form.

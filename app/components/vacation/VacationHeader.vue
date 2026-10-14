@@ -66,8 +66,16 @@ function submit() {
          of its own cost 48px above the tasks. -->
     <div v-if="!editing" class="vacation-header__head">
       <div class="vacation-header__text">
-        <h2 class="text-h6 vacation-header__title">{{ vacation.title }}</h2>
-        <p class="text-muted q-my-none">
+        <h2
+          class="text-h6 vacation-header__title"
+          :data-testid="TEST_IDS.vacation.header.title"
+        >
+          {{ vacation.title }}
+        </h2>
+        <p
+          class="text-muted q-my-none"
+          :data-testid="TEST_IDS.vacation.header.summary"
+        >
           {{ VACATION_KIND_LABELS[vacation.kind] }} ·
           {{ vacationDates(vacation, today) }} ·
           {{ stageLine(vacation, today) }}
@@ -79,6 +87,7 @@ function submit() {
         flat
         :icon="mdiPencilOutline"
         label="Edit"
+        :data-testid="TEST_IDS.vacation.header.edit"
         class="touch-target vacation-header__edit"
         @click="startEditing"
       />
@@ -89,6 +98,7 @@ function submit() {
         ref="titleInput"
         v-model="draft.title"
         label="Title"
+        :data-testid="TEST_IDS.vacation.header.titleInput"
         :maxlength="VACATION_TITLE_LIMIT"
         :error="problem === 'title'"
         :error-message="VACATION_DETAILS_MESSAGES.title"
@@ -114,6 +124,7 @@ function submit() {
           v-model="draft.ends_on"
           type="date"
           label="Until"
+          :data-testid="TEST_IDS.vacation.header.until"
           stack-label
           required
           :min="draft.starts_on"
@@ -124,6 +135,7 @@ function submit() {
         v-if="problem === 'dates'"
         role="alert"
         class="text-negative q-mb-none"
+        :data-testid="TEST_IDS.errorMessage"
       >
         {{ VACATION_DETAILS_MESSAGES.dates }}
       </p>
@@ -131,6 +143,7 @@ function submit() {
         <q-btn
           flat
           label="Cancel"
+          :data-testid="TEST_IDS.vacation.header.cancel"
           class="touch-target"
           :disable="saving"
           @click="editing = false"
@@ -139,6 +152,7 @@ function submit() {
           type="submit"
           color="primary"
           label="Save"
+          :data-testid="TEST_IDS.vacation.header.save"
           unelevated
           class="touch-target"
           :loading="saving"
@@ -149,6 +163,7 @@ function submit() {
         flat
         :icon="mdiDeleteOutline"
         label="Remove vacation"
+        :data-testid="TEST_IDS.vacation.header.remove"
         class="touch-target"
         :disable="saving"
         @click="emit('remove')"

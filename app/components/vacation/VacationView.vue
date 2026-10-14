@@ -250,8 +250,14 @@ function confirmRemove() {
     title: "Remove this vacation?",
     message: `This removes "${title}" and ${what} for the whole family.`,
     // No color for the flat button; see SharedWhiteboard.vue.
-    cancel: { label: "Cancel", flat: true, color: undefined },
-    ok: { label: "Remove", color: "negative", unelevated: true },
+    cancel: withTestId(
+      { label: "Cancel", flat: true, color: undefined },
+      TEST_IDS.confirmDialog.cancel,
+    ),
+    ok: withTestId(
+      { label: "Remove", color: "negative", unelevated: true },
+      TEST_IDS.confirmDialog.ok,
+    ),
   }).onOk(async () => {
     void vacationStore.remove(props.vacationId);
     await router.replace(ROUTES.vacations);
@@ -267,6 +273,7 @@ function confirmRemove() {
       :to="ROUTES.vacations"
       :icon="mdiArrowLeft"
       label="All vacations"
+      :data-testid="TEST_IDS.vacation.view.back"
       class="touch-target q-mb-xs"
     />
 
@@ -286,7 +293,12 @@ function confirmRemove() {
       <!-- A failed tick, edit, removal or assignment: said aloud as well as
            shown, since the row it concerns has already gone back to what it
            was. -->
-      <p v-if="vacationStore.error" role="alert" class="text-negative q-mt-sm">
+      <p
+        v-if="vacationStore.error"
+        role="alert"
+        class="text-negative q-mt-sm"
+        :data-testid="TEST_IDS.errorMessage"
+      >
         {{ vacationStore.error }}
       </p>
 
@@ -349,12 +361,20 @@ function confirmRemove() {
     <!-- Also for another household's vacation: RLS returns no row for it.
          And what replaces the page when someone removes the vacation while
          it is open. -->
-    <div v-else-if="vacationStore.householdId">
+    <div
+      v-else-if="vacationStore.householdId"
+      :data-testid="TEST_IDS.vacation.view.notFound"
+    >
       <h2 class="text-h6">Vacation not found</h2>
       <p>This vacation doesn't exist, or it was removed.</p>
     </div>
 
-    <p v-else-if="vacationStore.error" role="alert" class="text-negative">
+    <p
+      v-else-if="vacationStore.error"
+      role="alert"
+      class="text-negative"
+      :data-testid="TEST_IDS.errorMessage"
+    >
       {{ vacationStore.error }}
     </p>
   </div>

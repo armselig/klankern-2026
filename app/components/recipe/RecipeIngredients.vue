@@ -45,6 +45,7 @@ function setChosen(id: string, isChosen: boolean) {
             :model-value="!skippedIds.includes(ingredient.id)"
             :label="label(ingredient)"
             class="recipe-ingredients__name"
+            :data-testid="TEST_IDS.recipe.view.ingredient"
             @update:model-value="(value) => setChosen(ingredient.id, value)"
           />
         </q-item-section>
@@ -55,6 +56,7 @@ function setChosen(id: string, isChosen: boolean) {
       color="primary"
       :icon="mdiCartPlus"
       label="Add to shopping list"
+      :data-testid="TEST_IDS.recipe.view.addToShopping"
       unelevated
       :loading="adding"
       :disable="chosen.length === 0"

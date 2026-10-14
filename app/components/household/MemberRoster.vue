@@ -21,12 +21,14 @@ const emptyPlaceSize = `${AVATAR_SIZE}px`;
     <ul
       role="list"
       aria-label="Household members"
+      :data-testid="TEST_IDS.household.members"
       class="member-roster__members"
     >
       <li
         v-for="member in householdStore.members"
         :key="member.user_id"
         class="member-roster__member column items-center"
+        :data-testid="TEST_IDS.household.member"
       >
         <!-- The whole address is the avatar's name and tooltip. The caption
              is only the part before the @, which fits under an avatar. -->
@@ -34,6 +36,7 @@ const emptyPlaceSize = `${AVATAR_SIZE}px`;
           :email="member.email"
           :size="AVATAR_SIZE"
           :label="member.email"
+          :data-testid="TEST_IDS.household.memberAvatar"
         />
         <span class="member-roster__name text-caption ellipsis">
           {{ emailLocalPart(member.email) }}
@@ -47,6 +50,7 @@ const emptyPlaceSize = `${AVATAR_SIZE}px`;
       flat
       no-caps
       padding="0"
+      :data-testid="TEST_IDS.household.inviteButton"
       class="member-roster__member"
       @click="emit('invite')"
     >
@@ -59,7 +63,11 @@ const emptyPlaceSize = `${AVATAR_SIZE}px`;
     </q-btn>
   </div>
 
-  <p v-if="householdStore.membersError" class="text-negative">
+  <p
+    v-if="householdStore.membersError"
+    class="text-negative"
+    :data-testid="TEST_IDS.errorMessage"
+  >
     Couldn't load the household members. Reload the page to try again.
   </p>
 </template>

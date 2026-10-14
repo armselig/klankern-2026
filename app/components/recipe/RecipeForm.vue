@@ -71,6 +71,7 @@ function submit() {
       ref="titleInput"
       v-model="draft.title"
       label="Title"
+      :data-testid="TEST_IDS.recipe.form.title"
       :maxlength="RECIPE_LIMITS.title"
       :error="titleMissing"
       error-message="Give the recipe a title."
@@ -81,6 +82,7 @@ function submit() {
     <q-input
       v-model="draft.servings"
       label="Servings (optional)"
+      :data-testid="TEST_IDS.recipe.form.servings"
       :maxlength="RECIPE_LIMITS.servings"
     />
 
@@ -93,18 +95,21 @@ function submit() {
         :key="ingredient.id"
         role="group"
         :aria-label="`Ingredient ${index + 1}`"
+        :data-testid="TEST_IDS.recipe.form.ingredientRow"
         class="row no-wrap items-center q-gutter-x-sm"
       >
         <q-input
           :ref="(input) => rememberNameInput(ingredient.id, input)"
           v-model="ingredient.name"
           label="Ingredient"
+          :data-testid="TEST_IDS.recipe.form.ingredientName"
           :maxlength="RECIPE_LIMITS.ingredientName"
           class="col"
         />
         <q-input
           v-model="ingredient.quantity"
           label="Quantity (optional)"
+          :data-testid="TEST_IDS.recipe.form.ingredientQuantity"
           :maxlength="RECIPE_LIMITS.ingredientQuantity"
           class="col-5"
         />
@@ -115,6 +120,7 @@ function submit() {
           round
           :icon="mdiDeleteOutline"
           :aria-label="`Remove ingredient ${index + 1}`"
+          :data-testid="TEST_IDS.recipe.form.ingredientRemove"
           @click="removeIngredient(ingredient.id)"
         />
       </div>
@@ -123,6 +129,7 @@ function submit() {
         flat
         :icon="mdiPlus"
         label="Add ingredient"
+        :data-testid="TEST_IDS.recipe.form.addIngredient"
         class="q-mt-sm"
         :disable="draft.ingredients.length >= RECIPE_LIMITS.ingredients"
         @click="addIngredient"
@@ -133,17 +140,26 @@ function submit() {
       v-model="draft.instructions"
       type="textarea"
       label="Instructions"
+      :data-testid="TEST_IDS.recipe.form.instructions"
       :maxlength="RECIPE_LIMITS.instructions"
       autogrow
     />
 
-    <p v-if="error" class="text-negative" role="alert">{{ error }}</p>
+    <p
+      v-if="error"
+      class="text-negative"
+      :data-testid="TEST_IDS.errorMessage"
+      role="alert"
+    >
+      {{ error }}
+    </p>
 
     <div class="row q-gutter-sm">
       <q-btn
         type="submit"
         color="primary"
         label="Save"
+        :data-testid="TEST_IDS.recipe.form.save"
         unelevated
         :loading="saving"
       />

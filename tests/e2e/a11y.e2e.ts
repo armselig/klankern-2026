@@ -12,8 +12,6 @@ import {
   fillRecipeForm,
   listItem,
   memberAvatar,
-  NO_RECIPES_TEXT,
-  NO_VACATIONS_TEXT,
   openAccountMenu,
   openList,
   openRecipes,
@@ -21,11 +19,13 @@ import {
   openWhiteboard,
   phaseButton,
   recipeLink,
+  recipeListEmpty,
   saveRecipeForm,
   openSignedIn,
   taskMoreButton,
   untilSaved,
   vacationLink,
+  vacationListEmpty,
   vacationTask,
   whiteboardPreview,
 } from "../support/e2e-ui";
@@ -176,19 +176,19 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       // The members and the tiles' content arrive after the household; the
       // scan should see them.
       await expect(memberAvatar(page, user.email)).toBeVisible();
-      await expect(dashboardTile(page, "To-dos")).toContainText(
+      await expect(dashboardTile(page, "todos")).toContainText(
         "Nothing to do.",
       );
-      await expect(dashboardTile(page, "Shopping")).toContainText(
+      await expect(dashboardTile(page, "shopping")).toContainText(
         "Nothing to buy.",
       );
-      await expect(dashboardTile(page, "Whiteboard")).toContainText(
+      await expect(dashboardTile(page, "whiteboard")).toContainText(
         "Nothing drawn yet.",
       );
-      await expect(dashboardTile(page, "Recipes")).toContainText(
+      await expect(dashboardTile(page, "recipes")).toContainText(
         "None saved yet.",
       );
-      await expect(dashboardTile(page, "Vacations")).toContainText(
+      await expect(dashboardTile(page, "vacations")).toContainText(
         "No vacation planned.",
       );
       await expectNoBlockingViolations(page, "the dashboard");
@@ -250,7 +250,7 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       // lost with it.
       await expect(accountButton(page, user.email)).toBeFocused();
 
-      await openList(page, "To-dos");
+      await openList(page, "todos");
       await expect(page).toHaveTitle("To-dos · Klankern");
       await expectNoBlockingViolations(page, "the empty to-do list");
 
@@ -289,7 +289,7 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       await expectNoBlockingViolations(page, "the to-do list");
 
       await page.getByRole("link", { name: "Klankern" }).click();
-      await openList(page, "Shopping");
+      await openList(page, "shopping");
       await addShoppingItem(page, "Apples", "6");
       await addShoppingItem(page, "Bread");
       await untilSaved(page, () => listItem(page, "Bread").click());
@@ -342,13 +342,13 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       await page.getByRole("link", { name: "Klankern" }).click();
       // The tiles with what the steps above left behind: counts, entries
       // and the drawing.
-      await expect(dashboardTile(page, "To-dos")).toContainText("1 open");
-      await expect(dashboardTile(page, "Shopping")).toContainText("1 to buy");
+      await expect(dashboardTile(page, "todos")).toContainText("1 open");
+      await expect(dashboardTile(page, "shopping")).toContainText("1 to buy");
       await expect(whiteboardPreview(page)).toBeVisible();
       await expectNoBlockingViolations(page, "the dashboard with filled tiles");
       await openRecipes(page);
       await expect(page).toHaveTitle("Recipes · Klankern");
-      await expect(page.getByText(NO_RECIPES_TEXT)).toBeVisible();
+      await expect(recipeListEmpty(page)).toBeVisible();
       await expectNoBlockingViolations(page, "the empty recipe list");
 
       await page.getByRole("link", { name: "New recipe" }).click();
@@ -395,7 +395,7 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       await page.getByRole("link", { name: "Klankern" }).click();
       await openVacations(page);
       await expect(page).toHaveTitle("Vacations · Klankern");
-      await expect(page.getByText(NO_VACATIONS_TEXT)).toBeVisible();
+      await expect(vacationListEmpty(page)).toBeVisible();
       await expectNoBlockingViolations(page, "the empty list of vacations");
 
       const today = localDateOf(new Date());
@@ -416,7 +416,7 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       // With a done task among the open ones, and a folded phase opened.
       await vacationTask(page, "Clothes").click();
       await expect(vacationTask(page, "Clothes")).toBeChecked();
-      await phaseButton(page, "During").click();
+      await phaseButton(page, "during").click();
       await expect(vacationTask(page, "Return the key")).toBeVisible();
       await untilFadesEnd(page);
       await expectNoBlockingViolations(page, "a vacation");
@@ -509,7 +509,7 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       await expectNoBlockingViolations(page, "the list of vacations");
 
       await page.getByRole("link", { name: "Klankern" }).click();
-      await expect(dashboardTile(page, "Vacations")).toContainText(
+      await expect(dashboardTile(page, "vacations")).toContainText(
         "Winter week by the sea",
       );
       await expectNoBlockingViolations(page, "the dashboard with a vacation");

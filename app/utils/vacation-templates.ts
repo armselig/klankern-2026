@@ -68,6 +68,9 @@ const ENTRIES: Record<VacationPhase, readonly TemplateEntry[]> = {
   ],
 };
 
+/** The kinds of stay, in the order the form for a new vacation offers them. */
+export const VACATION_KINDS: readonly VacationKind[] = ["house", "hotel"];
+
 /** The phases in the order a trip goes through them, which is also the
  * order of a vacation's page. */
 export const VACATION_PHASES: readonly VacationPhase[] = [
