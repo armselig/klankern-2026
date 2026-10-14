@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.9.0](https://github.com/armselig/klankern-2026/compare/v1.8.1...v1.9.0) (2026-10-14)
+
+### Features
+
+* **vacations:** make a rejection stand out on its task ([33f5a3c](https://github.com/armselig/klankern-2026/commit/33f5a3c06eb914adee8742290fa241ed14c3c6ba))
+
+### Bug Fixes
+
+* take the user id from the session, not from the auth service ([358cc85](https://github.com/armselig/klankern-2026/commit/358cc85babb99682528bdce0fda0356c32b2a8c0))
+
 ## [1.8.1](https://github.com/armselig/klankern-2026/compare/v1.8.0...v1.8.1) (2026-10-14)
 
 ### Bug Fixes
