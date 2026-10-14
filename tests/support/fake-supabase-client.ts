@@ -64,9 +64,10 @@ export function fakeClient({
 }) {
   return {
     auth: {
-      getUser: vi
-        .fn()
-        .mockResolvedValue({ data: { user: { id: userId } }, error: null }),
+      getSession: vi.fn().mockResolvedValue({
+        data: { session: { user: { id: userId } } },
+        error: null,
+      }),
     },
     from: vi.fn(
       from ?? (() => fakeQueryBuilder({ data: null, error: null }).builder),
