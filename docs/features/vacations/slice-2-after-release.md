@@ -28,3 +28,10 @@ Tests: unit tests of `addTaskLabel` and of the insert with a person, and the cha
 `npm run lint`, `npm run typecheck`, the unit tests of `app/utils` and `app/composables` (398) and the `dev` project's `vacations` and `a11y` specs (6) pass after both changes.
 
 Not verified: either change on a phone; with two members' devices, whether a line that moves under a finger is pressed by mistake.
+
+## “Change people” in the frame of “Who has what” (2026-10-14)
+
+At the user's request: pressing "Change people" changed the layout. "Who has what" has the frame of the lists of tasks (`--theme-separator`, square, with its heading inside, see "A frame around “Who has what”" in [`features/vacations/slice-2-after-trying.md`](./slice-2-after-trying.md)); the "Who is coming" that takes its place had its heading above a frame of its own around the list alone (`--theme-outline`, 4 px corners). Now "Who is coming" stands in the same box as "Who has what", heading and "Done" inside, and the list has no frame of its own, so the box stays where it is and only its content changes.
+
+- The box's rules are written out in `VacationPeople.vue` beside those of `FairShare.vue`, with a comment naming the other; the two components share no style sheet.
+- Checked at 375x667 in light and dark mode in both states. The `dev` project's `vacations` and `a11y` specs pass (6), the scan of "the people of a vacation" included.

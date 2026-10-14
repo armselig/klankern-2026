@@ -57,7 +57,7 @@ function addName() {
 </script>
 
 <template>
-  <section>
+  <section class="vacation-people-box">
     <h3 class="vacation-people__heading">
       <span>Who is coming</span>
       <q-btn
@@ -152,13 +152,22 @@ function addName() {
 </template>
 
 <style scoped>
+/* The frame of "Who has what" (FairShare.vue), whose place this takes
+   while the people are changed: the box stays as it is, with its heading
+   inside. */
+.vacation-people-box {
+  margin-top: 16px;
+  padding: 4px 8px;
+  border: 1px solid var(--theme-separator);
+}
+
 /* Quasar styles a bare h3 as a 3rem display line. */
 .vacation-people__heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin: 16px 0 4px;
+  margin: 0 0 4px;
   font-size: 1rem;
   font-weight: 500;
   line-height: 1.5rem;
@@ -167,10 +176,8 @@ function addName() {
 
 .vacation-people {
   margin: 0;
-  padding: 4px 8px;
+  padding: 0;
   list-style: none;
-  border: 1px solid var(--theme-outline);
-  border-radius: 4px;
 }
 
 .vacation-people li {
@@ -201,6 +208,6 @@ function addName() {
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  margin-top: 8px;
+  margin: 8px 0 8px;
 }
 </style>
