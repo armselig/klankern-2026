@@ -63,3 +63,7 @@ Not verified: with a keyboard or a screen reader by hand; the order is heading, 
 At the user's request the tiles stand in the order To-dos, Shopping, Recipes, Vacations, Whiteboard, where the whiteboard had been third. The whiteboard is to stay last when a tile is added. The navigation is named "Lists, recipes, vacations and whiteboard" to match, which is also how the browser tests find the tiles.
 
 At 375 px the vacations' tile now shares a row with the recipes' tile, which grows to its 222 px; the whiteboard's tile stands alone in the last row.
+
+## Tried by hand (2026-10-14)
+
+The user tried the dashboard on a phone by touch and with a second member changing things. Nothing needed changing.

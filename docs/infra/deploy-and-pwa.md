@@ -92,3 +92,7 @@ All of it through Netlify's API, each change with the user's go-ahead.
 
 - **Nothing in the repository prevents it.** A `node_modules` folder under `app/` would split Pinia again, on Netlify or in a developer's checkout. Proposed and not tried: `resolve.dedupe` for `pinia` in the Vite config. The user decided on the record alone (2026-10-12).
 - Not checked after the repair: signing in on the deployed site, and the update notice in an installed app.
+
+### Checked after the repair (2026-10-14)
+
+The user signed in on the deployed site and looked at the update notice in an installed app. Both work; the second item of "Left undone" above is done. The guard against a second Pinia stays proposed and not built.

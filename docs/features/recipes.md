@@ -68,3 +68,7 @@ The household's recipes at `ROUTES.recipes` ("Recipes" button on the dashboard):
 
 - The list stores and the whiteboard store put a row back after a failed write without checking that the store wasn't reset in between (a change of user). The recipe store checks.
 - `init()` of the list stores keeps the result of a fetch that ends after a reset; `load()` of the recipe store drops it. (Fixed with the dashboard, see "Dashboard with live tiles" in [`features/dashboard.md`](dashboard.md).)
+
+## Tried by hand (2026-10-14)
+
+The user tried the recipes where the click-through of 2026-10-11 had not reached: on a phone by touch, with a second member watching, in light mode and on the deployed site. Nothing needed changing.
