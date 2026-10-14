@@ -61,10 +61,11 @@ public/                 offline.html, icons, favicon.ico, robots.txt, _redirects
 scripts/                generate-pwa-icons.mjs (writes the app icons and the favicon in `public/`)
 supabase/migrations/    0001_households.sql … 0016_vacation_people.sql
 tests/support/          supabase-fixtures.ts (disposable users/households/invites via the Admin API, shared by RLS + e2e),
+                        rls-rows.ts (row builders for the RLS specs),
                         earlier-trip.ts (a past vacation with tasks, for the e2e tests that copy them),
                         e2e-ui.ts (the steps through the real UI, which find every element by its test id), realtime-socket.ts (cut/watch the Realtime socket, hold back frames),
                         fake-supabase-client.ts (fake query builder + client for the `*-actions.spec.ts` unit tests)
-tests/rls/              household-isolation.spec.ts (two-JWT RLS proof against Supabase Cloud)
+tests/rls/              *-isolation.spec.ts, one per feature, run in parallel (two-JWT RLS proof against Supabase Cloud; see "The RLS suite in four files that run in parallel" in [`infra/testing.md`](infra/testing.md))
 tests/unit/             environment.spec.ts (the Vitest environment mounts a Vue component)
 tests/e2e/              Playwright `dev` project (against `nuxt dev`): auth, household, lists, realtime-sync,
                         session-switch, whiteboard, recipes, vacations, avatars, dashboard, a11y, app-version (*.e2e.ts); `pwa` project: pwa.e2e.ts (production build)

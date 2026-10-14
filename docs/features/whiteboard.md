@@ -41,7 +41,7 @@ One whiteboard per household at `ROUTES.whiteboard` ("Whiteboard" button on the 
 ### Tests
 
 - Unit: `whiteboard-actions.spec.ts`, `whiteboard-state.spec.ts`, `whiteboard-geometry.spec.ts`, and the stroke listener in `household-realtime.spec.ts`.
-- RLS (`household-isolation.spec.ts`): another household's board and strokes are invisible and can't be drawn on or erased; the composite key rejects a stroke on another household's board; no hard delete; one board per household; each check constraint.
+- RLS (`whiteboard-isolation.spec.ts`): another household's board and strokes are invisible and can't be drawn on or erased; the composite key rejects a stroke on another household's board; no hard delete; one board per household; each check constraint.
 - E2E (`whiteboard.e2e.ts`): two members; a stroke with its color, width and points arrives on the other; a tap makes a dot; undo; reload; the eraser on another member's stroke of several hundred points (the missing-`points` rule itself is guarded by the unit test, since an erased stroke is hidden either way); clear with its confirmation. It asserts on the surface's accessible name and the strokes' attributes, not on pixels. Verified to fail with the stroke listener disconnected. `a11y.e2e.ts` scans the page and `auth.e2e.ts` checks its auth guard.
 - Not tested separately: a reconnect (same resync as the lists), and touch or pen input (the e2e test draws with the mouse).
 - **Tried by hand by the user (2026-10-11)**: the whiteboard on a phone and with a second member. No automated test draws by touch.

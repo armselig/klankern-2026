@@ -97,3 +97,14 @@ CI on `main` for v1.9.0 failed in `lists.e2e.ts`, "shopping: add with and withou
 - **`untilAdded`** (`tests/support/e2e-ui.ts`, beside `untilSaved`) does what adds a list item and waits until the server has answered its insert. The test adds Milk with it.
 - **The other reloads were checked** and need no such wait: the to-do test's reload follows a tick and a removal of its only two items; the tests of an add still being saved poll the database first; and in the whiteboard, recipe and vacation journeys every change before a reload has first shown up on the other member's page, so the server had it.
 - **Not explained:** in one local run after the change, "checking or removing an item while its add is saving" failed once, after its reload: the database already had the item ticked, but the page did not show it within 15 seconds. The re-run passed, as did the whole spec once more (4); its trace was overwritten by the re-run before it was read.
+
+## The RLS suite in four files that run in parallel (2026-10-14)
+
+`tests/rls/household-isolation.spec.ts` took 19 to 21 seconds for its 101 tests. Setup (about 1.5 s) and teardown (about 0.4 s) were not the cause: the tests ran one after another, and each waited on one to three round trips of 45 to 180 ms to Supabase Cloud.
+
+- **Four specs, one per feature**: `household-isolation` (households, invites, lists), `whiteboard-isolation`, `recipe-isolation` and `vacation-isolation`, with the row builders in `tests/support/rls-rows.ts`. Vitest runs files in parallel on separate workers, and each file makes its own disposable users and households, so they don't share state.
+- **Inside a file**: the tables of independent rejections use `it.concurrent.each`, independent calls in one test use `Promise.all`, and `beforeAll` and `deleteTestData` run their independent calls in parallel.
+- **Result**: the same 101 tests in about 7 seconds (6.5 to 7.8 s over four runs).
+- **The vacation spec stays in order** except for its rejection tables: its tests build on what an earlier one leaves (a task's assignee, who is on the trip, the exact list of people). Making them concurrent would break them.
+- **A new table's spec** goes into the file of its feature, or into a new file, not back into one big file; that keeps the files parallel.
+- **More users per run**: about 10 disposable users instead of 3, which adds to the several hundred a day mentioned in "A slow auth service and a refused insert on CI" above. The fixtures sign in with a password, which is not counted against the OTP rate limit of "Running e2e tests repeatedly" (see "E2E gap review" above); not checked in Supabase's settings.

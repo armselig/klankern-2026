@@ -224,7 +224,9 @@ export async function deleteTestData(
 ) {
   const ids = householdIds.filter((id): id is string => Boolean(id));
   if (ids.length) await admin.from("households").delete().in("id", ids);
-  for (const user of users) {
-    if (user?.userId) await admin.auth.admin.deleteUser(user.userId);
-  }
+  await Promise.all(
+    users.map((user) =>
+      user?.userId ? admin.auth.admin.deleteUser(user.userId) : undefined,
+    ),
+  );
 }
