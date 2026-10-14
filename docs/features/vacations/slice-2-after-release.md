@@ -35,3 +35,13 @@ At the user's request: pressing "Change people" changed the layout. "Who has wha
 
 - The box's rules are written out in `VacationPeople.vue` beside those of `FairShare.vue`, with a comment naming the other; the two components share no style sheet.
 - Checked at 375x667 in light and dark mode in both states. The `dev` project's `vacations` and `a11y` specs pass (6), the scan of "the people of a vacation" included.
+
+## A rejection stands out (2026-10-14)
+
+The user found that the reason of a rejection under a task did not stand out: it was a line of muted grey text. Six options were rendered on a real trip page at 375 px in both modes and put on a page for the user to compare: today's line, a red icon in front, a bold lead, icon and a red lead, a pale red box with a red edge, and an outlined badge. All kept text at 4.5:1 or more and none relied on color alone. I recommended the box; the user chose the icon with the red lead, then changed it: only the icon red, the lead bold in the text color.
+
+- **The line now has a red stop hand** (`mdiHandBackLeftOutline`, 18 px, `text-ink-red`) beside its first line, **"Mia said no:" in bold**, and the whole line in the text color instead of muted. Red on the page is 4.8:1 in light mode and 7.1:1 in dark mode, above the 3:1 an icon needs; the text is 7.1:1 and 11.3:1.
+- The icon has no name of its own (Quasar hides it from screen readers): the words say it already.
+- Its text is the same as before, so the tests that read it (browser journey 2) are unchanged.
+
+Checked at 375x667 in both modes. The `dev` project's `vacations` and `a11y` specs pass (6), the scan of a rejected task in both modes included.

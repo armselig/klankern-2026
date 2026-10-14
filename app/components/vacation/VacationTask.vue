@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { mdiDotsVertical, mdiPlus } from "@quasar/extras/mdi-v7";
+import {
+  mdiDotsVertical,
+  mdiHandBackLeftOutline,
+  mdiPlus,
+} from "@quasar/extras/mdi-v7";
 import type {
   TaskRowState,
   VacationPerson,
@@ -305,13 +309,24 @@ defineExpose({
         </div>
 
         <!-- Below the line only what needs a reader: the reason of a
-             rejection. -->
+             rejection. It has to stand out from the list, so it has a red
+             stop hand and a bold lead, and is in the text color, not muted:
+             not the color alone, and the text stays above 4.5:1. -->
         <p
           v-if="showsWho && isFree && state.rejecter && task.rejection_reason"
-          class="vacation-task__reason text-muted"
+          class="vacation-task__reason"
           :data-testid="TEST_IDS.vacation.task.reason"
         >
-          {{ state.rejecter.name }} said no: “{{ task.rejection_reason }}”
+          <q-icon
+            :name="mdiHandBackLeftOutline"
+            size="18px"
+            class="vacation-task__reason-icon text-ink-red"
+          />
+          <span
+            ><strong>{{ state.rejecter.name }} said no:</strong> “{{
+              task.rejection_reason
+            }}”</span
+          >
         </p>
       </template>
     </q-item-section>
@@ -358,8 +373,21 @@ defineExpose({
 }
 
 .vacation-task__reason {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
   margin: 0 8px 4px 40px;
   overflow-wrap: anywhere;
+}
+
+/* Beside the first line of the reason, however many it wraps to. */
+.vacation-task__reason-icon {
+  flex: none;
+  margin-top: 1px;
+}
+
+.vacation-task__reason strong {
+  font-weight: 700;
 }
 
 .vacation-task__edit {
