@@ -8,8 +8,35 @@ branches:
 # not recognise `feat!:` as a breaking change.
 preset: conventionalcommits
 
+# The sections of the release notes and the changelog. The preset's own list,
+# except that "Code Refactoring" is shown: a refactor makes a release here
+# (see the commit analyzer below), and a release of refactors alone would
+# otherwise have empty notes. A list given here replaces the preset's whole
+# list, so every type is named.
+presetConfig:
+  types:
+    - { type: feat, section: Features }
+    - { type: feature, section: Features }
+    - { type: fix, section: Bug Fixes }
+    - { type: perf, section: Performance Improvements }
+    - { type: refactor, section: Code Refactoring }
+    - { type: revert, section: Reverts }
+    - { type: docs, section: Documentation, hidden: true }
+    - { type: style, section: Styles, hidden: true }
+    - { type: chore, section: Miscellaneous Chores, hidden: true }
+    - { type: test, section: Tests, hidden: true }
+    - { type: build, section: Build System, hidden: true }
+    - { type: ci, section: Continuous Integration, hidden: true }
+
 plugins:
-  - "@semantic-release/commit-analyzer"
+  # A refactor is a patch. The app is deployed, not used as a library, and the
+  # version identifies the build its footer shows: a change to the code that
+  # ships gets a version of its own, as a `perf` does by default. Docs, tests,
+  # chores, CI, build and style changes still make no release. The preset's
+  # own rules apply to every commit this one does not match.
+  - - "@semantic-release/commit-analyzer"
+    - releaseRules:
+        - { type: refactor, release: patch }
   - "@semantic-release/release-notes-generator"
 
   # Order matters from here on: the changelog and the version have to be
