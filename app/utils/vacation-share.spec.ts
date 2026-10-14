@@ -135,7 +135,7 @@ describe("taskShares", () => {
     task({ id: "6", assignee_id: "gone" }),
   ];
 
-  it("counts the open tasks per person, and nobody's last", () => {
+  it("counts the open tasks per person, the most first, and nobody's last", () => {
     expect(
       taskShares(tasks, onTheTrip, everyone).map((s) => [
         s.person?.id ?? null,
@@ -146,6 +146,23 @@ describe("taskShares", () => {
       ["sam", 1],
       ["mia", 0],
       // Free, rejected, and given to someone who was taken off.
+      [null, 3],
+    ]);
+  });
+
+  it("puts the person with the most open tasks first, and keeps the people's order for equal counts", () => {
+    const more = [...tasks, task({ id: "7", assignee_id: "mia" })].concat(
+      task({ id: "8", assignee_id: "mia" }),
+    );
+    expect(
+      taskShares(more, onTheTrip, everyone).map((s) => [
+        s.person?.id ?? null,
+        s.open,
+      ]),
+    ).toEqual([
+      ["mia", 2],
+      ["alex", 1],
+      ["sam", 1],
       [null, 3],
     ]);
   });

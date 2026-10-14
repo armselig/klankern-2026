@@ -422,7 +422,13 @@ test.describe("a vacation's tasks, shared between its people", () => {
         `${nameB}: Clothes`,
       );
 
-      await expect(shareLines(pageA).nth(1)).toHaveText(/1$/);
+      // The person with the most open tasks comes first; nobody's last.
+      await expect(shareLines(pageA)).toHaveText([
+        new RegExp(`${nameB}.*1$`),
+        new RegExp(`${nameA}.*0$`),
+        /Mia.*0$/,
+        /32$/,
+      ]);
 
       await expect(taskWhoButton(pageB, "Clothes")).toHaveAccessibleName(
         "Yours: Clothes",
@@ -471,7 +477,10 @@ test.describe("a vacation's tasks, shared between its people", () => {
       );
       await expect(rejection).toHaveText(`${nameB} said no: “${reason}”`);
 
-      await expect(shareLines(pageA).nth(1)).toHaveText(/0$/);
+      // Back to 0, and back to the people's order.
+      await expect(shareLines(pageA).nth(1)).toHaveText(
+        new RegExp(`${nameB}.*0$`),
+      );
 
       await giveTaskTo(pageA, "Clothes", "me");
 
@@ -481,7 +490,9 @@ test.describe("a vacation's tasks, shared between its people", () => {
 
       await expect(rejection).toHaveCount(0);
 
-      await expect(shareLines(pageA).first()).toHaveText(/1$/);
+      await expect(shareLines(pageA).first()).toHaveText(
+        new RegExp(`${nameA}.*1$`),
+      );
     });
 
     await test.step('a task of a person without an account has no "Reject", and any member ticks it', async () => {
@@ -541,7 +552,14 @@ test.describe("a vacation's tasks, shared between its people", () => {
     await test.step('a person who is taken off leaves "Who has what", and their task is nobody\'s', async () => {
       await giveTaskTo(pageA, "iPad", { name: "Mia" });
 
-      await expect(shareLines(pageA).nth(2)).toHaveText(/Mia.*1$/);
+      // Mia's ticked task no longer counts. Equal counts keep the people's
+      // order, so the member stays before Mia, and B with none comes after.
+      await expect(shareLines(pageA)).toHaveText([
+        new RegExp(`${nameA}.*1$`),
+        /Mia.*1$/,
+        new RegExp(`${nameB}.*0$`),
+        /\d+$/,
+      ]);
       // The closed menu gives the focus back to the row's button late: only
       // once the button's tooltip has gone too. Going on before that, the
       // focus arrives there afterwards and is taken from "Change people"

@@ -85,9 +85,11 @@ export function isTaskOf(
 }
 
 /**
- * "Who has what": the open tasks of every person on the trip, in the
- * people's order, and those that are nobody's as the last line. A person
- * without an open task is listed with 0, so it shows who carries nothing.
+ * "Who has what": the open tasks of every person on the trip, the one with
+ * the most first, and those that are nobody's as the last line, where they
+ * wait to be given. Equal counts keep the people's order, so the lines are
+ * the same on every member's screen. A person without an open task is
+ * listed with 0, so it shows who carries nothing.
  */
 export function taskShares(
   tasks: readonly VacationTask[],
@@ -95,10 +97,13 @@ export function taskShares(
   peopleById: ItemsById<VacationPerson>,
 ): TaskShare[] {
   const open = tasks.filter((task) => !task.done);
-  const shares: TaskShare[] = people.map((person) => ({
-    person,
-    open: open.filter((task) => isTaskOf(task, person, peopleById)).length,
-  }));
+  const shares: TaskShare[] = people
+    .map((person) => ({
+      person,
+      open: open.filter((task) => isTaskOf(task, person, peopleById)).length,
+    }))
+    // Stable: equal counts stay in the people's order.
+    .sort((a, b) => b.open - a.open);
   shares.push({
     person: null,
     open: open.filter((task) => !assigneeOf(task, peopleById)).length,
