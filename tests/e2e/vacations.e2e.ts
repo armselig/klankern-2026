@@ -513,7 +513,7 @@ test.describe("a vacation's tasks, shared between its people", () => {
       await expect(vacationTask(pageA, "Books")).toBeChecked();
     });
 
-    await test.step('a line of "Who has what" leaves that line\'s open tasks and hides the add fields', async () => {
+    await test.step("a line of \"Who has what\" leaves that line's open tasks, and a task added there is that person's", async () => {
       const myLine = shareLines(pageA).filter({ hasText: nameA });
       // The line of the tasks nobody has comes after the people's.
       const nobodysLine = shareLines(pageA).last();
@@ -527,7 +527,22 @@ test.describe("a vacation's tasks, shared between its people", () => {
         pageA.getByTestId(TEST_IDS.vacation.share.hint),
       ).toBeVisible();
 
-      await expect(addTaskField(pageA, "before")).toHaveCount(0);
+      // The field stays, and says whose a new task will be.
+      const field = addTaskField(pageA, "before");
+      await expect(field).toHaveAccessibleName(
+        "Add a task before the trip, for you",
+      );
+      await field.fill("Sunglasses");
+      await pageA.keyboard.press("Enter");
+      await expect(phaseTasks(pageA, "before")).toHaveCount(2);
+      await expect(taskWhoButton(pageA, "Sunglasses")).toHaveAccessibleName(
+        "Yours: Sunglasses",
+      );
+      await expect(myLine).toHaveText(/2$/);
+      await expect(phaseSummary(pageA, "before")).toHaveText("2 of yours open");
+      await expect(taskWhoButton(pageB, "Sunglasses")).toHaveAccessibleName(
+        `${nameA}: Sunglasses`,
+      );
 
       await expect(phaseSummary(pageA, "during")).toHaveText(
         "Nothing of yours here.",
@@ -545,17 +560,18 @@ test.describe("a vacation's tasks, shared between its people", () => {
       );
 
       await nobodysLine.click();
-      await expect(phaseTasks(pageA, "before")).toHaveCount(23);
+      // 23 copied, and the one added under the member's line.
+      await expect(phaseTasks(pageA, "before")).toHaveCount(24);
       await expect(addTaskField(pageA, "before")).toBeVisible();
     });
 
     await test.step('a person who is taken off leaves "Who has what", and their task is nobody\'s', async () => {
       await giveTaskTo(pageA, "iPad", { name: "Mia" });
 
-      // Mia's ticked task no longer counts. Equal counts keep the people's
-      // order, so the member stays before Mia, and B with none comes after.
+      // The most open tasks first: the member's two, Mia's one (her ticked
+      // task no longer counts), and B with none.
       await expect(shareLines(pageA)).toHaveText([
-        new RegExp(`${nameA}.*1$`),
+        new RegExp(`${nameA}.*2$`),
         /Mia.*1$/,
         new RegExp(`${nameB}.*0$`),
         /\d+$/,

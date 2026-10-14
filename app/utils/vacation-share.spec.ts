@@ -13,6 +13,7 @@ import {
   phaseSummaryIn,
   rejecterOf,
   shareView,
+  addTaskLabel,
   taskFilterHint,
   taskShares,
 } from "./vacation-share";
@@ -248,13 +249,31 @@ describe("the tasks filtered by a line of “Who has what”", () => {
 
   it("says under the strip what is shown and how to get back", () => {
     expect(taskFilterHint({ person: alex }, alex)).toBe(
-      "Only your open tasks. Press the name again to see all and add tasks.",
+      "Only your open tasks. Press the name again to see all.",
     );
     expect(taskFilterHint({ person: mia }, alex)).toBe(
-      "Only Mia's open tasks. Press the name again to see all and add tasks.",
+      "Only Mia's open tasks. Press the name again to see all.",
     );
     expect(taskFilterHint({ person: null }, alex)).toBe(
-      "Only the open tasks nobody has. Press “Nobody yet” again to see all and add tasks.",
+      "Only the open tasks nobody has. Press “Nobody yet” again to see all.",
+    );
+  });
+});
+
+describe("addTaskLabel", () => {
+  it("names the person whose tasks are listed, since a new one is theirs", () => {
+    expect(addTaskLabel("before", { person: alex }, alex)).toBe(
+      "Add a task before the trip, for you",
+    );
+    expect(addTaskLabel("after", { person: mia }, alex)).toBe(
+      "Add a task for afterwards, for Mia",
+    );
+  });
+
+  it("keeps the plain label without a filter and under “Nobody yet”", () => {
+    expect(addTaskLabel("during", null, alex)).toBe("Add a task for the trip");
+    expect(addTaskLabel("during", { person: null }, alex)).toBe(
+      "Add a task for the trip",
     );
   });
 });

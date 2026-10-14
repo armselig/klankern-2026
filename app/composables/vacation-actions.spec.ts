@@ -186,6 +186,7 @@ describe("insertVacationTask", () => {
     phase: "before",
     title: "Sunscreen",
     position: 24,
+    assigneeId: null,
   } as const;
 
   it("inserts with the client-supplied id and the resolved created_by", async () => {
@@ -203,9 +204,18 @@ describe("insertVacationTask", () => {
         phase: "before",
         title: "Sunscreen",
         position: 24,
+        assignee_id: null,
         created_by: "user-1",
       },
     ]);
+  });
+
+  it("gives the task to a person in the same insert", async () => {
+    const query = fakeQueryBuilder({ data: { id: "task-1" }, error: null });
+    const client = fakeClient({ userId: "user-1", from: () => query.builder });
+
+    await insertVacationTask(client as never, { ...task, assigneeId: "mia" });
+    expect(query.calls.insert).toMatchObject([{ assignee_id: "mia" }]);
   });
 
   it("throws on error", async () => {

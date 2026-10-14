@@ -4,9 +4,10 @@ import type {
   TaskFilter,
   TaskShare,
   VacationPerson,
+  VacationPhase,
   VacationTask,
 } from "~/types/vacation";
-import { openTaskCount } from "./vacation-state";
+import { VACATION_ADD_TASK_LABELS, openTaskCount } from "./vacation-state";
 
 // Who is on a trip and who has which task. An assignment is a proposal
 // between peers: the person does the task or rejects it with a reason, and
@@ -166,17 +167,30 @@ export function phaseSummaryIn(
 }
 
 /** The line under "Who has what" while the tasks are filtered: what is
- * shown, and how to get back, since the fields for a new task are hidden
- * until then. */
+ * shown, and how to get back to all of them. */
 export function taskFilterHint(
   filter: TaskFilter,
   me: VacationPerson | null,
 ): string {
   const { person } = filter;
   if (!person)
-    return "Only the open tasks nobody has. Press “Nobody yet” again to see all and add tasks.";
+    return "Only the open tasks nobody has. Press “Nobody yet” again to see all.";
   const whose = person.id === me?.id ? "your" : `${person.name}'s`;
-  return `Only ${whose} open tasks. Press the name again to see all and add tasks.`;
+  return `Only ${whose} open tasks. Press the name again to see all.`;
+}
+
+/** The label of a phase's field for a new task. While one person's tasks
+ * are listed it names them, since the task becomes theirs; under "Nobody
+ * yet" and without a filter the task is nobody's, as the plain label says. */
+export function addTaskLabel(
+  phase: VacationPhase,
+  filter: TaskFilter | null,
+  me: VacationPerson | null,
+): string {
+  const label = VACATION_ADD_TASK_LABELS[phase];
+  const person = filter?.person;
+  if (!person) return label;
+  return `${label}, for ${person.id === me?.id ? "you" : person.name}`;
 }
 
 /** What the dashboard's tile adds for the signed-in member: how many of a

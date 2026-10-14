@@ -211,7 +211,9 @@ export async function softDeleteVacationRemote(
 }
 
 /** Inserts with a client-supplied id so the store's optimistic entry and the
- * server-confirmed row share one key (see utils/list-state.ts). */
+ * server-confirmed row share one key (see utils/list-state.ts). A task
+ * added while the page lists one person's tasks is theirs from the start,
+ * in the same insert, so it never shows as nobody's in between. */
 export async function insertVacationTask(
   client: Client,
   task: {
@@ -221,6 +223,8 @@ export async function insertVacationTask(
     phase: VacationPhase;
     title: string;
     position: number;
+    /** The person on the trip whose task it is, or null for nobody's. */
+    assigneeId: string | null;
   },
 ): Promise<VacationTask> {
   const userId = await getCurrentUserId(client);
@@ -233,6 +237,7 @@ export async function insertVacationTask(
       phase: task.phase,
       title: task.title,
       position: task.position,
+      assignee_id: task.assigneeId,
       created_by: userId,
     })
     .select()

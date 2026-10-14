@@ -374,6 +374,8 @@ export const useVacationStore = defineStore("vacations", {
       vacationId: string,
       phase: VacationPhase,
       title: string,
+      /** The person on the trip whose task it is, or null for nobody's. */
+      assigneeId: string | null = null,
     ): Promise<string | null> {
       const householdId = this.householdId;
       if (!householdId || !this.find(vacationId))
@@ -389,7 +391,7 @@ export const useVacationStore = defineStore("vacations", {
         title,
         done: false,
         position: nextPosition(tasksInPhase(this.tasksOf(vacationId), phase)),
-        assignee_id: null,
+        assignee_id: assigneeId,
         rejected_by: null,
         rejection_reason: null,
         created_by: userId,
@@ -410,6 +412,7 @@ export const useVacationStore = defineStore("vacations", {
               phase,
               title,
               position: optimistic.position,
+              assigneeId,
             }),
           );
           this.tasksById = confirmListItem(

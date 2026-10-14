@@ -25,7 +25,7 @@ Read the design first, then the file of the slice you are about to touch. The re
 - [`slice-1.md`](./slice-1.md): how slice 1 was built, the trip checklist from a template: migration 0015, what was decided and found during the build, its tests, "When it breaks" and "After a deploy".
 - [`slice-2.md`](./slice-2.md): how slice 2 was built, fair share: migration 0016, people and assignment, the gap in the live sync that was narrowed for every feature, its tests, "When it breaks" and "After a deploy".
 - [`slice-2-after-trying.md`](./slice-2-after-trying.md): what the user changed in slice 2 after trying it, before its release: the task's row back on one line, "Tell them" removed, "Who has what" as a strip of names, those names as buttons that filter the tasks in place of "Only my tasks", "Edit" beside the title, a picture of two letters for a person without an account, and a member's name as text in "Change people".
-- [`slice-2-after-release.md`](./slice-2-after-release.md): what the user changed in slice 2 after its release (2026-10-14): "Who has what" sorted by open tasks.
+- [`slice-2-after-release.md`](./slice-2-after-release.md): what the user changed in slice 2 after its release (2026-10-14): "Who has what" sorted by open tasks, and a task added under a person's line given to them.
 - [`copy-tasks.md`](./copy-tasks.md): the templates replaced (2026-10-14): a new vacation starts empty or with copies of an earlier trip's tasks, open and nobody's; what was decided, how it is built and how the tests get their tasks now; then Quasar's date picker and select in the form, and frames around the dates and the tasks.
 
 ## Writing here

@@ -19,11 +19,9 @@ const props = defineProps<{
   /** What stands beside the heading: "5 open", or the filtered view's own
    * text. */
   summary: string;
-  /** Whether the field for a new task is shown. Not while a person's line
-   * of "Who has what" is pressed: a new task is nobody's and would vanish
-   * as it is saved. Nor for the line of nobody's, so that every filtered
-   * view is the same. */
-  canAdd: boolean;
+  /** The label of the field for a new task, which names the person a new
+   * task goes to while their line of "Who has what" is pressed. */
+  addLabel: string;
   /** What each row shows beyond its task, by task id. */
   rowStates: Record<string, TaskRowState>;
   /** The people on the trip, the member's own person and the members'
@@ -141,11 +139,11 @@ defineExpose({
         />
       </q-list>
 
-      <q-form v-if="canAdd" class="vacation-phase__add" @submit.prevent="add">
+      <q-form class="vacation-phase__add" @submit.prevent="add">
         <q-input
           ref="addInput"
           v-model="newTitle"
-          :label="VACATION_ADD_TASK_LABELS[phase]"
+          :label="addLabel"
           :data-testid="TEST_IDS.vacation.addTask"
           :maxlength="VACATION_TITLE_LIMIT"
           class="col"

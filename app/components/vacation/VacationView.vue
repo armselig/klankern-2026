@@ -53,8 +53,8 @@ const chosenFilter = ref<TaskFilter | null>(null);
  * out from the people of the trip, so a person who is renamed is named
  * anew, and one who is taken off takes the filter along. And only while
  * "Who has what" shows its lines: once the last open task is ticked it
- * says "Nothing open.", and a filter left on would hide the fields for a
- * new task with nothing to press to get them back. */
+ * says "Nothing open.", and a filter left on would hide every task, the
+ * done ones too, with nothing to press to get them back. */
 const taskFilter = computed<TaskFilter | null>(() => {
   if (shareView(shares.value) !== "lines") return null;
   const chosen = chosenFilter.value?.person;
@@ -137,12 +137,15 @@ const addErrors = reactive<Record<VacationPhase, string | null>>({
   after: null,
 });
 
+/** Adds a task to a phase. While one person's tasks are listed it is
+ * theirs, so it stays in the list it was typed under. */
 async function addTask(phase: VacationPhase, title: string) {
   addErrors[phase] = null;
   addErrors[phase] = await vacationStore.addTask(
     props.vacationId,
     phase,
     title,
+    taskFilter.value?.person?.id ?? null,
   );
 }
 
@@ -333,7 +336,7 @@ function confirmRemove() {
         :phase="entry.phase"
         :tasks="entry.tasks"
         :summary="entry.summary"
-        :can-add="!taskFilter"
+        :add-label="addTaskLabel(entry.phase, taskFilter, me)"
         :row-states="rowStates"
         :people="people"
         :me="me"
