@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.8.1](https://github.com/armselig/klankern-2026/compare/v1.8.0...v1.8.1) (2026-10-14)
+
+### Bug Fixes
+
+* **vacations:** keep "Change people" in the frame of "Who has what" ([dba1540](https://github.com/armselig/klankern-2026/commit/dba1540fae5d9fd7d3e9dc77cd9cf93a84e36fe9))
+
 ## [1.8.0](https://github.com/armselig/klankern-2026/compare/v1.7.0...v1.8.0) (2026-10-14)
 
 ### Features
