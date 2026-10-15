@@ -16,14 +16,16 @@ import {
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   personJson,
+  recipeRow,
   taskJson,
   vacationJson,
+  vacationMealRow,
   vacationPersonRow,
   vacationRow,
   vacationTaskRow,
 } from "../support/rls-rows";
 
-// Household RLS for vacations, their tasks and their people. Many of these
+// Household RLS for vacations, their tasks, their people and their meals. Many of these
 // tests build on the state an earlier one left (a task's assignee, who is on
 // the trip), so they run in order; only the independent rejection tables run
 // concurrently.
@@ -699,5 +701,176 @@ describe("vacation RLS isolation", () => {
       .update({ assignee_id: stranger.id })
       .eq("id", taskAId);
     expect(error).not.toBeNull();
+  });
+
+  describe("meals", () => {
+    let recipeAId: string;
+    let recipeBId: string;
+    let mealAId: string;
+
+    async function addRecipe(user: TestUser, householdId: string) {
+      const { data, error } = await user.client
+        .from("recipes")
+        .insert(recipeRow(user, householdId))
+        .select("id")
+        .single();
+      if (error || !data) throw error ?? new Error("recipe insert failed");
+      return data.id as string;
+    }
+
+    it("lets a member pick a recipe of the household for a vacation, more than once", async () => {
+      [recipeAId, recipeBId] = await Promise.all([
+        addRecipe(userA, householdAId),
+        addRecipe(userB, householdBId),
+      ]);
+      const row = vacationMealRow(userA, vacationAId, householdAId, recipeAId);
+      const [first, second] = await Promise.all([
+        userA.client.from("vacation_meals").insert(row).select("id").single(),
+        userA.client.from("vacation_meals").insert(row).select("id").single(),
+      ]);
+      expect(first.error).toBeNull();
+      expect(second.error).toBeNull();
+      expect(first.data!.id).not.toBe(second.data!.id);
+      mealAId = first.data!.id as string;
+    });
+
+    it("returns zero of household A's meals to a member of household B, and none without signing in", async () => {
+      const [meals, signedOutRead] = await Promise.all([
+        userB.client
+          .from("vacation_meals")
+          .select("id")
+          .eq("vacation_id", vacationAId),
+        signedOut.from("vacation_meals").select("id"),
+      ]);
+      expect(meals.error).toBeNull();
+      expect(meals.data).toHaveLength(0);
+      expect(signedOutRead.data).toBeNull();
+      expect(signedOutRead.error).not.toBeNull();
+    });
+
+    it("blocks a meal on another household's vacation, under either household", async () => {
+      const [asTheirs, asOwn] = await Promise.all([
+        userB.client
+          .from("vacation_meals")
+          .insert(vacationMealRow(userB, vacationAId, householdAId, recipeBId)),
+        userB.client
+          .from("vacation_meals")
+          .insert(vacationMealRow(userB, vacationAId, householdBId, recipeBId)),
+      ]);
+      expect(asTheirs.error).not.toBeNull();
+      expect(asOwn.error).not.toBeNull();
+    });
+
+    it("blocks a meal that names another household's recipe", async () => {
+      // The policy alone would pass the row, since the vacation is the
+      // member's own; the composite foreign key ties the recipe to the
+      // meal's household.
+      const { error } = await userA.client
+        .from("vacation_meals")
+        .insert(vacationMealRow(userA, vacationAId, householdAId, recipeBId));
+      expect(error).not.toBeNull();
+    });
+
+    it("leaves another household's meal untouched, and lets no member hard-delete one", async () => {
+      const [edit, removal] = await Promise.all([
+        userB.client
+          .from("vacation_meals")
+          .update({ deleted_at: new Date().toISOString() })
+          .eq("id", mealAId),
+        userA.client.from("vacation_meals").delete().eq("id", mealAId),
+      ]);
+      expect(edit.error).toBeNull();
+      expect(removal.error).not.toBeNull();
+
+      const { data: meal } = await admin
+        .from("vacation_meals")
+        .select("deleted_at")
+        .eq("id", mealAId)
+        .single();
+      expect(meal).toEqual({ deleted_at: null });
+    });
+
+    it("lets a member stamp a meal as put on the shopping list, and remove it softly", async () => {
+      const stampedAt = new Date().toISOString();
+      const stamp = await userA.client
+        .from("vacation_meals")
+        .update({ on_shopping_list_at: stampedAt })
+        .eq("id", mealAId)
+        .select("on_shopping_list_at")
+        .single();
+      expect(stamp.error).toBeNull();
+      expect(new Date(stamp.data!.on_shopping_list_at).getTime()).toBe(
+        new Date(stampedAt).getTime(),
+      );
+
+      const removal = await userA.client
+        .from("vacation_meals")
+        .update({ deleted_at: stampedAt })
+        .eq("id", mealAId);
+      expect(removal.error).toBeNull();
+    });
+
+    it("blocks moving a meal into another household", async () => {
+      const { error } = await userA.client
+        .from("vacation_meals")
+        .update({ household_id: householdBId })
+        .eq("id", mealAId);
+      expect(error).not.toBeNull();
+    });
+
+    it("lets a member change a vacation's kind", async () => {
+      const edit = await userA.client
+        .from("vacations")
+        .update({ kind: "hotel" })
+        .eq("id", vacationAId)
+        .select("kind")
+        .single();
+      expect(edit.error).toBeNull();
+      expect(edit.data).toEqual({ kind: "hotel" });
+
+      const unknown = await userA.client
+        .from("vacations")
+        .update({ kind: "tent" })
+        .eq("id", vacationAId);
+      expect(unknown.error).not.toBeNull();
+    });
+
+    it("removes a household's meals with the household, and with its recipes", async () => {
+      const householdId = await createHousehold(
+        userC.client,
+        `Household D ${runId}`,
+      );
+      try {
+        const recipeId = await addRecipe(userC, householdId);
+        const vacation = vacationJson(householdId);
+        const created = await userC.client.rpc("create_vacation", {
+          p_vacation: vacation,
+          p_tasks: [],
+        });
+        expect(created.error).toBeNull();
+        const meal = await userC.client
+          .from("vacation_meals")
+          .insert(vacationMealRow(userC, vacation.id, householdId, recipeId))
+          .select("id")
+          .single();
+        expect(meal.error).toBeNull();
+
+        // What the tests' cleanup does. A foreign key that blocked the
+        // cascade would leave test rows in the database that production uses.
+        const removal = await admin
+          .from("households")
+          .delete()
+          .eq("id", householdId);
+        expect(removal.error).toBeNull();
+
+        const { data: meals } = await admin
+          .from("vacation_meals")
+          .select("id")
+          .eq("vacation_id", vacation.id);
+        expect(meals).toHaveLength(0);
+      } finally {
+        await admin.from("households").delete().eq("id", householdId);
+      }
+    });
   });
 });
