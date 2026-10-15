@@ -175,6 +175,67 @@ export type Database = {
         };
         Relationships: [];
       };
+      meal_plan_entries: {
+        Row: {
+          created_at: string;
+          created_by: string;
+          date: string;
+          deleted_at: string | null;
+          household_id: string;
+          id: string;
+          on_shopping_list_at: string | null;
+          position: number;
+          recipe_id: string | null;
+          skipped_at: string | null;
+          slot: string;
+          title: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string;
+          date: string;
+          deleted_at?: string | null;
+          household_id: string;
+          id?: string;
+          on_shopping_list_at?: string | null;
+          position?: number;
+          recipe_id?: string | null;
+          skipped_at?: string | null;
+          slot: string;
+          title?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string;
+          date?: string;
+          deleted_at?: string | null;
+          household_id?: string;
+          id?: string;
+          on_shopping_list_at?: string | null;
+          position?: number;
+          recipe_id?: string | null;
+          skipped_at?: string | null;
+          slot?: string;
+          title?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "meal_plan_entries_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "meal_plan_entries_recipe_fkey";
+            columns: ["recipe_id", "household_id"];
+            isOneToOne: false;
+            referencedRelation: "recipes";
+            referencedColumns: ["id", "household_id"];
+          },
+        ];
+      };
       recipes: {
         Row: {
           created_at: string;
