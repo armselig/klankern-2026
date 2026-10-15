@@ -8,7 +8,7 @@ Read the design first, then the file of the slice you are about to touch. The re
 
 ### The design
 
-- [`design.md`](./design.md): the vacation planner: its design, with tasks by phase, assignment that can be rejected and a meal plan. Slices 1 and 2 are built.
+- [`design.md`](./design.md): the vacation planner: its design, with tasks by phase, assignment that can be rejected and a meal plan. All three slices are built; slice 3 is not released yet.
 - [`design-decisions.md`](./design-decisions.md): the rest of that design: its open decisions and how each was answered, what counts as done, and what was considered and not chosen.
 - [`templates.md`](./templates.md): what its house and hotel templates held, until they were replaced by copying (see `features/vacations/copy-tasks.md`): the list the user handed over, how its entries are worded, and the tasks added for the two later phases.
 
@@ -27,11 +27,12 @@ Read the design first, then the file of the slice you are about to touch. The re
 - [`slice-2-after-trying.md`](./slice-2-after-trying.md): what the user changed in slice 2 after trying it, before its release: the task's row back on one line, "Tell them" removed, "Who has what" as a strip of names, those names as buttons that filter the tasks in place of "Only my tasks", "Edit" beside the title, a picture of two letters for a person without an account, and a member's name as text in "Change people".
 - [`slice-2-after-release.md`](./slice-2-after-release.md): what the user changed in slice 2 after its release (2026-10-14): "Who has what" sorted by open tasks, and a task added under a person's line given to them.
 - [`slice-3-design.md`](./slice-3-design.md): the design review of slice 3, the meals (2026-10-15): the meals on a page of their own, the dialog that picks recipes, the shopping button's states, and the kind of stay made editable. Nothing was drawn.
+- [`slice-3.md`](./slice-3.md): how slice 3 was built, the meals: migration 0017, the page of its own, the picker and the shopping button, what was decided and found during the build, its tests, "When it breaks" and "After a deploy".
 - [`copy-tasks.md`](./copy-tasks.md): the templates replaced (2026-10-14): a new vacation starts empty or with copies of an earlier trip's tasks, open and nobody's; what was decided, how it is built and how the tests get their tasks now; then Quasar's date picker and select in the form, and frames around the dates and the tasks.
 
 ## Writing here
 
-- **A slice gets a file of its own when it is built**, `slice-3.md` next: the migration, what was decided and found during the build, its tests, "When it breaks" and "After a deploy".
+- **A slice gets a file of its own when it is built** (`slice-3.md` was the last of the three): the migration, what was decided and found during the build, its tests, "When it breaks" and "After a deploy".
 - **What changes after a slice is built goes into that slice's file**, as a dated section at its end. Once such a file passes about 2,500 words, the changes get a file of their own beside it, as `slice-2-after-trying.md` did.
 - **A decision that overtakes a review is not written into the review.** The review gets a dated remark at the place it overtakes, which names the section that holds the newer state.
 - **The list above is part of the change**: a new or renamed file gets its line here in the same commit. The list in the documentation's `CLAUDE.md` has one line for the whole folder and changes only when what the folder covers does.
