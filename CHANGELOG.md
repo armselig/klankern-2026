@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.12.0](https://github.com/armselig/klankern-2026/compare/v1.11.1...v1.12.0) (2026-10-15)
+
+### Features
+
+* **meal-planner:** add the kids, their reactions to dinners and a kids' version of recipes ([3cc54bc](https://github.com/armselig/klankern-2026/commit/3cc54bc97623bc8b85d54888087daedd6072d7a6))
+
+### Bug Fixes
+
+* **meal-planner:** show the kids' note only under a dinner whose reactions count ([97e02ac](https://github.com/armselig/klankern-2026/commit/97e02ac4004b9cb3c562c1fa741e9655f5faff39))
+
 ## [1.11.1](https://github.com/armselig/klankern-2026/compare/v1.11.0...v1.11.1) (2026-10-15)
 
 ### Code Refactoring
