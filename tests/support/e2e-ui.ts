@@ -483,6 +483,35 @@ export function vacationKindRadio(page: Page, kind: VacationKind) {
   return optionRadio(page, TEST_IDS.vacation.form.kinds, VACATION_KINDS, kind);
 }
 
+/** The radio for a kind of stay in the header's edit form. */
+export function headerKindRadio(page: Page, kind: VacationKind) {
+  return optionRadio(
+    page,
+    TEST_IDS.vacation.header.kinds,
+    VACATION_KINDS,
+    kind,
+  );
+}
+
+/** The rows of a trip's meals, in the order they are listed. */
+export function mealRows(page: Page) {
+  return page.getByTestId(TEST_IDS.vacation.meals.row);
+}
+
+/** The meal rows of a recipe, which is the recipe's title as a link, or
+ * with `removed` the muted line of a recipe that is gone. */
+export function mealRow(page: Page, title: string) {
+  return mealRows(page).filter({ hasText: exactly(title) });
+}
+
+/** The "Add" button of a recipe in the dialog that picks meals. */
+export function pickMealButton(page: Page, title: string) {
+  return page
+    .getByTestId(TEST_IDS.vacation.meals.dialog.recipe)
+    .filter({ hasText: title })
+    .getByTestId(TEST_IDS.vacation.meals.dialog.add);
+}
+
 /** What a test types into the form for a new vacation. The dates are
  * calendar days as "YYYY-MM-DD", the form a date field takes. */
 export interface VacationFormEntry {

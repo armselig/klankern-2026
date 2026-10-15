@@ -12,12 +12,16 @@ import type {
 
 const props = defineProps<{ householdId: string; vacationId: string }>();
 const vacationStore = useVacationStore();
+const recipeStore = useRecipeStore();
 const householdStore = useHouseholdStore();
 const user = useSupabaseUser();
 const router = useRouter();
 
 onMounted(() => {
   void vacationStore.load(props.householdId);
+  // For the link to the meals, which says which of them wait for the
+  // shopping list: a meal whose recipe was removed doesn't.
+  void recipeStore.load(props.householdId);
   // For the avatars and for the members who can be added to the trip; the
   // dashboard has usually fetched them already.
   if (householdStore.members.length === 0) void householdStore.fetchMembers();
@@ -41,6 +45,16 @@ const emails = computed(() =>
 const readyToGo = computed(
   () => !!vacation.value && isReadyToGo(vacation.value, tasks.value, today),
 );
+/** What the link to the meals says. Which meals wait is known once the
+ * recipes are loaded; until then it is only a count. */
+const mealsLine = computed(() => {
+  const meals = vacationStore.mealsOf(props.vacationId);
+  const waiting =
+    recipeStore.householdId === props.householdId
+      ? mealsToPutOnList(meals, (id) => recipeStore.find(id)).length
+      : null;
+  return mealsSummary(meals, waiting);
+});
 const shares = computed(() =>
   taskShares(tasks.value, people.value, vacationStore.peopleById),
 );
@@ -328,6 +342,8 @@ function confirmRemove() {
         @change-people="startEditingPeople"
         @show="(filter) => (chosenFilter = filter)"
       />
+
+      <vacation-meals-link :vacation-id="vacationId" :summary="mealsLine" />
 
       <vacation-phase
         v-for="entry in phases"

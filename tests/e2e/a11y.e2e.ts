@@ -522,6 +522,56 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       await expectNoBlockingViolations(page, "the people of a vacation");
       await page.getByRole("button", { name: "Done" }).click();
 
+      // The meals: their page before a meal is picked, the dialog that
+      // picks one, and the page with the meal on the shopping list.
+      await page.getByRole("link", { name: /^Meals/ }).click();
+      await expect(page).toHaveTitle(/^Meals · Winter week by the sea/);
+      await expect(page.getByText("No meals yet. Pick recipes")).toBeVisible();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "the meals of a vacation, empty");
+
+      await page.getByRole("button", { name: "Add meal" }).click();
+      await page.getByRole("button", { name: "Add Pancakes" }).click();
+      await expect(
+        page.getByRole("status").filter({ hasText: "Added: Pancakes" }),
+      ).toBeVisible();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "the dialog that picks a meal");
+      await page.getByRole("button", { name: "Done" }).click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "the meals of a vacation");
+
+      await page
+        .getByRole("button", {
+          name: /^Put 2 ingredients on the shopping list/,
+        })
+        .click();
+      // The notice is scanned while it shows, once it has faded in, and is
+      // gone before the next scans (see the recipe above).
+      const added = page.getByText("2 items added to the shopping list");
+      await expect(added).toBeVisible();
+      await expect(
+        page.getByRole("img", { name: "On the shopping list" }),
+      ).toBeVisible();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(
+        page,
+        "the meals with the notice of added items",
+      );
+      await expect(added).toHaveCount(0);
+
+      await page
+        .getByRole("link", { name: /^Back to Winter week by the sea/ })
+        .click();
+      await expect(page.getByRole("link", { name: /^Meals/ })).toContainText(
+        "1 meal",
+      );
+      await expectNoBlockingViolations(
+        page,
+        "a vacation with its meals linked",
+      );
+
       await page.getByRole("button", { name: "Edit", exact: true }).click();
       await expect(page.getByLabel("Title")).toBeFocused();
       await untilFadesEnd(page);

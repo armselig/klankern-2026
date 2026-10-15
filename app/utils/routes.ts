@@ -15,6 +15,7 @@ export const ROUTES = {
   vacations: "/vacations",
   vacationNew: "/vacations/new",
   vacation: (id: string) => `/vacations/${id}`,
+  vacationMeals: (id: string) => `/vacations/${id}/meals`,
   joinPrefix: "/join/",
   join: (code: string) => `/join/${code}`,
 } as const;
