@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.13.0](https://github.com/armselig/klankern-2026/compare/v1.12.0...v1.13.0) (2026-10-15)
+
+### Features
+
+* **meal-planner:** propose a week of dinners with a lock and a re-roll ([8c80205](https://github.com/armselig/klankern-2026/commit/8c802051690a0f2b2d67da40f6150300ed5b2be3))
+
 ## [1.12.0](https://github.com/armselig/klankern-2026/compare/v1.11.1...v1.12.0) (2026-10-15)
 
 ### Features
