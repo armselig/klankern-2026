@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.11.1](https://github.com/armselig/klankern-2026/compare/v1.11.0...v1.11.1) (2026-10-15)
+
+### Code Refactoring
+
+* **meal-planner:** plan all slots, move entries and plan a trip's meals ([a9d72e7](https://github.com/armselig/klankern-2026/commit/a9d72e7f6b0243cf47c23595cf96e4c52c8c05d0))
+
 ## [1.11.0](https://github.com/armselig/klankern-2026/compare/v1.10.0...v1.11.0) (2026-10-15)
 
 ### Features
