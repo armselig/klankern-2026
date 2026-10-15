@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { Notify } from "quasar";
 import {
   mdiBagSuitcaseOutline,
   mdiCartOutline,
   mdiChefHat,
   mdiDraw,
   mdiFormatListChecks,
+  mdiSilverwareForkKnife,
 } from "@quasar/extras/mdi-v7";
 
 const householdStore = useHouseholdStore();
@@ -13,6 +15,7 @@ const shoppingStore = useShoppingStore();
 const whiteboardStore = useWhiteboardStore();
 const recipeStore = useRecipeStore();
 const vacationStore = useVacationStore();
+const mealPlanStore = useMealPlanStore();
 
 const inviteOpen = ref(false);
 
@@ -33,6 +36,12 @@ watch(
     void whiteboardStore.load(householdId);
     void recipeStore.load(householdId);
     void vacationStore.load(householdId);
+    // Not `today` below: it is declared after this watcher, which runs at
+    // once when the household is known already.
+    void mealPlanStore.load(
+      householdId,
+      dashboardRange(localDateOf(new Date())),
+    );
   },
   { immediate: true },
 );
@@ -71,6 +80,84 @@ const whiteboardFailed = computed(
 const recipesFailed = computed(
   () => !recipeStore.householdId && !!recipeStore.error,
 );
+const now = useMinuteClock();
+/** The day the Tonight tile is about: today, or tomorrow from 17:00 on. */
+const tonight = computed(() =>
+  tonightDay(localDateOf(now.value), now.value.getHours()),
+);
+const tonightIsToday = computed(() => tonight.value === localDateOf(now.value));
+/** How many suggestions "Another one" passed; on this device only, and
+ * started again whenever the day or the plan's dinners change. Watched as a
+ * key of what the dinners say, not as the list: a resync builds a new list
+ * with the same dinners, and would undo the member's "Another one". */
+const tonightSkip = ref(0);
+const dinnersKey = computed(() =>
+  mealPlanStore.visible
+    .filter((entry) => entry.slot === "dinner")
+    .map(
+      (entry) =>
+        `${entry.id}|${entry.date}|${entry.recipe_id}|${entry.skipped_at}`,
+    )
+    .join(),
+);
+watch([tonight, dinnersKey], () => (tonightSkip.value = 0));
+const tonightStateNow = computed(() =>
+  tonightState(recipeStore.visible, mealPlanStore.visible, tonight.value, {
+    isToday: tonightIsToday.value,
+    skip: tonightSkip.value,
+  }),
+);
+const tonightLinesNow = computed(() =>
+  tonightLines(
+    tonightStateNow.value,
+    new Map(recipeStore.visible.map((recipe) => [recipe.id, recipe.title])),
+  ),
+);
+const tonightFailed = computed(
+  () =>
+    (!mealPlanStore.householdId && !!mealPlanStore.error) ||
+    recipesFailed.value,
+);
+const addTextOpen = ref(false);
+
+/** The dinners of the tile's day that are not removed. */
+function dinnersOfTonight() {
+  return mealPlanStore.visible.filter(
+    (entry) => entry.slot === "dinner" && entry.date === tonight.value,
+  );
+}
+
+/** Plans the tile's day; a refused save is taken back, and said. */
+async function planTonight(choice: {
+  recipeId: string | null;
+  title: string | null;
+}) {
+  const saved = await mealPlanStore.add({
+    date: tonight.value,
+    slot: "dinner",
+    ...choice,
+  });
+  if (saved) return;
+  Notify.create({
+    message: "Could not save. Check your connection and try again.",
+    color: "negative",
+    textColor: "on-accent",
+    attrs: { "data-testid": TEST_IDS.errorMessage },
+  });
+}
+
+function planSuggestion() {
+  const state = tonightStateNow.value;
+  if (state.kind === "suggested" || state.kind === "only-one")
+    void planTonight({ recipeId: state.candidate.recipe.id, title: null });
+}
+
+function skipTonight(skipped: boolean) {
+  for (const entry of dinnersOfTonight())
+    if (!!entry.skipped_at !== skipped)
+      void mealPlanStore.setSkipped(entry.id, skipped);
+}
+
 const vacationsFailed = computed(
   () => !vacationStore.householdId && !!vacationStore.error,
 );
@@ -104,6 +191,29 @@ const vacationsFailed = computed(
            other four are what a household looks up, and they come first. -->
       <nav aria-label="Lists, recipes, vacations and whiteboard">
         <ul role="list" class="dashboard__tiles">
+          <li
+            class="dashboard__tile--wide"
+            :data-testid="TEST_IDS.dashboard.tile.tonight"
+          >
+            <dashboard-tile
+              :title="tonightIsToday ? 'Tonight' : 'Tomorrow'"
+              :to="ROUTES.meals"
+              :icon="mdiSilverwareForkKnife"
+              :loading="mealPlanStore.loading || recipeStore.loading"
+              :failed="tonightFailed"
+            >
+              <tonight-tile
+                :kind="tonightStateNow.kind"
+                :lines="tonightLinesNow"
+                :is-today="tonightIsToday"
+                @plan-this="planSuggestion"
+                @another="tonightSkip++"
+                @skip="skipTonight(true)"
+                @undo-skip="skipTonight(false)"
+                @add-text="addTextOpen = true"
+              />
+            </dashboard-tile>
+          </li>
           <li :data-testid="TEST_IDS.dashboard.tile.todos">
             <dashboard-tile
               title="To-dos"
@@ -197,6 +307,12 @@ const vacationsFailed = computed(
 
       <!-- Beside the roster, whose button opens it: the roster only renders. -->
       <invite-dialog v-model="inviteOpen" />
+      <add-meal-dialog
+        v-model="addTextOpen"
+        :day-label="formatWeekday(tonight)"
+        :recipes="recipeStore.visible"
+        @choose="planTonight"
+      />
     </div>
   </q-page>
 </template>
@@ -216,6 +332,11 @@ const vacationsFailed = computed(
   margin: 20px 0 0;
   padding: 0;
   list-style: none;
+}
+
+/* The Tonight tile spans the row: it holds a line of buttons. */
+.dashboard__tile--wide {
+  grid-column: 1 / -1;
 }
 
 /* A tile fills its cell, so the two of a row are equally high. */

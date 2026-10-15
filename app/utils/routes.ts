@@ -12,6 +12,7 @@ export const ROUTES = {
   recipeNew: "/recipes/new",
   recipe: (id: string) => `/recipes/${id}`,
   recipeEdit: (id: string) => `/recipes/${id}/edit`,
+  meals: "/meals",
   vacations: "/vacations",
   vacationNew: "/vacations/new",
   vacation: (id: string) => `/vacations/${id}`,

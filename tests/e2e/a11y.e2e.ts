@@ -596,6 +596,28 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
         "Winter week by the sea",
       );
       await expectNoBlockingViolations(page, "the dashboard with a vacation");
+
+      // The one recipe is what the Tonight tile proposes.
+      await expect(dashboardTile(page, "tonight")).toContainText("Pancakes");
+      await expectNoBlockingViolations(page, "the dashboard with a dinner");
+
+      // Named "Tomorrow" from 17:00 on.
+      await page.getByRole("link", { name: /^(Tonight|Tomorrow)$/ }).click();
+      await expect(page).toHaveTitle("Meals · Klankern");
+      await expect(
+        page.getByRole("button", { name: /^Add dinner on / }),
+      ).toHaveCount(7);
+      await expectNoBlockingViolations(page, "the meal plan");
+
+      await page
+        .getByRole("button", { name: /^Add dinner on / })
+        .first()
+        .click();
+      await expect(page.getByLabel("What will you eat?")).toBeFocused();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "the dialog that adds a dinner");
+      await page.getByRole("button", { name: "Cancel" }).click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
     });
   });
 }

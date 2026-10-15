@@ -65,12 +65,48 @@ export const TEST_IDS = {
   invite: {
     link: "invite-link",
   },
+  /** The Tonight tile on the dashboard. */
+  tonight: {
+    headline: "tonight-headline",
+    secondary: "tonight-secondary",
+    planThis: "tonight-plan-this",
+    another: "tonight-another",
+    skip: "tonight-skip",
+    undoSkip: "tonight-undo-skip",
+    change: "tonight-change",
+    writeRecipe: "tonight-write-recipe",
+    addText: "tonight-add-text",
+  },
+  /** The meal plan page, /meals. */
+  meals: {
+    heading: "meals-heading",
+    loading: "meals-loading",
+    failure: "meals-failure",
+    day: "meals-day",
+    entry: "meals-entry",
+    entryRemove: "meals-entry-remove",
+    entryConfirm: "meals-entry-confirm",
+    add: "meals-add",
+    empty: "meals-empty",
+    undoRemoval: "meals-undo-removal",
+    previousWeek: "meals-previous-week",
+    nextWeek: "meals-next-week",
+    thisWeek: "meals-this-week",
+    dialog: {
+      title: "meals-dialog-title",
+      input: "meals-dialog-input",
+      recipe: "meals-dialog-recipe",
+      addText: "meals-dialog-add-text",
+      error: "meals-dialog-error",
+    },
+  },
   dashboard: {
     tile: {
       todos: "dashboard-tile-todos",
       shopping: "dashboard-tile-shopping",
       recipes: "dashboard-tile-recipes",
       vacations: "dashboard-tile-vacations",
+      tonight: "dashboard-tile-tonight",
       whiteboard: "dashboard-tile-whiteboard",
     },
     tileLink: "dashboard-tile-link",
