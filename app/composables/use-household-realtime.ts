@@ -42,7 +42,6 @@ export function useHouseholdRealtime() {
         onVacationTaskChange: (event) => vacationStore.applyTaskEvent(event),
         onVacationPersonChange: (event) =>
           vacationStore.applyPersonEvent(event),
-        onVacationMealChange: (event) => vacationStore.applyMealEvent(event),
         onMealPlanEntryChange: (event) =>
           mealPlanStore.applyRealtimeEvent(event),
         onSubscribed: () => {

@@ -310,6 +310,7 @@ const vacationsFailed = computed(
       <add-meal-dialog
         v-model="addTextOpen"
         :day-label="formatWeekday(tonight)"
+        slot-label="Dinner"
         :recipes="recipeStore.visible"
         @choose="planTonight"
       />

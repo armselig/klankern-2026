@@ -1,7 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
+import type { MealSlot } from "../../app/types/meal-plan";
 import type { VacationKind, VacationPhase } from "../../app/types/vacation";
 import type { WhiteboardTool } from "../../app/types/whiteboard";
 import { INK_VALUES } from "../../app/utils/ink";
+import { SLOTS_IN_ORDER } from "../../app/utils/meal-week";
 import { ROUTES } from "../../app/utils/routes";
 import { TEST_IDS, type DashboardTileKey } from "../../app/utils/test-ids";
 import { VACATION_KINDS } from "../../app/utils/vacation-state";
@@ -493,25 +495,6 @@ export function headerKindRadio(page: Page, kind: VacationKind) {
   );
 }
 
-/** The rows of a trip's meals, in the order they are listed. */
-export function mealRows(page: Page) {
-  return page.getByTestId(TEST_IDS.vacation.meals.row);
-}
-
-/** The meal rows of a recipe, which is the recipe's title as a link, or
- * with `removed` the muted line of a recipe that is gone. */
-export function mealRow(page: Page, title: string) {
-  return mealRows(page).filter({ hasText: exactly(title) });
-}
-
-/** The "Add" button of a recipe in the dialog that picks meals. */
-export function pickMealButton(page: Page, title: string) {
-  return page
-    .getByTestId(TEST_IDS.vacation.meals.dialog.recipe)
-    .filter({ hasText: title })
-    .getByTestId(TEST_IDS.vacation.meals.dialog.add);
-}
-
 /** What a test types into the form for a new vacation. The dates are
  * calendar days as "YYYY-MM-DD", the form a date field takes. */
 export interface VacationFormEntry {
@@ -683,4 +666,49 @@ export async function untilTaskSaved(page: Page, action: () => Promise<void>) {
   );
   await action();
   expect((await saved).ok()).toBe(true);
+}
+
+/** An entry of the meal plan, by its name. */
+export function mealEntry(page: Page, name: string) {
+  return page
+    .getByTestId(TEST_IDS.meals.entry)
+    .filter({ hasText: exactly(name) });
+}
+
+/** An entry of the meal plan entry's menu, by the key of its id. */
+export type MealEntryMenuEntry = Exclude<
+  keyof typeof TEST_IDS.meals.entryMenu,
+  "group"
+>;
+
+/**
+ * Opens a plan entry's menu and presses one of its entries. Waits first
+ * until no other entry's menu is left, as `openTaskMenu` does: a menu that
+ * was just closed stays in the page while it fades.
+ */
+export async function chooseFromMealEntryMenu(
+  page: Page,
+  name: string,
+  entry: MealEntryMenuEntry,
+) {
+  const menu = page.getByTestId(TEST_IDS.meals.entryMenu.group);
+  await expect(menu).toHaveCount(0);
+  await mealEntry(page, name).getByTestId(TEST_IDS.meals.entryMore).click();
+  await menu.getByTestId(TEST_IDS.meals.entryMenu[entry]).click();
+}
+
+/** The radio of a slot in the move dialog. */
+export function moveSlotRadio(page: Page, slot: MealSlot) {
+  return optionRadio(
+    page,
+    TEST_IDS.meals.moveDialog.slot,
+    SLOTS_IN_ORDER,
+    slot,
+  );
+}
+
+/** A day's button in the move dialog, by its place: the dialog lists today
+ * first, then tomorrow and the six days after (see moveTargets). */
+export function moveDayButton(page: Page, daysFromToday: number) {
+  return page.getByTestId(TEST_IDS.meals.moveDialog.day).nth(daysFromToday);
 }

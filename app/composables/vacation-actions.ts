@@ -6,7 +6,6 @@ import type {
   NewVacationTask,
   Vacation,
   VacationDetails,
-  VacationMeal,
   VacationPerson,
   VacationPhase,
   VacationTask,
@@ -387,79 +386,4 @@ export async function rejectVacationTaskRemote(
     .select("id");
   if (error) throw error;
   return data.length > 0;
-}
-
-/** Every meal of the household that isn't removed, across its vacations:
- * the link on a vacation's page says how many of its meals are on the
- * shopping list. */
-export async function fetchVacationMeals(
-  client: Client,
-  householdId: string,
-): Promise<VacationMeal[]> {
-  return fetchAllPages((afterId) => {
-    let query = client
-      .from("vacation_meals")
-      .select()
-      .eq("household_id", householdId)
-      .is("deleted_at", null)
-      .order("id")
-      .limit(VACATION_PAGE_SIZE);
-    if (afterId) query = query.gt("id", afterId);
-    return query;
-  });
-}
-
-/** Picks a recipe as a meal of a vacation. The id is the client's, so the
- * optimistic row, the row that comes back and the Realtime echo share one
- * key. */
-export async function insertVacationMeal(
-  client: Client,
-  meal: {
-    id: string;
-    vacationId: string;
-    householdId: string;
-    recipeId: string;
-    position: number;
-  },
-): Promise<VacationMeal> {
-  const userId = await getCurrentUserId(client);
-  const { data, error } = await client
-    .from("vacation_meals")
-    .insert({
-      id: meal.id,
-      vacation_id: meal.vacationId,
-      household_id: meal.householdId,
-      recipe_id: meal.recipeId,
-      position: meal.position,
-      created_by: userId,
-    })
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-}
-
-/** Notes that all of a meal's ingredients are on the shopping list. */
-export async function markVacationMealOnShoppingListRemote(
-  client: Client,
-  id: string,
-  at: string,
-): Promise<void> {
-  const { error } = await client
-    .from("vacation_meals")
-    .update({ on_shopping_list_at: at })
-    .eq("id", id);
-  if (error) throw error;
-}
-
-/** Takes a meal out of the plan. The row stays, as a removed task does. */
-export async function softDeleteVacationMealRemote(
-  client: Client,
-  id: string,
-): Promise<void> {
-  const { error } = await client
-    .from("vacation_meals")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
-  if (error) throw error;
 }

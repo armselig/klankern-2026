@@ -5,7 +5,7 @@ import type { MealPlanEntry } from "~/types/meal-plan";
 import type { Recipe } from "~/types/recipe";
 import type { ShoppingItem } from "~/types/shopping";
 import type { TodoItem } from "~/types/todo";
-import type { Vacation, VacationMeal, VacationTask } from "~/types/vacation";
+import type { Vacation, VacationTask } from "~/types/vacation";
 import type { BoardStroke } from "~/types/whiteboard";
 import { subscribeToHouseholdChanges } from "./household-realtime";
 
@@ -133,18 +133,6 @@ const vacationTaskRow: VacationTask = {
   deleted_at: null,
 };
 
-const vacationMealRow: VacationMeal = {
-  id: "meal-1",
-  vacation_id: "vacation-1",
-  household_id: "house-1",
-  recipe_id: "recipe-1",
-  position: 1,
-  on_shopping_list_at: null,
-  created_by: "user-1",
-  created_at: "2026-01-01T00:00:00Z",
-  deleted_at: null,
-};
-
 const mealPlanEntryRow: MealPlanEntry = {
   id: "entry-1",
   household_id: "house-1",
@@ -169,7 +157,6 @@ function listeners() {
     onVacationChange: vi.fn(),
     onVacationTaskChange: vi.fn(),
     onVacationPersonChange: vi.fn(),
-    onVacationMealChange: vi.fn(),
     onMealPlanEntryChange: vi.fn(),
     onSubscribed: vi.fn(),
   };
@@ -194,7 +181,6 @@ describe("subscribeToHouseholdChanges", () => {
       "vacations",
       "vacation_tasks",
       "vacation_people",
-      "vacation_meals",
       "meal_plan_entries",
     ].flatMap((table) =>
       ["INSERT", "UPDATE"].map((event) => [
@@ -416,45 +402,6 @@ describe("subscribeToHouseholdChanges", () => {
     expect(l.onRecipeChange).not.toHaveBeenCalled();
   });
 
-  it("passes the meals of a vacation on to their own listener", () => {
-    const fake = fakeRealtimeClient();
-    const l = listeners();
-    subscribeToHouseholdChanges(fake.client, "house-1", l);
-    const onList = {
-      ...vacationMealRow,
-      on_shopping_list_at: committedLater,
-    };
-
-    callbackFor(
-      fake,
-      "vacation_meals",
-      "INSERT",
-    )({
-      eventType: "INSERT",
-      new: vacationMealRow,
-      commit_timestamp: committedAt,
-    });
-    callbackFor(
-      fake,
-      "vacation_meals",
-      "UPDATE",
-    )({ eventType: "UPDATE", new: onList, commit_timestamp: committedLater });
-
-    expect(l.onVacationMealChange).toHaveBeenCalledTimes(2);
-    expect(l.onVacationMealChange).toHaveBeenNthCalledWith(1, {
-      eventType: "INSERT",
-      new: vacationMealRow,
-      commitTimestamp: committedAt,
-    });
-    expect(l.onVacationMealChange).toHaveBeenNthCalledWith(2, {
-      eventType: "UPDATE",
-      new: onList,
-      commitTimestamp: committedLater,
-    });
-    expect(l.onVacationTaskChange).not.toHaveBeenCalled();
-    expect(l.onRecipeChange).not.toHaveBeenCalled();
-  });
-
   it("asks for a resync on every SUBSCRIBED, including reconnects, and on nothing else", () => {
     const fake = fakeRealtimeClient();
     const l = listeners();
@@ -529,6 +476,6 @@ describe("subscribeToHouseholdChanges", () => {
       new: skipped,
       commitTimestamp: committedLater,
     });
-    expect(l.onVacationMealChange).not.toHaveBeenCalled();
+    expect(l.onVacationPersonChange).not.toHaveBeenCalled();
   });
 });

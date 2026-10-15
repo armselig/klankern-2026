@@ -546,6 +546,354 @@ describe("useMealPlanStore setSkipped", () => {
   });
 });
 
+describe("useMealPlanStore update", () => {
+  const updatesOf = (requests: Request[]) =>
+    requests.filter((request) => request.op === "update");
+
+  it("changes the columns at once and sends only those", async () => {
+    const soup = entry();
+    const answer = deferred<QueryResult>();
+    const { requests } = setUpClient((request) =>
+      request.op === "update" ? answer.promise : serverWith([soup])(request),
+    );
+    const store = useMealPlanStore();
+    await store.load(HOUSEHOLD, WEEK);
+
+    const updating = store.update(soup.id, { title: "Stew" });
+    expect(store.entriesById[soup.id]).toEqual({ ...soup, title: "Stew" });
+    expect(store.pendingIds).toEqual([soup.id]);
+    await vi.waitFor(() => expect(updatesOf(requests)).toHaveLength(1));
+    expect(updatesOf(requests)[0]!.filters).toEqual({ id: soup.id });
+    expect(updatesOf(requests)[0]!.payload).toEqual({ title: "Stew" });
+    answer.resolve(ok());
+
+    expect(await updating).toBe(true);
+    expect(store.entriesById[soup.id]!.title).toBe("Stew");
+    expect(store.pendingIds).toEqual([]);
+    expect(store.error).toBeNull();
+  });
+
+  it("takes back only the changed columns when the server refuses", async () => {
+    const soup = entry({ title: "Soup" });
+    const answer = deferred<QueryResult>();
+    const { requests } = setUpClient((request) =>
+      request.op === "update" ? answer.promise : serverWith([soup])(request),
+    );
+    const store = useMealPlanStore();
+    await store.load(HOUSEHOLD, WEEK);
+
+    const updating = store.update(soup.id, {
+      skipped_at: "2026-10-15T10:00:00Z",
+    });
+    await vi.waitFor(() => expect(updatesOf(requests)).toHaveLength(1));
+    // Another device renames the entry while the request is on its way.
+    store.applyRealtimeEvent(
+      realtimeEvent(
+        { ...soup, title: "Stew", skipped_at: "2026-10-15T10:00:00Z" },
+        "2026-10-15T10:00:01.000Z",
+      ),
+    );
+    answer.resolve(fail("refused"));
+
+    expect(await updating).toBe(false);
+    expect(store.entriesById[soup.id]!.skipped_at).toBeNull();
+    expect(store.entriesById[soup.id]!.title).toBe("Stew");
+    expect(store.error).toBe("refused");
+    expect(store.pendingIds).toEqual([]);
+  });
+
+  it("takes back every column of a change that touches several", async () => {
+    const soup = entry({ recipe_id: null, title: "Soup" });
+    setUpClient((request) =>
+      request.op === "update" ? fail("refused") : serverWith([soup])(request),
+    );
+    const store = useMealPlanStore();
+    await store.load(HOUSEHOLD, WEEK);
+
+    await store.update(soup.id, { recipe_id: "recipe-1", title: null });
+
+    expect(store.entriesById[soup.id]).toEqual(soup);
+  });
+
+  it("clears an earlier error when it starts", async () => {
+    const soup = entry();
+    setUpClient(serverWith([soup]));
+    const store = useMealPlanStore();
+    await store.load(HOUSEHOLD, WEEK);
+    store.error = "old";
+
+    await store.update(soup.id, { title: "Stew" });
+
+    expect(store.error).toBeNull();
+  });
+
+  it("waits for the insert of an entry that is still being saved", async () => {
+    const insert = deferred<QueryResult>();
+    const { requests } = setUpClient((request) =>
+      request.op === "insert" ? insert.promise : ok([]),
+    );
+    const store = useMealPlanStore();
+    await store.load(HOUSEHOLD, WEEK);
+    const adding = store.add({
+      date: "2026-10-15",
+      slot: "dinner",
+      recipeId: null,
+      title: "Stew",
+    });
+    const id = store.visible[0]!.id;
+    await vi.waitFor(() =>
+      expect(requests.some((r) => r.op === "insert")).toBe(true),
+    );
+
+    const updating = store.update(id, { title: "Pasta" });
+    await Promise.resolve();
+    expect(store.entriesById[id]!.title).toBe("Pasta");
+    expect(updatesOf(requests)).toEqual([]);
+    insert.resolve(ok(entry({ id, title: "Stew" })));
+    await Promise.all([adding, updating]);
+
+    expect(updatesOf(requests)).toHaveLength(1);
+    expect(requests.at(-1)!.op).toBe("update");
+  });
+
+  it("returns false and sends nothing for an unknown or deleted entry", async () => {
+    const gone = entry({ deleted_at: "2026-10-15T09:00:00Z" });
+    const { requests } = setUpClient(serverWith([]));
+    const store = useMealPlanStore();
+    await store.load(HOUSEHOLD, WEEK);
+    store.applyRealtimeEvent(realtimeEvent(gone, "2026-10-15T10:00:00.000Z"));
+    requests.length = 0;
+
+    expect(await store.update("unknown", { title: "Stew" })).toBe(false);
+    expect(await store.update(gone.id, { title: "Stew" })).toBe(false);
+
+    expect(requests).toEqual([]);
+    expect(store.entriesById[gone.id]!.title).toBe("Soup");
+  });
+});
+
+describe("useMealPlanStore move", () => {
+  async function loadedStoreWith(...rows: MealPlanEntry[]) {
+    const server = setUpClient(serverWith(rows));
+    const store = useMealPlanStore();
+    await store.load(HOUSEHOLD, WEEK);
+    server.requests.length = 0;
+    return { store, requests: server.requests };
+  }
+
+  it("puts the entry at once on the other day and slot, after the live entries there", async () => {
+    const moving = entry({ date: "2026-10-15", slot: "dinner", position: 1 });
+    const first = entry({ date: "2026-10-16", slot: "lunch", position: 2 });
+    const last = entry({ date: "2026-10-16", slot: "lunch", position: 5 });
+    const removed = entry({
+      date: "2026-10-16",
+      slot: "lunch",
+      position: 9,
+      deleted_at: "2026-10-15T09:00:00Z",
+    });
+    const otherSlot = entry({
+      date: "2026-10-16",
+      slot: "dinner",
+      position: 7,
+    });
+    const answer = deferred<QueryResult>();
+    const { requests } = setUpClient((request) =>
+      request.op === "update"
+        ? answer.promise
+        : serverWith([moving, first, last, removed, otherSlot])(request),
+    );
+    const store = useMealPlanStore();
+    await store.load(HOUSEHOLD, WEEK);
+
+    const moved = store.move(moving.id, "2026-10-16", "lunch");
+    expect(store.entriesById[moving.id]).toMatchObject({
+      date: "2026-10-16",
+      slot: "lunch",
+      position: 6,
+    });
+    await vi.waitFor(() =>
+      expect(requests.some((r) => r.op === "update")).toBe(true),
+    );
+    expect(requests.find((r) => r.op === "update")!.payload).toEqual({
+      date: "2026-10-16",
+      slot: "lunch",
+      position: 6,
+    });
+    answer.resolve(ok());
+
+    expect(await moved).toBe(true);
+  });
+
+  it("takes position 1 in an empty slot", async () => {
+    const moving = entry({ position: 4 });
+    const { store } = await loadedStoreWith(moving);
+
+    await store.move(moving.id, "2026-10-17", "breakfast");
+
+    expect(store.entriesById[moving.id]).toMatchObject({
+      date: "2026-10-17",
+      slot: "breakfast",
+      position: 1,
+    });
+  });
+
+  it("does not count the entry itself when it moves within its own slot", async () => {
+    const other = entry({ position: 2 });
+    const moving = entry({ position: 8 });
+    const { store } = await loadedStoreWith(other, moving);
+
+    await store.move(moving.id, other.date, "dinner");
+
+    expect(store.entriesById[moving.id]!.position).toBe(3);
+  });
+
+  it("keeps the note that the ingredients are on the shopping list", async () => {
+    const noted = entry({ on_shopping_list_at: "2026-10-14T10:00:00Z" });
+    const { store, requests } = await loadedStoreWith(noted);
+
+    await store.move(noted.id, "2026-10-16", "lunch");
+
+    expect(store.entriesById[noted.id]!.on_shopping_list_at).toBe(
+      "2026-10-14T10:00:00Z",
+    );
+    expect(requests.at(-1)!.payload).not.toHaveProperty("on_shopping_list_at");
+  });
+
+  it("puts the entry back where it was when the server refuses", async () => {
+    const soup = entry({ date: "2026-10-15", slot: "dinner", position: 3 });
+    setUpClient((request) =>
+      request.op === "update" ? fail("refused") : serverWith([soup])(request),
+    );
+    const store = useMealPlanStore();
+    await store.load(HOUSEHOLD, WEEK);
+
+    expect(await store.move(soup.id, "2026-10-16", "lunch")).toBe(false);
+
+    expect(store.entriesById[soup.id]).toEqual(soup);
+    expect(store.error).toBe("refused");
+  });
+
+  it("returns false for an unknown entry", async () => {
+    const { store, requests } = await loadedStoreWith();
+    expect(await store.move("unknown", "2026-10-16", "lunch")).toBe(false);
+    expect(requests).toEqual([]);
+  });
+});
+
+describe("useMealPlanStore makeRecipeOf", () => {
+  it("sets the recipe and clears the title and the shopping note in one update", async () => {
+    const titled = entry({
+      title: "Soup",
+      recipe_id: null,
+      on_shopping_list_at: "2026-10-14T10:00:00Z",
+    });
+    const { requests } = setUpClient(serverWith([titled]));
+    const store = useMealPlanStore();
+    await store.load(HOUSEHOLD, WEEK);
+    requests.length = 0;
+
+    expect(await store.makeRecipeOf(titled.id, "recipe-1")).toBe(true);
+
+    expect(store.entriesById[titled.id]).toMatchObject({
+      recipe_id: "recipe-1",
+      title: null,
+      on_shopping_list_at: null,
+    });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]!.op).toBe("update");
+    expect(requests[0]!.filters).toEqual({ id: titled.id });
+    expect(requests[0]!.payload).toEqual({
+      recipe_id: "recipe-1",
+      title: null,
+      on_shopping_list_at: null,
+    });
+  });
+
+  it("restores the title and the shopping note when the server refuses", async () => {
+    const titled = entry({
+      title: "Soup",
+      on_shopping_list_at: "2026-10-14T10:00:00Z",
+    });
+    setUpClient((request) =>
+      request.op === "update" ? fail("refused") : serverWith([titled])(request),
+    );
+    const store = useMealPlanStore();
+    await store.load(HOUSEHOLD, WEEK);
+
+    expect(await store.makeRecipeOf(titled.id, "recipe-1")).toBe(false);
+
+    expect(store.entriesById[titled.id]).toEqual(titled);
+    expect(store.error).toBe("refused");
+  });
+
+  it("sends the update for an entry that is not in state", async () => {
+    // The recipe form may have been reloaded, which empties the store.
+    const { requests } = setUpClient(serverWith([]));
+    const store = useMealPlanStore();
+
+    expect(await store.makeRecipeOf("elsewhere", "recipe-1")).toBe(true);
+    expect(requests).toHaveLength(1);
+    expect(requests[0]!.op).toBe("update");
+    expect(requests[0]!.filters).toEqual({ id: "elsewhere" });
+    expect(requests[0]!.payload).toEqual({
+      recipe_id: "recipe-1",
+      title: null,
+      on_shopping_list_at: null,
+    });
+    expect(store.entriesById).toEqual({});
+  });
+
+  it("returns false and sets the error when that update is refused", async () => {
+    setUpClient(() => fail("refused"));
+    const store = useMealPlanStore();
+
+    expect(await store.makeRecipeOf("elsewhere", "recipe-1")).toBe(false);
+    expect(store.error).toBe("refused");
+  });
+});
+
+describe("useMealPlanStore markOnShoppingList", () => {
+  it("notes the time at once and sends on_shopping_list_at", async () => {
+    const soup = entry();
+    const { requests } = setUpClient(serverWith([soup]));
+    const store = useMealPlanStore();
+    await store.load(HOUSEHOLD, WEEK);
+
+    await store.markOnShoppingList(soup.id);
+
+    const noted = store.entriesById[soup.id]!.on_shopping_list_at;
+    expect(noted).not.toBeNull();
+    expect(requests.at(-1)!.op).toBe("update");
+    expect(requests.at(-1)!.payload).toEqual({ on_shopping_list_at: noted });
+  });
+
+  it("rejects with the server's message and takes the note back when refused", async () => {
+    const soup = entry();
+    setUpClient((request) =>
+      request.op === "update" ? fail("refused") : serverWith([soup])(request),
+    );
+    const store = useMealPlanStore();
+    await store.load(HOUSEHOLD, WEEK);
+
+    await expect(store.markOnShoppingList(soup.id)).rejects.toThrow("refused");
+
+    expect(store.entriesById[soup.id]!.on_shopping_list_at).toBeNull();
+    expect(store.error).toBe("refused");
+  });
+
+  it("rejects for an unknown entry without sending anything", async () => {
+    const { requests } = setUpClient(serverWith([]));
+    const store = useMealPlanStore();
+    await store.load(HOUSEHOLD, WEEK);
+    requests.length = 0;
+
+    await expect(store.markOnShoppingList("unknown")).rejects.toThrow(
+      "not_saved",
+    );
+    expect(requests).toEqual([]);
+  });
+});
+
 describe("useMealPlanStore remove", () => {
   it("soft deletes at once and sends deleted_at, not a delete", async () => {
     const soup = entry();

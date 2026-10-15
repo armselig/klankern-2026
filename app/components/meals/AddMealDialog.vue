@@ -2,7 +2,7 @@
 import type { Recipe } from "~/types/recipe";
 
 /**
- * Asks what to put on a day's dinner: a recipe of the household or a few
+ * Asks what to put in a day's slot: a recipe of the household or a few
  * words ("toast"). A plain form, so it works without the extras: the text
  * field, then a button for each recipe that matches it, then the button that
  * adds the text as it is. It only reports the choice; saving is the page's.
@@ -10,6 +10,8 @@ import type { Recipe } from "~/types/recipe";
 const props = defineProps<{
   /** The day, as a member reads it ("Tue 20 Oct"). */
   dayLabel: string;
+  /** The slot, as a member reads it ("Dinner"). */
+  slotLabel: string;
   recipes: Recipe[];
 }>();
 const open = defineModel<boolean>({ required: true });
@@ -60,7 +62,7 @@ function chooseTypedText() {
           class="text-h6 q-my-none"
           :data-testid="TEST_IDS.meals.dialog.title"
         >
-          Dinner on {{ dayLabel }}
+          {{ slotLabel }} on {{ dayLabel }}
         </h2>
         <q-input
           v-model="query"

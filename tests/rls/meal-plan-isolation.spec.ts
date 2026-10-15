@@ -198,4 +198,59 @@ describe("meal plan RLS isolation", () => {
       .eq("id", entryAId);
     expect(error).not.toBeNull();
   });
+
+  describe("count_planned_dinner_days", () => {
+    /** The day `days` before today in UTC, the zone the calls give. */
+    function daysAgo(days: number): string {
+      const day = new Date();
+      day.setUTCDate(day.getUTCDate() - days);
+      return day.toISOString().slice(0, 10);
+    }
+
+    // Household B, whose plan no other test writes to: household A's entries
+    // lie on a fixed day that a later run would find inside the window.
+    beforeAll(async () => {
+      const dinner = (date: string) => ({
+        ...entryRow(householdBId),
+        date,
+      });
+      const { error } = await userB.client.from("meal_plan_entries").insert([
+        dinner(daysAgo(0)),
+        dinner(daysAgo(3)),
+        dinner(daysAgo(3)),
+        dinner(daysAgo(13)),
+        // Not counted: the day before the window, a lunch, a removed dinner.
+        dinner(daysAgo(14)),
+        { ...dinner(daysAgo(1)), slot: "lunch" },
+        { ...dinner(daysAgo(2)), deleted_at: new Date().toISOString() },
+      ]);
+      if (error) throw error;
+    });
+
+    it("counts the days of the last 14 with a dinner, each day once", async () => {
+      const { data, error } = await userB.client.rpc(
+        "count_planned_dinner_days",
+        { p_household_id: householdBId, p_time_zone: "UTC" },
+      );
+      expect(error).toBeNull();
+      expect(data).toBe(3);
+    });
+
+    it("counts nothing of another household for a member", async () => {
+      const { data, error } = await userA.client.rpc(
+        "count_planned_dinner_days",
+        { p_household_id: householdBId, p_time_zone: "UTC" },
+      );
+      expect(error).toBeNull();
+      expect(data).toBe(0);
+    });
+
+    it("is not callable without signing in", async () => {
+      const { error } = await signedOut.rpc("count_planned_dinner_days", {
+        p_household_id: householdBId,
+        p_time_zone: "UTC",
+      });
+      expect(error).not.toBeNull();
+    });
+  });
 });

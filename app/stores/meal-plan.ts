@@ -3,14 +3,15 @@ import type { ItemsById } from "~/types/list";
 import type {
   LoadedDateRange,
   MealPlanEntry,
+  MealPlanEntryChange,
   MealPlanRealtimeEvent,
   MealSlot,
 } from "~/types/meal-plan";
 import {
   fetchMealPlanEntries,
   insertMealPlanEntry,
-  setMealPlanEntrySkipped,
   softDeleteMealPlanEntryRemote,
+  updateMealPlanEntry,
 } from "~/composables/meal-plan-actions";
 import { errorMessage } from "~/utils/error-message";
 import { createChangesDuringFetch } from "~/utils/changes-during-fetch";
@@ -18,8 +19,8 @@ import { createInsertsInFlight } from "~/utils/inserts-in-flight";
 import { isRangeLoaded } from "~/utils/meal-week";
 import {
   addLoadedRange,
+  applyMealPlanChange,
   applyMealPlanRealtimeEvent,
-  applyMealPlanSkip,
   mergeMealPlanResync,
   visibleMealPlanEntries,
 } from "~/utils/meal-plan-state";
@@ -254,27 +255,93 @@ export const useMealPlanStore = defineStore("meal-plan", {
       return saved;
     },
 
-    /** Marks an entry as not cooked after all, or takes the mark back.
-     * Optimistic, and taken back if the server refuses it. */
-    async setSkipped(id: string, skipped: boolean) {
+    /**
+     * Changes some columns of an entry: optimistic, and only those columns
+     * are taken back if the server refuses, so a change to another column
+     * that arrived meanwhile stays.
+     *
+     * @returns whether the server has the change; false also leaves `error`
+     *   set
+     */
+    async update(id: string, change: MealPlanEntryChange): Promise<boolean> {
       const previous = this.entriesById[id];
-      if (!previous || previous.deleted_at) return;
+      if (!previous || previous.deleted_at) return false;
       this.error = null;
-      const skippedAt = skipped ? new Date().toISOString() : null;
-      this.entriesById = applyMealPlanSkip(this.entriesById, id, skippedAt);
+      const undo = Object.fromEntries(
+        Object.keys(change).map((column) => [
+          column,
+          previous[column as keyof MealPlanEntryChange],
+        ]),
+      ) as MealPlanEntryChange;
+      this.entriesById = applyMealPlanChange(this.entriesById, id, change);
+      let saved = false;
       await this.withPending(id, async () => {
         await insertsInFlight.settled(id);
         try {
-          await setMealPlanEntrySkipped(useSupabaseClient(), id, skippedAt);
+          await updateMealPlanEntry(useSupabaseClient(), id, change);
+          saved = true;
         } catch (e) {
-          this.entriesById = applyMealPlanSkip(
-            this.entriesById,
-            id,
-            previous.skipped_at,
-          );
+          this.entriesById = applyMealPlanChange(this.entriesById, id, undo);
           this.error = errorMessage(e);
         }
       });
+      return saved;
+    },
+
+    /** Marks an entry as not cooked after all, or takes the mark back. */
+    async setSkipped(id: string, skipped: boolean) {
+      await this.update(id, {
+        skipped_at: skipped ? new Date().toISOString() : null,
+      });
+    },
+
+    /** Puts an entry on another day or in another slot, after what is there
+     * already. Its ingredients stay noted as on the shopping list: they are
+     * the same ingredients. */
+    async move(id: string, date: string, slot: MealSlot): Promise<boolean> {
+      const target = Object.values(this.entriesById).filter(
+        (entry) =>
+          !entry.deleted_at &&
+          entry.id !== id &&
+          entry.date === date &&
+          entry.slot === slot,
+      );
+      return this.update(id, { date, slot, position: nextPosition(target) });
+    },
+
+    /**
+     * Turns an entry with a title into one with a recipe, in one write. The
+     * note that it is on the shopping list goes: the recipe's ingredients
+     * were never put there. Sent also for an entry that is not in state: the
+     * recipe form it is called from may have been reloaded, which empties
+     * the store, and the Realtime echo brings the entry back.
+     */
+    async makeRecipeOf(id: string, recipeId: string): Promise<boolean> {
+      const change = {
+        recipe_id: recipeId,
+        title: null,
+        on_shopping_list_at: null,
+      };
+      if (this.entriesById[id]) return this.update(id, change);
+      try {
+        await updateMealPlanEntry(useSupabaseClient(), id, change);
+        return true;
+      } catch (e) {
+        this.error = errorMessage(e);
+        return false;
+      }
+    },
+
+    /**
+     * Notes that an entry's ingredients are on the shopping list.
+     *
+     * @throws what the server refused with, for the shopping run to report
+     */
+    async markOnShoppingList(id: string) {
+      const saved = await this.update(id, {
+        on_shopping_list_at: new Date().toISOString(),
+      });
+      if (!saved) throw new Error(this.error ?? "not_saved");
     },
 
     /** Soft delete at once: optimistic, taken back if the server refuses it.

@@ -12,16 +12,13 @@ import type {
 
 const props = defineProps<{ householdId: string; vacationId: string }>();
 const vacationStore = useVacationStore();
-const recipeStore = useRecipeStore();
+const mealPlanStore = useMealPlanStore();
 const householdStore = useHouseholdStore();
 const user = useSupabaseUser();
 const router = useRouter();
 
 onMounted(() => {
   void vacationStore.load(props.householdId);
-  // For the link to the meals, which says which of them wait for the
-  // shopping list: a meal whose recipe was removed doesn't.
-  void recipeStore.load(props.householdId);
   // For the avatars and for the members who can be added to the trip; the
   // dashboard has usually fetched them already.
   if (householdStore.members.length === 0) void householdStore.fetchMembers();
@@ -45,15 +42,33 @@ const emails = computed(() =>
 const readyToGo = computed(
   () => !!vacation.value && isReadyToGo(vacation.value, tasks.value, today),
 );
-/** What the link to the meals says. Which meals wait is known once the
- * recipes are loaded; until then it is only a count. */
+/** The trip's days in the meal plan, fetched once the trip is known, for
+ * the link to its meals. */
+const tripRange = computed(() =>
+  vacation.value
+    ? { from: vacation.value.starts_on, to: vacation.value.ends_on }
+    : null,
+);
+watch(
+  tripRange,
+  (range) => {
+    if (range) void mealPlanStore.load(props.householdId, range);
+  },
+  { immediate: true },
+);
+/** What the link to the meals says: how many dinners the plan holds for
+ * the trip's days; nothing until those days are loaded. */
 const mealsLine = computed(() => {
-  const meals = vacationStore.mealsOf(props.vacationId);
-  const waiting =
-    recipeStore.householdId === props.householdId
-      ? mealsToPutOnList(meals, (id) => recipeStore.find(id)).length
-      : null;
-  return mealsSummary(meals, waiting);
+  const range = tripRange.value;
+  if (!range || !mealPlanStore.isLoaded(range)) return "";
+  return dinnersPlannedLine(
+    mealPlanStore.visible.filter(
+      (entry) =>
+        entry.slot === "dinner" &&
+        range.from <= entry.date &&
+        entry.date <= range.to,
+    ).length,
+  );
 });
 const shares = computed(() =>
   taskShares(tasks.value, people.value, vacationStore.peopleById),

@@ -8,8 +8,6 @@ import type { RowRealtimeEvent } from "~/types/synced-row";
 import type { TodoItem } from "~/types/todo";
 import type {
   Vacation,
-  VacationMeal,
-  VacationMealRealtimeEvent,
   VacationPerson,
   VacationPersonRealtimeEvent,
   VacationRealtimeEvent,
@@ -49,7 +47,6 @@ export interface HouseholdChangeListeners {
   onVacationChange: (event: VacationRealtimeEvent) => void;
   onVacationTaskChange: (event: VacationTaskRealtimeEvent) => void;
   onVacationPersonChange: (event: VacationPersonRealtimeEvent) => void;
-  onVacationMealChange: (event: VacationMealRealtimeEvent) => void;
   onMealPlanEntryChange: (event: MealPlanRealtimeEvent) => void;
   /** Fires on the first subscribe and on every automatic rejoin after a
    * dropped connection; postgres_changes has no replay, so this is the cue
@@ -102,12 +99,6 @@ export function subscribeToHouseholdChanges(
   const vacationPeople = {
     schema: "public",
     table: "vacation_people",
-    filter,
-  } as const;
-
-  const vacationMeals = {
-    schema: "public",
-    table: "vacation_meals",
     filter,
   } as const;
 
@@ -190,16 +181,6 @@ export function subscribeToHouseholdChanges(
       { ...vacationPeople, event: "UPDATE" },
       (payload) =>
         listeners.onVacationPersonChange(toRowRealtimeEvent(payload)),
-    )
-    .on<VacationMeal>(
-      "postgres_changes",
-      { ...vacationMeals, event: "INSERT" },
-      (payload) => listeners.onVacationMealChange(toRowRealtimeEvent(payload)),
-    )
-    .on<VacationMeal>(
-      "postgres_changes",
-      { ...vacationMeals, event: "UPDATE" },
-      (payload) => listeners.onVacationMealChange(toRowRealtimeEvent(payload)),
     )
     .on<MealPlanEntry>(
       "postgres_changes",

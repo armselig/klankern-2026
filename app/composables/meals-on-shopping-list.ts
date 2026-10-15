@@ -1,5 +1,5 @@
 import type { ShoppingItem } from "~/types/shopping";
-import type { MealToPutOnList } from "~/utils/vacation-meals";
+import type { MealToPutOnList } from "~/utils/shopping-run";
 import { errorMessage } from "~/utils/error-message";
 
 /** What the shopping list and the plan give the run: the list's add of

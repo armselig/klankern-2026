@@ -3,9 +3,14 @@ import {
   COOKED_LOOKBACK_WEEKS,
   dashboardRange,
   DASHBOARD_DAYS_AHEAD,
+  daysOfRange,
+  dinnersPlannedLine,
   formatWeekday,
   isRangeLoaded,
   mondayOf,
+  moveTargets,
+  slotLabel,
+  SLOTS_IN_ORDER,
   tonightDay,
   weekDays,
   weekFromParam,
@@ -218,5 +223,104 @@ describe("formatWeekday", () => {
 
   it("gives a Sunday and a single-digit day", () => {
     expect(formatWeekday("2026-11-01")).toBe("Sun 1 Nov");
+  });
+});
+
+describe("daysOfRange", () => {
+  it("is the one day for a single-day range", () => {
+    expect(daysOfRange(TODAY, TODAY)).toEqual([TODAY]);
+  });
+
+  it("includes both ends", () => {
+    expect(daysOfRange("2026-10-15", "2026-10-17")).toEqual([
+      "2026-10-15",
+      "2026-10-16",
+      "2026-10-17",
+    ]);
+  });
+
+  it("runs over the end of a month", () => {
+    expect(daysOfRange("2026-10-30", "2026-11-02")).toEqual([
+      "2026-10-30",
+      "2026-10-31",
+      "2026-11-01",
+      "2026-11-02",
+    ]);
+  });
+
+  it("runs over the end of a year", () => {
+    expect(daysOfRange("2026-12-31", "2027-01-01")).toEqual([
+      "2026-12-31",
+      "2027-01-01",
+    ]);
+  });
+
+  it("has no skipped or doubled day over the change to summer time", () => {
+    expect(daysOfRange("2026-03-28", "2026-03-30")).toEqual([
+      "2026-03-28",
+      "2026-03-29",
+      "2026-03-30",
+    ]);
+  });
+
+  it("has no skipped or doubled day over the change back to winter time", () => {
+    expect(daysOfRange("2026-10-24", "2026-10-26")).toEqual([
+      "2026-10-24",
+      "2026-10-25",
+      "2026-10-26",
+    ]);
+  });
+});
+
+describe("SLOTS_IN_ORDER", () => {
+  it("lists dinner first, then the others as the day runs", () => {
+    expect(SLOTS_IN_ORDER).toEqual(["dinner", "breakfast", "lunch", "snack"]);
+  });
+});
+
+describe("slotLabel", () => {
+  it("capitalises the slot's name", () => {
+    expect(SLOTS_IN_ORDER.map(slotLabel)).toEqual([
+      "Dinner",
+      "Breakfast",
+      "Lunch",
+      "Snack",
+    ]);
+  });
+});
+
+describe("moveTargets", () => {
+  it("offers eight days, today and tomorrow by name", () => {
+    const targets = moveTargets(TODAY);
+    expect(targets).toHaveLength(8);
+    expect(targets[0]).toEqual({ day: "2026-10-15", label: "Today" });
+    expect(targets[1]).toEqual({ day: "2026-10-16", label: "Tomorrow" });
+  });
+
+  it("names the six days after tomorrow by weekday across a month end", () => {
+    expect(moveTargets("2026-10-29")).toEqual([
+      { day: "2026-10-29", label: "Today" },
+      { day: "2026-10-30", label: "Tomorrow" },
+      { day: "2026-10-31", label: "Sat 31 Oct" },
+      { day: "2026-11-01", label: "Sun 1 Nov" },
+      { day: "2026-11-02", label: "Mon 2 Nov" },
+      { day: "2026-11-03", label: "Tue 3 Nov" },
+      { day: "2026-11-04", label: "Wed 4 Nov" },
+      { day: "2026-11-05", label: "Thu 5 Nov" },
+    ]);
+  });
+});
+
+describe("dinnersPlannedLine", () => {
+  it("says no dinners are planned for none", () => {
+    expect(dinnersPlannedLine(0)).toBe("No dinners planned");
+  });
+
+  it("uses the singular for one", () => {
+    expect(dinnersPlannedLine(1)).toBe("1 dinner planned");
+  });
+
+  it("uses the plural for several", () => {
+    expect(dinnersPlannedLine(3)).toBe("3 dinners planned");
   });
 });

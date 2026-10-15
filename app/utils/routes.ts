@@ -13,10 +13,10 @@ export const ROUTES = {
   recipe: (id: string) => `/recipes/${id}`,
   recipeEdit: (id: string) => `/recipes/${id}/edit`,
   meals: "/meals",
+  tripMeals: (vacationId: string) => `/meals?trip=${vacationId}`,
   vacations: "/vacations",
   vacationNew: "/vacations/new",
   vacation: (id: string) => `/vacations/${id}`,
-  vacationMeals: (id: string) => `/vacations/${id}/meals`,
   joinPrefix: "/join/",
   join: (code: string) => `/join/${code}`,
 } as const;

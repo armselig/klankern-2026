@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Recipe } from "~/types/recipe";
-import type { VacationMeal } from "~/types/vacation";
-import type { MealToPutOnList } from "~/utils/vacation-meals";
+import type { MealToPutOnList } from "~/utils/shopping-run";
 import {
   putMealsOnShoppingList,
   type ShoppingListWrites,
@@ -12,17 +11,6 @@ function pending(
   title: string,
   ingredients: Recipe["ingredients"],
 ): MealToPutOnList {
-  const meal: VacationMeal = {
-    id,
-    vacation_id: "vacation-1",
-    household_id: "house-1",
-    recipe_id: `recipe-${id}`,
-    position: 1,
-    on_shopping_list_at: null,
-    created_by: "user-1",
-    created_at: "2026-10-01T00:00:00Z",
-    deleted_at: null,
-  };
   const recipe: Recipe = {
     id: `recipe-${id}`,
     household_id: "house-1",
@@ -34,7 +22,7 @@ function pending(
     created_at: "2026-01-01T00:00:00Z",
     deleted_at: null,
   };
-  return { meal, recipe };
+  return { meal: { id }, recipe };
 }
 
 const flour = { id: "i1", name: "Flour", quantity: "250 g" };

@@ -4,7 +4,7 @@ import type { MealPlanEntry, MealPlanRealtimeEvent } from "~/types/meal-plan";
 import {
   addLoadedRange,
   applyMealPlanRealtimeEvent,
-  applyMealPlanSkip,
+  applyMealPlanChange,
   mergeMealPlanResync,
   visibleMealPlanEntries,
 } from "./meal-plan-state";
@@ -303,35 +303,46 @@ describe("visibleMealPlanEntries", () => {
   });
 });
 
-describe("applyMealPlanSkip", () => {
-  it("lays the skip over the entry", () => {
-    const next = applyMealPlanSkip(
-      byId(entry()),
-      "entry-1",
-      "2026-10-15T10:00:00Z",
-    );
+describe("applyMealPlanChange", () => {
+  it("lays the change over the entry", () => {
+    const next = applyMealPlanChange(byId(entry()), "entry-1", {
+      skipped_at: "2026-10-15T10:00:00Z",
+    });
     expect(next["entry-1"]!.skipped_at).toBe("2026-10-15T10:00:00Z");
   });
 
-  it("takes the skip back with null", () => {
-    const next = applyMealPlanSkip(
+  it("changes several columns and leaves the others", () => {
+    const before = entry({ title: "toast", recipe_id: null });
+    const next = applyMealPlanChange(byId(before), "entry-1", {
+      recipe_id: "recipe-9",
+      title: null,
+    });
+    expect(next["entry-1"]).toEqual({
+      ...before,
+      recipe_id: "recipe-9",
+      title: null,
+    });
+  });
+
+  it("takes a value back with null", () => {
+    const next = applyMealPlanChange(
       byId(entry({ skipped_at: "2026-10-15T10:00:00Z" })),
       "entry-1",
-      null,
+      { skipped_at: null },
     );
     expect(next["entry-1"]!.skipped_at).toBeNull();
   });
 
   it("does nothing for an unknown entry", () => {
     const state = byId(entry());
-    expect(applyMealPlanSkip(state, "unknown", "2026-10-15T10:00:00Z")).toBe(
+    expect(applyMealPlanChange(state, "unknown", { skipped_at: null })).toBe(
       state,
     );
   });
 
   it("does nothing for a deleted entry", () => {
     const state = byId(entry({ deleted_at: DELETED }));
-    expect(applyMealPlanSkip(state, "entry-1", "2026-10-15T10:00:00Z")).toBe(
+    expect(applyMealPlanChange(state, "entry-1", { skipped_at: null })).toBe(
       state,
     );
   });

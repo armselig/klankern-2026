@@ -522,25 +522,26 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       await expectNoBlockingViolations(page, "the people of a vacation");
       await page.getByRole("button", { name: "Done" }).click();
 
-      // The meals: their page before a meal is picked, the dialog that
-      // picks one, and the page with the meal on the shopping list.
+      // The trip's meals: the plan of its days, empty, then with a dinner,
+      // the notice of the shopping run, an entry's menu and the dialog that
+      // moves an entry.
       await page.getByRole("link", { name: /^Meals/ }).click();
-      await expect(page).toHaveTitle(/^Meals · Winter week by the sea/);
-      await expect(page.getByText("No meals yet. Pick recipes")).toBeVisible();
-      await untilFadesEnd(page);
-      await expectNoBlockingViolations(page, "the meals of a vacation, empty");
-
-      await page.getByRole("button", { name: "Add meal" }).click();
-      await page.getByRole("button", { name: "Add Pancakes" }).click();
+      await expect(page).toHaveTitle("Meals · Klankern");
       await expect(
-        page.getByRole("status").filter({ hasText: "Added: Pancakes" }),
+        page.getByRole("heading", { name: /^Trip to Winter week by the sea/ }),
       ).toBeVisible();
       await untilFadesEnd(page);
-      await expectNoBlockingViolations(page, "the dialog that picks a meal");
-      await page.getByRole("button", { name: "Done" }).click();
+      await expectNoBlockingViolations(page, "the meals of a trip, empty");
+
+      await page
+        .getByRole("button", { name: /^Add dinner on / })
+        .first()
+        .click();
+      await page.getByRole("button", { name: "Pancakes" }).click();
       await expect(page.getByRole("dialog")).toHaveCount(0);
+      await expect(page.getByRole("link", { name: "Pancakes" })).toBeVisible();
       await untilFadesEnd(page);
-      await expectNoBlockingViolations(page, "the meals of a vacation");
+      await expectNoBlockingViolations(page, "the meals of a trip");
 
       await page
         .getByRole("button", {
@@ -549,23 +550,33 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
         .click();
       // The notice is scanned while it shows, once it has faded in, and is
       // gone before the next scans (see the recipe above).
-      const added = page.getByText("2 items added to the shopping list");
+      const added = page.getByText(/^2 items added to the shopping list/);
       await expect(added).toBeVisible();
-      await expect(
-        page.getByRole("img", { name: "On the shopping list" }),
-      ).toBeVisible();
       await untilFadesEnd(page);
       await expectNoBlockingViolations(
         page,
-        "the meals with the notice of added items",
+        "the meals of a trip with the notice of added items",
       );
       await expect(added).toHaveCount(0);
 
-      await page
-        .getByRole("link", { name: /^Back to Winter week by the sea/ })
-        .click();
+      await page.getByRole("button", { name: "More: Pancakes" }).click();
+      await expect(
+        page.getByRole("group", { name: "More: Pancakes" }),
+      ).toBeVisible();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "the menu of a planned meal");
+      await page.getByRole("button", { name: "Move", exact: true }).click();
+      await expect(
+        page.getByRole("heading", { name: "Move Pancakes" }),
+      ).toBeVisible();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "the dialog that moves a meal");
+      await page.getByRole("button", { name: "Cancel" }).click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+
+      await page.goBack();
       await expect(page.getByRole("link", { name: /^Meals/ })).toContainText(
-        "1 meal",
+        "1 dinner planned",
       );
       await expectNoBlockingViolations(
         page,

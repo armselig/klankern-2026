@@ -4,7 +4,7 @@ import {
   isLocalDate,
   type LocalDate,
 } from "./local-date";
-import type { LoadedDateRange } from "~/types/meal-plan";
+import type { LoadedDateRange, MealSlot } from "~/types/meal-plan";
 
 /** How many weeks back the Tonight tile looks to tell when a recipe was last
  * cooked; a recipe not planned in that time counts as not cooked for good. */
@@ -83,4 +83,47 @@ export function formatWeekday(day: LocalDate): string {
   })
     .format(new Date(`${day}T00:00:00Z`))
     .replace(",", "");
+}
+
+/** The days from `from` to `to`, both included: a trip's days. */
+export function daysOfRange(from: LocalDate, to: LocalDate): LocalDate[] {
+  return Array.from({ length: daysBetween(from, to) + 1 }, (_, i) =>
+    addDays(from, i),
+  );
+}
+
+/** The slots in the order a day shows them: dinner first, since it is what
+ * the household decides every day, then the others as the day runs. */
+export const SLOTS_IN_ORDER: readonly MealSlot[] = [
+  "dinner",
+  "breakfast",
+  "lunch",
+  "snack",
+];
+
+/** A slot's name for a member to read: "Dinner". */
+export function slotLabel(slot: MealSlot): string {
+  return slot.charAt(0).toUpperCase() + slot.slice(1);
+}
+
+/** A day the move dialog offers, with what its button says. */
+export interface MoveTarget {
+  day: LocalDate;
+  label: string;
+}
+
+/** The days the move dialog offers as buttons: today, tomorrow and the six
+ * after, by name; any other day is picked in the dialog's date field. */
+export function moveTargets(today: LocalDate): MoveTarget[] {
+  return Array.from({ length: 8 }, (_, i) => {
+    const day = addDays(today, i);
+    const label = i === 0 ? "Today" : i === 1 ? "Tomorrow" : formatWeekday(day);
+    return { day, label };
+  });
+}
+
+/** What a trip's link to its meals says: "3 dinners planned". */
+export function dinnersPlannedLine(count: number): string {
+  if (count === 0) return "No dinners planned";
+  return `${count} ${count === 1 ? "dinner" : "dinners"} planned`;
 }

@@ -147,20 +147,3 @@ export function vacationPersonRow(
     created_by: user.userId,
   };
 }
-
-/** A meal row for a direct insert, as the app adds one: a recipe of the
- * household picked for the vacation. */
-export function vacationMealRow(
-  user: TestUser,
-  vacationId: string,
-  householdId: string,
-  recipeId: string,
-) {
-  return {
-    vacation_id: vacationId,
-    household_id: householdId,
-    recipe_id: recipeId,
-    position: 1,
-    created_by: user.userId,
-  };
-}

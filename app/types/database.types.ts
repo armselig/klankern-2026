@@ -676,6 +676,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      count_planned_dinner_days: {
+        Args: { p_household_id: string; p_time_zone: string };
+        Returns: number;
+      };
       create_household: {
         Args: { p_name: string };
         Returns: {

@@ -2,20 +2,21 @@
 import { mdiChevronRight } from "@quasar/extras/mdi-v7";
 
 /**
- * The way from a vacation's page to its meals. One line with what waits
- * there, so a member sees that ingredients are still to go on the shopping
- * list without opening the page: the app has no notifications.
+ * The way from a vacation's page to the meal plan of its days. One line
+ * with how many dinners are planned, so a member sees whether the trip's
+ * meals are thought of without opening the plan.
  */
 defineProps<{
   vacationId: string;
-  /** What the meals page says about itself (see mealsSummary). */
+  /** How many dinners are planned (see dinnersPlannedLine); empty while
+   * the plan is loading. */
   summary: string;
 }>();
 </script>
 
 <template>
   <nuxt-link
-    :to="ROUTES.vacationMeals(vacationId)"
+    :to="ROUTES.tripMeals(vacationId)"
     class="vacation-meals-link"
     :data-testid="TEST_IDS.vacation.meals.link"
   >

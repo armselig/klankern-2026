@@ -5,8 +5,6 @@ import type {
   NewVacationPerson,
   Vacation,
   VacationDetails,
-  VacationMeal,
-  VacationMealRealtimeEvent,
   VacationPerson,
   VacationPersonRealtimeEvent,
   VacationPhase,
@@ -17,17 +15,13 @@ import type {
 import {
   assignVacationTaskRemote,
   createVacation,
-  fetchVacationMeals,
   fetchVacationPeople,
   fetchVacations,
   fetchVacationTasks,
-  insertVacationMeal,
   insertVacationPerson,
-  markVacationMealOnShoppingListRemote,
   insertVacationTask,
   rejectVacationTaskRemote,
   renameVacationPersonRemote,
-  softDeleteVacationMealRemote,
   softDeleteVacationPersonRemote,
   renameVacationTaskRemote,
   setVacationTaskDone,
@@ -58,13 +52,12 @@ import {
   tasksToCopy,
 } from "~/utils/vacation-state";
 import { peopleOfVacation } from "~/utils/vacation-share";
-import { mealsOfVacation } from "~/utils/vacation-meals";
 
-// One store for the vacations, their tasks, their people and their meals, and
-// one of each piece of bookkeeping for all four: they are keyed by a row's id, and ids
+// One store for the vacations, their tasks and their people, and one of each
+// piece of bookkeeping for all three: they are keyed by a row's id, and ids
 // are UUIDs, so rows of different tables can't be mistaken for each other.
 
-/** Adds of tasks, people and meals still being saved; see createInsertsInFlight. A
+/** Adds of tasks and people still being saved; see createInsertsInFlight. A
  * vacation has none: it is put into state only once it is saved (see add). */
 const insertsInFlight = createInsertsInFlight();
 
@@ -88,9 +81,6 @@ export const useVacationStore = defineStore("vacations", {
      * rejection keeps its name, and a task given to such a person counts as
      * nobody's (see assigneeOf). */
     peopleById: {} as ItemsById<VacationPerson>,
-    /** The meals of all vacations, since a vacation's page says how many of
-     * them are on the shopping list. */
-    mealsById: {} as ItemsById<VacationMeal>,
     /** Ids with a write still in flight; a resync must not overwrite them
      * with a fetch that may predate the write. */
     pendingIds: [] as string[],
@@ -110,9 +100,6 @@ export const useVacationStore = defineStore("vacations", {
     /** The people who are on a vacation, in the order they were added. */
     peopleOf: (state) => (vacationId: string) =>
       peopleOfVacation(state.peopleById, vacationId),
-    /** A vacation's live meals in the order its plan lists them. */
-    mealsOf: (state) => (vacationId: string) =>
-      mealsOfVacation(state.mealsById, vacationId),
     /** The live vacations as the list and the tile show them on a day. */
     groups: (state) => (today: LocalDate) =>
       groupVacations(state.vacationsById, state.tasksById, today),
@@ -125,7 +112,7 @@ export const useVacationStore = defineStore("vacations", {
      * background (see resync): replacing it would drop a write that is
      * still on its way.
      *
-     * The four tables are fetched before any is put into state, so a
+     * The three tables are fetched before any is put into state, so a
      * failure of one leaves the state as it was instead of vacations without
      * tasks, or tasks without the people they were given to.
      */
@@ -135,11 +122,10 @@ export const useVacationStore = defineStore("vacations", {
       this.error = null;
       try {
         const client = useSupabaseClient();
-        const [vacations, tasks, people, meals] = await Promise.all([
+        const [vacations, tasks, people] = await Promise.all([
           fetchVacations(client, householdId),
           fetchVacationTasks(client, householdId),
           fetchVacationPeople(client, householdId),
-          fetchVacationMeals(client, householdId),
         ]);
         // A reset in the meantime (the user changed) ended this load; the
         // rows fetched are the previous user's.
@@ -152,9 +138,6 @@ export const useVacationStore = defineStore("vacations", {
         );
         this.peopleById = Object.fromEntries(
           people.map((person) => [person.id, person]),
-        );
-        this.mealsById = Object.fromEntries(
-          meals.map((meal) => [meal.id, meal]),
         );
         this.householdId = householdId;
       } catch (e) {
@@ -201,19 +184,6 @@ export const useVacationStore = defineStore("vacations", {
       );
     },
 
-    /** Folds a change of a meal from the household's Realtime channel into
-     * state. */
-    applyMealEvent(event: VacationMealRealtimeEvent) {
-      if (!realtimeEventOrder.accept(event.new.id, event.commitTimestamp))
-        return;
-      changesDuringFetch.record(event.new.id);
-      this.mealsById = applyVacationRowEvent(
-        this.mealsById,
-        event,
-        this.householdId,
-      );
-    },
-
     /** Repairs state after a (re)connect, since Realtime doesn't replay missed
      * events. Skipped until load() has fetched the rows (the channel can
      * connect first). As in load(), a failure of one fetch changes nothing. */
@@ -223,11 +193,10 @@ export const useVacationStore = defineStore("vacations", {
       const changes = changesDuringFetch.start();
       try {
         const client = useSupabaseClient();
-        const [vacations, tasks, people, meals] = await Promise.all([
+        const [vacations, tasks, people] = await Promise.all([
           fetchVacations(client, householdId),
           fetchVacationTasks(client, householdId),
           fetchVacationPeople(client, householdId),
-          fetchVacationMeals(client, householdId),
         ]);
         if (householdId !== this.householdId) return;
         const keepLocalIds = [...this.pendingIds, ...changes.stop()];
@@ -243,7 +212,6 @@ export const useVacationStore = defineStore("vacations", {
           people,
           keepLocalIds,
         );
-        this.mealsById = mergeListResync(this.mealsById, meals, keepLocalIds);
       } catch (e) {
         this.error = errorMessage(e);
       } finally {
@@ -688,104 +656,6 @@ export const useVacationStore = defineStore("vacations", {
         }
       });
       return outcome;
-    },
-    /**
-     * Optimistic pick of a recipe as a meal, at the end of the plan: the row
-     * appears at once under a client-generated id and is reconciled (not
-     * duplicated) once the server confirms it. A refused meal is taken out
-     * again. The same recipe may be picked again.
-     *
-     * @returns the reason the meal could not be saved, or null when it is;
-     *   it belongs in the dialog the recipe was picked in
-     */
-    async addMeal(
-      vacationId: string,
-      recipeId: string,
-    ): Promise<string | null> {
-      const householdId = this.householdId;
-      if (!householdId || !this.find(vacationId))
-        throw new Error("not_initialized");
-      const userId = useSupabaseUser().value?.sub;
-      if (!userId) throw new Error("not_authenticated");
-      const id = crypto.randomUUID();
-      const optimistic: VacationMeal = {
-        id,
-        vacation_id: vacationId,
-        household_id: householdId,
-        recipe_id: recipeId,
-        position: nextPosition(this.mealsOf(vacationId)),
-        on_shopping_list_at: null,
-        created_by: userId,
-        created_at: new Date().toISOString(),
-        deleted_at: null,
-      };
-      this.mealsById = upsertListItem(this.mealsById, optimistic);
-
-      let failure: string | null = null;
-      await this.withPending(id, async () => {
-        try {
-          const confirmed = await insertsInFlight.track(
-            id,
-            insertVacationMeal(useSupabaseClient(), {
-              id,
-              vacationId,
-              householdId,
-              recipeId,
-              position: optimistic.position,
-            }),
-          );
-          this.mealsById = confirmListItem(
-            this.mealsById,
-            optimistic,
-            confirmed,
-          );
-        } catch (e) {
-          const { [id]: _removed, ...rest } = this.mealsById;
-          this.mealsById = rest;
-          failure = errorMessage(e);
-        }
-      });
-      return failure;
-    },
-
-    /** Optimistic soft delete of a meal; like toggleTask, it waits for the
-     * meal's add to be saved. The ingredients that were put on the shopping
-     * list stay there. */
-    async removeMeal(id: string) {
-      const previous = this.mealsById[id];
-      if (!previous) return;
-      this.error = null;
-      this.mealsById = softDeleteListItem(this.mealsById, id);
-      await this.withPending(id, async () => {
-        await insertsInFlight.settled(id);
-        if (!this.mealsById[id]) return;
-        try {
-          await softDeleteVacationMealRemote(useSupabaseClient(), id);
-        } catch (e) {
-          this.mealsById = upsertListItem(this.mealsById, previous);
-          this.error = errorMessage(e);
-        }
-      });
-    },
-
-    /**
-     * Notes that all of a meal's ingredients are on the shopping list. Not
-     * optimistic: the note is only true once it is saved, and the run that
-     * puts the ingredients there stops where a note is refused.
-     *
-     * @throws what the server refused with
-     */
-    async markMealOnShoppingList(id: string) {
-      const meal = this.mealsById[id];
-      if (!meal || meal.deleted_at) return;
-      const at = new Date().toISOString();
-      await this.withPending(id, async () => {
-        await insertsInFlight.settled(id);
-        await markVacationMealOnShoppingListRemote(useSupabaseClient(), id, at);
-        this.mealsById = applyRowEdit(this.mealsById, id, {
-          on_shopping_list_at: at,
-        });
-      });
     },
   },
 });

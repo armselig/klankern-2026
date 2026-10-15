@@ -20,6 +20,21 @@ export interface NewMealPlanEntry {
   title: string | null;
 }
 
+/** The columns of an entry that an update may change (0018 grants update on
+ * these and `deleted_at` only). */
+export type MealPlanEntryChange = Partial<
+  Pick<
+    MealPlanEntry,
+    | "date"
+    | "slot"
+    | "position"
+    | "recipe_id"
+    | "title"
+    | "on_shopping_list_at"
+    | "skipped_at"
+  >
+>;
+
 /** A plan entry change as delivered by Realtime (see RowRealtimeEvent). */
 export type MealPlanRealtimeEvent = RowRealtimeEvent<MealPlanEntry>;
 

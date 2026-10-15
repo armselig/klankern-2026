@@ -3,6 +3,7 @@ import type { Database } from "~/types/database.types";
 import type {
   LoadedDateRange,
   MealPlanEntry,
+  MealPlanEntryChange,
   NewMealPlanEntry,
 } from "~/types/meal-plan";
 import { getCurrentUserId } from "./current-user";
@@ -71,15 +72,16 @@ export async function insertMealPlanEntry(
   return data;
 }
 
-/** Sets or clears when the household did not cook an entry after all. */
-export async function setMealPlanEntrySkipped(
+/** Changes some columns of an entry: a move, a skip, a recipe made of its
+ * title, or the note that its ingredients are on the shopping list. */
+export async function updateMealPlanEntry(
   client: Client,
   id: string,
-  skippedAt: string | null,
+  change: MealPlanEntryChange,
 ): Promise<void> {
   const { error } = await client
     .from("meal_plan_entries")
-    .update({ skipped_at: skippedAt })
+    .update(change)
     .eq("id", id);
   if (error) throw error;
 }

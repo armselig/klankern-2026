@@ -4,8 +4,8 @@ import {
   fetchMealPlanEntries,
   insertMealPlanEntry,
   MEAL_PLAN_PAGE_SIZE,
-  setMealPlanEntrySkipped,
   softDeleteMealPlanEntryRemote,
+  updateMealPlanEntry,
 } from "./meal-plan-actions";
 import {
   fakeClient,
@@ -170,25 +170,25 @@ describe("insertMealPlanEntry", () => {
   });
 });
 
-describe("setMealPlanEntrySkipped", () => {
-  it("sets skipped_at on the entry", async () => {
+describe("updateMealPlanEntry", () => {
+  it("sends only the columns given, for the entry", async () => {
     const query = fakeQueryBuilder({ data: null, error: null });
     const client = fakeClient({ from: () => query.builder });
-    await setMealPlanEntrySkipped(
-      client as never,
-      "e1",
-      "2026-10-15T10:00:00Z",
-    );
+    await updateMealPlanEntry(client as never, "e1", {
+      date: "2026-10-16",
+      slot: "lunch",
+      position: 2,
+    });
     expect(query.calls.update).toEqual([
-      { skipped_at: "2026-10-15T10:00:00Z" },
+      { date: "2026-10-16", slot: "lunch", position: 2 },
     ]);
     expect(query.calls.eq).toEqual(["id", "e1"]);
   });
 
-  it("clears skipped_at with null", async () => {
+  it("clears a column with null", async () => {
     const query = fakeQueryBuilder({ data: null, error: null });
     const client = fakeClient({ from: () => query.builder });
-    await setMealPlanEntrySkipped(client as never, "e1", null);
+    await updateMealPlanEntry(client as never, "e1", { skipped_at: null });
     expect(query.calls.update).toEqual([{ skipped_at: null }]);
   });
 
@@ -197,7 +197,7 @@ describe("setMealPlanEntrySkipped", () => {
     const query = fakeQueryBuilder({ data: null, error: failure });
     const client = fakeClient({ from: () => query.builder });
     await expect(
-      setMealPlanEntrySkipped(client as never, "e1", null),
+      updateMealPlanEntry(client as never, "e1", { skipped_at: null }),
     ).rejects.toBe(failure);
   });
 });

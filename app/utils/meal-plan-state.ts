@@ -2,6 +2,7 @@ import type { ItemsById } from "~/types/list";
 import type {
   LoadedDateRange,
   MealPlanEntry,
+  MealPlanEntryChange,
   MealPlanRealtimeEvent,
 } from "~/types/meal-plan";
 import { addDays } from "./local-date";
@@ -106,13 +107,13 @@ export function visibleMealPlanEntries(
     );
 }
 
-/** Lays a skip over an entry at once, before the server has it. */
-export function applyMealPlanSkip(
+/** Lays a change over an entry at once, before the server has it. */
+export function applyMealPlanChange(
   entriesById: ItemsById<MealPlanEntry>,
   id: string,
-  skippedAt: string | null,
+  change: MealPlanEntryChange,
 ): ItemsById<MealPlanEntry> {
   const local = entriesById[id];
   if (!local || local.deleted_at) return entriesById;
-  return upsertListItem(entriesById, { ...local, skipped_at: skippedAt });
+  return upsertListItem(entriesById, { ...local, ...change });
 }

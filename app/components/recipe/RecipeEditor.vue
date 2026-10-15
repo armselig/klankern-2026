@@ -3,9 +3,19 @@ import { Notify } from "quasar";
 import type { Recipe, RecipeContent } from "~/types/recipe";
 import type { RecipeDraft } from "~/utils/recipe-draft";
 
-/** The form for a new recipe, or for the recipe with `recipeId`. */
-const props = defineProps<{ householdId: string; recipeId?: string }>();
+/**
+ * The form for a new recipe, or for the recipe with `recipeId`. A new
+ * recipe can be made of a meal plan entry that has only a title
+ * (`fromEntry`): the form starts with that title, and the saved recipe
+ * takes the entry's title's place.
+ */
+const props = defineProps<{
+  householdId: string;
+  recipeId?: string;
+  fromEntry?: { id: string; title: string };
+}>();
 const recipeStore = useRecipeStore();
+const mealPlanStore = useMealPlanStore();
 const router = useRouter();
 
 onMounted(() => recipeStore.load(props.householdId));
@@ -19,7 +29,9 @@ const recipe = computed(() =>
  * changed while the form was open. */
 const original = shallowRef<Recipe | null>(null);
 const initialDraft = shallowRef<RecipeDraft | null>(
-  props.recipeId ? null : emptyRecipeDraft(),
+  props.recipeId
+    ? null
+    : { ...emptyRecipeDraft(), title: props.fromEntry?.title ?? "" },
 );
 
 watch(
@@ -42,11 +54,24 @@ watch(
   { immediate: true },
 );
 
-const cancelTo = computed(() =>
-  props.recipeId ? ROUTES.recipe(props.recipeId) : ROUTES.recipes,
-);
+const cancelTo = computed(() => {
+  if (props.recipeId) return ROUTES.recipe(props.recipeId);
+  return props.fromEntry ? ROUTES.meals : ROUTES.recipes;
+});
 
 const saving = ref(false);
+
+/** Puts the saved recipe in the place of the entry it was made of. The
+ * recipe is saved either way; a failure only leaves the entry's title. */
+async function putInPlaceOfEntry(entryId: string, recipeId: string) {
+  if (await mealPlanStore.makeRecipeOf(entryId, recipeId)) return;
+  Notify.create({
+    message: "The recipe is saved, but the meal plan still shows the title.",
+    color: "negative",
+    textColor: "on-accent",
+    attrs: { "data-testid": TEST_IDS.errorMessage },
+  });
+}
 
 /** Saves and shows the recipe. A failed save stays on the form, with what
  * was typed and the store's error. */
@@ -55,7 +80,9 @@ async function save(content: RecipeContent) {
   try {
     if (!props.recipeId) {
       const id = await recipeStore.add(content);
-      if (id) await router.replace(ROUTES.recipe(id));
+      if (!id) return;
+      if (props.fromEntry) await putInPlaceOfEntry(props.fromEntry.id, id);
+      await router.replace(ROUTES.recipe(id));
     } else if (original.value) {
       const saved = await recipeStore.update(
         props.recipeId,
