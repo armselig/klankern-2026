@@ -179,6 +179,14 @@ function canRecord(entry: MealPlanEntry): boolean {
   );
 }
 
+/** The line about the kids under an entry, only where what was recorded
+ * counts: a dinner skipped or moved ahead after a refusal shows none, as
+ * the record and the suggestions leave it out. */
+function noteOf(entry: MealPlanEntry): string | null {
+  if (!canRecord(entry)) return null;
+  return reactionNote(kidsStore.reactionsById, kidsStore.children, entry.id);
+}
+
 /** Saves what the dialog says for each child; only what changed is sent
  * (see setReaction). The notice names no child. */
 async function saveReactions(choices: Record<string, MealReactionChoice>) {
@@ -362,13 +370,7 @@ async function putOnShoppingList() {
                 :entry="entry"
                 :name="nameOf(entry)"
                 :can-record-reactions="canRecord(entry)"
-                :reaction-note="
-                  reactionNote(
-                    kidsStore.reactionsById,
-                    kidsStore.children,
-                    entry.id,
-                  )
-                "
+                :reaction-note="noteOf(entry)"
                 @move="openMove"
                 @reactions="openReactions"
                 @remove="removeEntry"
