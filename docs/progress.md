@@ -2,7 +2,7 @@
 
 The current state of the project: what is built, where it deviates from [`plan.md`](./plan.md) and what comes next. It is kept to two printed pages. How each part came about (the decisions, the bugs found, what was checked by hand) is in the topic files that [`CLAUDE.md`](./CLAUDE.md) lists; the rules for the code are in the root `CLAUDE.md`.
 
-**Resuming in a new session**: the last release is v1.11.1 (2026-10-15), slice 1b of the meal planner, which also removed the old trip meals; migration 0020, which drops their table, is applied. Before it the same day: v1.11.0 (slice 1a) and v1.10.0 (slice 3 of the vacation planner). Each release and how it was checked is in [`infra/releases.md`](infra/releases.md). Read this file, then the topic files for what you are about to touch. The repo and these docs are the source of truth, not any prior chat history.
+**Resuming in a new session**: slice 2 of the meal planner (the kids) is built on `develop` and not released; its migration 0021 is applied. The last release is v1.11.1 (2026-10-15), slice 1b of the meal planner, which also removed the old trip meals; migration 0020, which drops their table, is applied. Before it the same day: v1.11.0 (slice 1a) and v1.10.0 (slice 3 of the vacation planner). Each release and how it was checked is in [`infra/releases.md`](infra/releases.md). Read this file, then the topic files for what you are about to touch. The repo and these docs are the source of truth, not any prior chat history.
 
 ## Status
 
@@ -19,18 +19,19 @@ The current state of the project: what is built, where it deviates from [`plan.m
 | Vacation planner, slices 1–3     | ✅ Released 1.6.0 to 1.10.0, tried by hand           | [`features/vacations/`](features/vacations/CLAUDE.md)                |
 | Meal planner, slice 1a           | ✅ Released 1.11.0, tried by hand                    | [`features/meal-planner/`](features/meal-planner/CLAUDE.md)          |
 | Meal planner, slice 1b           | ✅ Released 1.11.1, tried by hand                    | [`features/meal-planner/`](features/meal-planner/CLAUDE.md)          |
+| Meal planner, slice 2 (the kids) | 🔶 Built, not released, not tried on a phone         | [`features/meal-planner/`](features/meal-planner/CLAUDE.md)          |
 
 ## What's built
 
 Nuxt 4 as an SPA (`ssr: false`) with Quasar, Pinia and `@vite-pwa/nuxt`, on Supabase Cloud through `@nuxtjs/supabase`; served by Netlify as a static build. Every feature follows the layers of "Architecture" in the root `CLAUDE.md`.
 
 - `app/`: the source, by Nuxt 4's folders (`composables/`, `stores/`, `utils/`, `types/`, `components/` with one folder per feature, `pages/`).
-- `supabase/migrations/`: `0001` to `0020` applied to the cloud project.
+- `supabase/migrations/`: `0001` to `0021` applied to the cloud project.
 - `tests/`: `rls/` (one spec per feature against Supabase Cloud), `e2e/` (Playwright, projects `dev` and `pwa`), `support/` (fixtures and UI steps shared by both).
 - `public/`, `scripts/`, `netlify.toml`: the static files, the icon generator and the build settings.
 - `.github/`: the CI and release workflows, and the release tooling as a package of its own.
 
-**Tests**: Vitest, 745 tests in 46 files, the RLS suite included (locally, 2026-10-15). Playwright, 43 tests in 15 files and two projects; locally on 2026-10-15 the `dev` project passed 36 in one run and the newest test on its own, the `pwa` project was not run. CI for v1.11.1 passed on `develop` and `main`, all 43 e2e tests included (2026-10-15).
+**Tests**: Vitest, 900 tests in 50 files, the RLS suite (six spec files) included (locally, 2026-10-15). Playwright, 17 files and two projects; locally on 2026-10-15 the `dev` project passed all 40 of its tests with slice 2, the `pwa` project was not run. CI for v1.11.1 passed on `develop` and `main`, all 43 e2e tests of then included (2026-10-15).
 
 ## Deviations from the plan
 
@@ -46,7 +47,7 @@ Nuxt 4 as an SPA (`ssr: false`) with Quasar, Pinia and `@vite-pwa/nuxt`, on Supa
 
 [`features/header.md`](features/header.md) and [`ui/theme-and-contrast.md`](ui/theme-and-contrast.md) name a few things nobody has looked at yet, mostly in dark mode.
 
-1. The meal planner. Slices 1a and 1b are released and were tried by hand (2026-10-15). Slice 2 is started at the owner's choice before the kill condition's date; its screens are to be approved before it is built. On 2026-10-29, call `count_planned_dinner_days` all the same, see [`features/meal-planner/measuring.md`](features/meal-planner/measuring.md).
+1. The meal planner. Slices 1a and 1b are released and were tried by hand. Slice 2 (the kids) is built at the owner's choice before the kill condition's date: try it on a phone, then release. Slice 3 is next. On 2026-10-29, call `count_planned_dinner_days` all the same, see [`features/meal-planner/measuring.md`](features/meal-planner/measuring.md).
 2. The vacation planner. All three slices were tried by hand (slice 3 on 2026-10-15). The app is to get notifications in place of "Tell them"; nothing plans them yet.
 3. Write a README. Deferred (2026-10-14).
 4. A guard against the cause of the broken first deploy after the move to the git root, proposed and not built. See "The move to the git root on `main`, and a broken deploy" in [`infra/deploy-and-pwa.md`](infra/deploy-and-pwa.md).
