@@ -59,3 +59,12 @@ The e2e test found that a re-roll could leave a day unchanged when the weekly ca
 Looked at on screen at 375x667 px in light and dark mode: the tile with the line and the button, and the week with proposals, one of them kept.
 
 Not done: slice 3 was not tried by hand on a phone, and it is not committed or released.
+
+## Released (2026-10-15)
+
+Released as 1.13.0 the same day; how the release was checked, and the CI failures on the way, are in "Each release" in [`infra/releases.md`](../../infra/releases.md). The `pwa` project passed in CI, so the earlier "not run" is overtaken. The a11y walk had to be given 4 minutes because of the scan added here.
+
+Still open, waiting for the owner, who has not tried slice 3 on a phone:
+
+- The fill bar above the days instead of under them, as in the approved preview (see "Deviation from the approved preview").
+- The widened ranking, the nearest use before or after the day (see "The rules of the proposal").
