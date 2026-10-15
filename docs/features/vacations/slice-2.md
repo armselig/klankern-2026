@@ -72,6 +72,8 @@ Nothing of this slice was tried on the deployed site or on a phone when this was
 - An existing vacation from before this slice: "Who has what" offers "Change people", and after adding the people its tasks can be given.
 - Two phones: a task given on one shows as "yours" on the other without a reload.
 
+Done 2026-10-15: the user did the checks above that still apply on the deployed site. Nothing was reported as wrong.
+
 ### Not verified
 
 - That a messenger keeps the link when it receives the sentence as text.
