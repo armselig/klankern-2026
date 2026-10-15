@@ -176,6 +176,9 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
     test("signed-in pages have no serious accessibility violations", async ({
       page,
     }) => {
+      // One walk through every signed-in page, scanned in each state: with
+      // the week's proposal it took more than the default 2 minutes on CI.
+      test.setTimeout(240_000);
       await openSignedIn(page, user);
       await expect(page.getByText(`E2E a11y ${runId}`)).toBeVisible();
       await expect(page).toHaveTitle("Klankern");
