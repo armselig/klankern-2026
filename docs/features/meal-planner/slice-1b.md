@@ -66,3 +66,10 @@ Screenshots at 375x667 in both color modes, of a week with a recipe and a title 
 
 - **Migrations renumbered.** The owner had the planning count wrapped in a function, which was applied at once, while the drop of `vacation_meals` waits for the release. So the function became `0019` and the drop `0020`: applied in the other order, a later `db push` would have found `0019` behind an applied `0020`. Everything above that says 0019 for the drop meant what is now `0020_drop_vacation_meals.sql`.
 - **A trip that could not be loaded span for ever.** `MealTripView.vue` showed its spinner until the vacations were in the store, and a failed first load never put them there. It now says "Couldn't load the trip. Reload the page to try again." An e2e test blocks the vacations' request and expects that line.
+
+## QA on localhost (2026-10-15)
+
+A QA run (gstack `/qa`, Standard tier) went through slice 1b at 375x667 with a disposable member and household on `nuxt dev`: the week's slots, the entry menu by state, mark as cooked, move, remove with Undo, making a recipe of a title, the shopping run with its notice and list, the trip's page and view, the removed old address and an unknown trip. All passed, with no console errors from the app.
+
+- **The focus after "Mark as cooked" looked lost** and is not: Quasar gives it back to the "More" button by focusing the `q-focus-helper` span inside it, as for every menu, so `document.activeElement` is a span. `tests/e2e/meal-plan.regression-1.e2e.ts` checks that the focus is inside the button. The e2e helper `mealEntry` now also finds a skipped entry, whose row says "Skipped" after the name.
+- **Left as they are (Low):** after "Remove" the focus falls to the page, since the row goes and the Undo notice cannot hold it; "Add dinner" is indented further than the line of the other slots, and recipe links in the week are in the browser's default blue.

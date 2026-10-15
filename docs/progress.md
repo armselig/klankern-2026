@@ -30,7 +30,7 @@ Nuxt 4 as an SPA (`ssr: false`) with Quasar, Pinia and `@vite-pwa/nuxt`, on Supa
 - `public/`, `scripts/`, `netlify.toml`: the static files, the icon generator and the build settings.
 - `.github/`: the CI and release workflows, and the release tooling as a package of its own.
 
-**Tests**: Vitest, 745 tests in 46 files, the RLS suite included (locally, 2026-10-15). Playwright, 42 tests in 14 files and two projects; locally on 2026-10-15 the `dev` project passed 36 in one run and the newest test on its own, the `pwa` project was not run. CI on `develop` before 1b passed 38 of 39; "a wrong code shows an error" in `auth.e2e.ts` failed and was not looked into (see "A wrong code that showed no error" in [`infra/e2e-failures-on-ci.md`](infra/e2e-failures-on-ci.md)).
+**Tests**: Vitest, 745 tests in 46 files, the RLS suite included (locally, 2026-10-15). Playwright, 43 tests in 15 files and two projects; locally on 2026-10-15 the `dev` project passed 36 in one run and the newest test on its own, the `pwa` project was not run. CI on `develop` before 1b passed 38 of 39; "a wrong code shows an error" in `auth.e2e.ts` failed and was not looked into (see "A wrong code that showed no error" in [`infra/e2e-failures-on-ci.md`](infra/e2e-failures-on-ci.md)).
 
 ## Deviations from the plan
 
