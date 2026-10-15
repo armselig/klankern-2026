@@ -28,7 +28,7 @@ Read the design first, then the file of the slice you are about to touch. The re
 - [`slice-2-names-and-pictures.md`](./slice-2-names-and-pictures.md): more of those changes, split off on 2026-10-15: "Edit" beside the title, a picture of two letters for a person without an account, and a member's name as text in "Change people".
 - [`slice-2-after-release.md`](./slice-2-after-release.md): what the user changed in slice 2 after its release (2026-10-14): "Who has what" sorted by open tasks, and a task added under a person's line given to them.
 - [`slice-3-design.md`](./slice-3-design.md): the design review of slice 3, the meals (2026-10-15): the meals on a page of their own, the dialog that picks recipes, the shopping button's states, and the kind of stay made editable. Nothing was drawn.
-- [`slice-3.md`](./slice-3.md): how slice 3 was built, the meals: migration 0017, the page of its own, the picker and the shopping button, what was decided and found during the build, its tests, "When it breaks" and "After a deploy".
+- [`slice-3.md`](./slice-3.md): how slice 3 was built, the meals (removed by meal planner slice 1b on 2026-10-15, see the last section): migration 0017, the page of its own, the picker and the shopping button, what was decided and found during the build, its tests, "When it breaks" and "After a deploy".
 - [`copy-tasks.md`](./copy-tasks.md): the templates replaced (2026-10-14): a new vacation starts empty or with copies of an earlier trip's tasks, open and nobody's; what was decided, how it is built and how the tests get their tasks now; then Quasar's date picker and select in the form, and frames around the dates and the tasks.
 
 ## Writing here

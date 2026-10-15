@@ -1,26 +1,10 @@
-# Meal planner
+# Meal planner, slice 1a
 
-The household's meal plan: what is cooked on which day, and the Tonight tile on the dashboard that proposes a dinner. It is built in slices; this file holds all of them and is split along them when it grows (see the rules in [`CLAUDE.md`](../CLAUDE.md)). The state is in [`progress.md`](../progress.md).
-
-## Why it exists, and the slices (decided 2026-10-15)
-
-Every day the parents ask "what shall we eat today or tomorrow". The household settles on one of about five dishes, or on toast and pasta for the two small children while the adults eat something else. The load is the daily deciding, so the app proposes and the parents veto. **The Tonight tile on the dashboard is the product; the week page is its supporting tool.** The children (4 and 6) are not users.
-
-The work was reviewed before it was built and split into slices:
-
-- **Slice 1, in two releases.** 1a is the plan table, the store, a list of dinners on `/meals` and the Tonight tile. 1b is the full week with all four slots, a move dialog, a trip's view and the shopping run from the plan.
-- **Slice 2**: a kids' version text on a recipe, children as household records, recording what a child refused (exceptions only), and a visible effect on the suggestion. Its screens are to be approved before it is built.
-- **Slice 3**: "Fill my week" with a lock and a re-roll per slot, the proposer behind a typed interface, and the tile showing the week's proposal.
-
-Slices 2 and 3 are not designed further than that here. Left out on purpose, so that nobody builds them unasked: copying last week, theme nights, who eats on which day, a share link for a day, a fixed weekly template, retiring `vacation_meals` and its pages, reordering inside a slot, and "exclude this recipe".
-
-## Glossary
-
-The words are fixed so that code, screens and these docs say the same. A **dinner** is an entry in the slot `dinner`. An **entry** is one row of `meal_plan_entries`: a recipe or a title on a day and in a slot. **Kids** means the two small children. The slots are called breakfast, lunch, dinner and snack.
+How slice 1a was built: the plan table, the store, `/meals` and the Tonight tile. Why the planner exists is in "Why it exists, and the slices" in [`features/meal-planner/design.md`](./design.md); what came after is in [`features/meal-planner/slice-1b.md`](./slice-1b.md).
 
 ## Slice 1a: the plan, the store, `/meals` and the Tonight tile (built 2026-10-15)
 
-Built on `develop`, not released (released in 1.11.0 on 2026-10-15, see "Releases" in [`infra/releases.md`](../infra/releases.md)). Migration 0018 is applied to the cloud project (2026-10-15, version recorded as `0018` by `supabase db push`), and `database.types.ts` was regenerated.
+Built on `develop`, not released (released in 1.11.0 on 2026-10-15, see "Releases" in [`infra/releases.md`](../../infra/releases.md)). Migration 0018 is applied to the cloud project (2026-10-15, version recorded as `0018` by `supabase db push`), and `database.types.ts` was regenerated.
 
 ### The table
 
@@ -65,52 +49,20 @@ Built on `develop`, not released (released in 1.11.0 on 2026-10-15, see "Release
 
 - Unit specs for every new util (`meal-week`, `dinner-order`, `meal-plan-state`, `tonight-lines`), the actions and the store, and for the new listener in `household-realtime.spec.ts`. 617 unit tests pass, the RLS suite included (`npm test`, 2026-10-15).
 - `tests/rls/meal-plan-isolation.spec.ts` (17 tests, pass) is the **fifth** RLS spec. It covers reading, the foreign household, the foreign recipe, a forged `created_by`, skipping and soft delete, a member of another household changing an entry and a refused hard delete.
-- `tests/e2e/meal-plan.e2e.ts`: the tile proposes, plans, skips and switches to tomorrow, the week page adds a dinner as text and removes it with "Undo", and a day that is not a Monday opens its week. Playwright's clock fixes the time, and the tests start with `openSignedIn`. (The fixed time made them fail on CI; moved to yesterday on 2026-10-15, see "The e2e tests failed on CI: a clock ahead of the session".) `a11y.e2e.ts` scans the tile, `/meals` and the add dialog in both modes.
+- `tests/e2e/meal-plan.e2e.ts`: the tile proposes, plans, skips and switches to tomorrow, the week page adds a dinner as text and removes it with "Undo", and a day that is not a Monday opens its week. Playwright's clock fixes the time, and the tests start with `openSignedIn`. (The fixed time made them fail on CI; moved to yesterday on 2026-10-15, see "The e2e tests failed on CI: a clock ahead of the session" in [`features/meal-planner/ci-clock-failure.md`](./ci-clock-failure.md).) `a11y.e2e.ts` scans the tile, `/meals` and the add dialog in both modes.
 - **`tests/support/fake-supabase-client.ts` has no `gte` or `lte`**, so the meal-plan specs add them to the builder themselves. Not fixed in the shared fake.
 
 ### Known limits
 
 - Held removals are local to the device (see above).
-- A meal added on a trip's meal page stays in `vacation_meals` and never reaches the plan.
-- Only dinners can be planned; breakfast, lunch and snack exist in the table and not on screen.
-- Not tried by hand on a phone yet.
+- A meal added on a trip's meal page stays in `vacation_meals` and never reaches the plan. (Overtaken 2026-10-15: slice 1b removed `vacation_meals`, see "Slice 1b" in [`features/meal-planner/slice-1b.md`](./slice-1b.md).)
+- Only dinners can be planned; breakfast, lunch and snack exist in the table and not on screen. (Overtaken 2026-10-15 by slice 1b.)
+- Not tried by hand on a phone yet. (Tried 2026-10-15, see "Slice 1a tried by hand (2026-10-15)".)
 
 ### Not built yet: slice 1b
 
-Breakfast, lunch and snack rows, the move dialog, the trip's view `/meals?trip=<id>`, the vacation page's "Meals" row pointing there, the shopping run from the plan (a structural entry type for `putMealsOnShoppingList`, from today on, skipping skipped entries and removed recipes), and "Make a recipe from this" for a title entry. These were specified in the review and are not in the code.
+Breakfast, lunch and snack rows, the move dialog, the trip's view `/meals?trip=<id>`, the vacation page's "Meals" row pointing there, the shopping run from the plan (a structural entry type for `putMealsOnShoppingList`, from today on, skipping skipped entries and removed recipes), and "Make a recipe from this" for a title entry. These were specified in the review and are not in the code. (Built 2026-10-15, except that the day view was dropped; see "Slice 1b" in [`features/meal-planner/slice-1b.md`](./slice-1b.md).)
 
-### Measuring whether it is used
+## Slice 1a tried by hand (2026-10-15)
 
-The kill condition, set before building: **if fewer than 4 of the first 14 days after slice 1 have a planned dinner, slices 2 and 3 wait until the cause is understood.** If the tile is used and the week page is not, the page is retired rather than extended. "Plan this" counts as planned, so the number measures use of the planner as a whole. The parents also answer, by hand, whether they had the "what shall we eat" talk that week.
-
-The count is one read-only query for the Supabase SQL editor. Set the two values at its top: the household's id and its time zone.
-
-```sql
--- Days of the last 14 with at least one planned dinner, for one household.
-with params as (
-  select
-    'the household id'::uuid as household_id,
-    'Europe/Berlin'::text as time_zone
-),
-today as (
-  select (now() at time zone (select time_zone from params))::date as day
-)
-select count(distinct e.date) as days_with_dinner
-from meal_plan_entries e, params, today
-where e.household_id = params.household_id
-  and e.slot = 'dinner'
-  and e.deleted_at is null
-  and e.date between today.day - 13 and today.day;
-```
-
-Not checked: the review asked for this query to be tested once in the RLS suite against a seeded household; `meal-plan-isolation.spec.ts` has no such test.
-
-## The e2e tests failed on CI: a clock ahead of the session (fixed 2026-10-15)
-
-On CI for v1.11.0, the first run of `meal-plan.e2e.ts` there, all three tests timed out right after `openSignedIn`: the header never showed the signed-in member. The other 36 e2e tests passed.
-
-- **Cause.** Each test pinned Playwright's clock to 12:30 or 17:30 of the device's day (`todayAt`). `openSignedIn` hands the browser a real session, whose access token expires an hour after the real time. On page load `@nuxtjs/supabase` sets the user from `getClaims()`, and auth-js checks the token's `exp` against the browser's `Date.now()`, which is the pinned clock. CI runs in UTC and started the tests at about 10:45, so 12:30 was more than an hour ahead, the token counted as expired and the user stayed empty. The session itself stayed, so the data still loaded: that is why the 17:30 step passed locally although it lies hours ahead, since nothing there looks at the header. Locally the tests had only been run shortly after 12:30 Berlin time, when the pinned time lay in the past.
-- **Reproduced** with the device's time zone: at 10:55 UTC the test "a day that is not a Monday opens its week" failed under `TZ=Etc/GMT+1` (09:55 local) with the error from CI, and passed under `TZ=Europe/Berlin` (12:55 local).
-- **Fix.** The tests pin the clock to yesterday at 12:30 and 17:30 (`yesterdayAt`), which lies in the past at any time of day; a token whose expiry is still ahead passes the check, whatever its issue time. The test of the week takes its `?week=` day from the same pinned moment instead of the real date. No app code changed.
-- **Verified** by running the whole file under `TZ=Etc/GMT+1`, `Europe/Berlin` and `Etc/GMT-12` (10:00, 13:00 and 23:01 local): 3 passed each time. The whole e2e suite was not run locally; CI runs it with the push.
-- The rule is in the root `CLAUDE.md`, under "What the tests need".
+The owner tried slice 1a by hand after the release of 1.11.0 and found nothing to change.

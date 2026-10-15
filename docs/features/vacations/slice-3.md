@@ -75,8 +75,16 @@ Nothing of this slice was tried on a phone, nor on the deployed site, when this 
 
 ### Not verified
 
-- **Nothing was tried by hand on a phone.** The page, the dialog and the link row were looked at on screenshots at 375 px in both color modes, not measured, and the accessibility scan covers them; the rest is the tests.
+- **Nothing was tried by hand on a phone.** The page, the dialog and the link row were looked at on screenshots at 375 px in both color modes, not measured, and the accessibility scan covers them; the rest is the tests. (Tried 2026-10-15, see "Slice 3 tried by hand (2026-10-15)".)
 - **The design had no mockups** (see "Open and not verified" in [`features/vacations/slice-3-design.md`](./slice-3-design.md)). Whether the check icon reads as a state beside a long title, and whether the link row looks like a link, is still for the first rendering by a person.
 - **No screen reader was used.** The status line and the errors are asserted to carry their roles, not heard.
 - **The wording** of the empty states, the failure line and the status was written in the review and has not been read aloud.
 - **A household with many dozens of recipes** was not tried in the picker.
+
+## Slice 3 tried by hand (2026-10-15)
+
+The owner tried slice 3 by hand after the release of 1.10.0 and found nothing to change.
+
+## The trip's meals removed (built 2026-10-15)
+
+Slice 1b of the meal planner overtakes this slice's page, table and button. The meals of a trip are now the meal plan's entries on the trip's days, at `/meals?trip=<id>`; the vacation page's "Meals" row points there and says "N dinners planned". Removed without a redirect: the table `vacation_meals`, the page `/vacations/<id>/meals`, the picker dialog, the meal row, `utils/vacation-meals.ts`, the store's, actions' and Realtime's parts for meals, and the tests for them. The shopping button's run survives as `putMealsOnShoppingList` for the plan's entries. The rows of the old table had no day and could not be moved; migration 0020 drops them and is written, not applied. The build is in "Slice 1b" in [`features/meal-planner/slice-1b.md`](../meal-planner/slice-1b.md). What this file says above about the meals describes the state of release 1.10.0.

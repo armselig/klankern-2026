@@ -43,4 +43,4 @@ CI on `main` for v1.9.0 failed in `lists.e2e.ts`, "shopping: add with and withou
 
 ## A wrong code that showed no error (2026-10-15)
 
-CI on `develop` on 2026-10-15, the run after the fix of the meal plan's e2e tests (see "The e2e tests failed on CI: a clock ahead of the session" in [`features/meal-planner.md`](../features/meal-planner.md)), passed 38 of the 39 e2e tests. "a wrong code shows an error" in `auth.e2e.ts` failed, because the error message did not show. Not looked into.
+CI on `develop` on 2026-10-15, the run after the fix of the meal plan's e2e tests (see "The e2e tests failed on CI: a clock ahead of the session" in [`features/meal-planner/ci-clock-failure.md`](../features/meal-planner/ci-clock-failure.md)), passed 38 of the 39 e2e tests. "a wrong code shows an error" in `auth.e2e.ts` failed, because the error message did not show. Not looked into.

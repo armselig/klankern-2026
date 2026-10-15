@@ -18,7 +18,7 @@ Start with `progress.md`, then read the topic files for what you are about to to
 - [`recipes.md`](./features/recipes.md): milestone 10, the shared recipes.
 - [`dashboard.md`](./features/dashboard.md): the dashboard with live tiles.
 - [`vacations/`](./features/vacations/CLAUDE.md): the vacation planner, in a folder of its own with sixteen files: its design, the reviews of the design, and how each slice was built and changed. Its `CLAUDE.md` lists them, in the order to read them, and says where new material goes. All three slices are built and released.
-- [`meal-planner.md`](./features/meal-planner.md): the meal planner: why it exists, slice 1a (the plan table, the store, `/meals`, the Tonight tile), what is left for 1b, the query that counts planned days, and the e2e tests that failed on CI because of a pinned clock. Slice 1a is built and released.
+- [`meal-planner/`](./features/meal-planner/CLAUDE.md): the meal planner, in a folder of its own with five files: why it exists and the slices, slice 1a (plan table, store, `/meals`, Tonight tile), slice 1b (all slots, move dialog, trip view, shopping run, the old trip meals removed), the query that counts planned days, and the e2e tests that failed on CI because of a pinned clock. Its `CLAUDE.md` lists them. Slice 1a is released; 1b is built and not released.
 - [`avatars.md`](./features/avatars.md): the members' avatars, rosette and Gravatar.
 - [`header.md`](./features/header.md): the header with the wordmark and the account menu.
 

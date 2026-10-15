@@ -1,6 +1,6 @@
 # Adding a synced store
 
-A checklist for the next table that is shared by a household and kept live. It was collected when the meal plan became the sixth store (see [`features/meal-planner.md`](../features/meal-planner.md)). The rules themselves are in the root `CLAUDE.md`; this file lists where each one has to be applied so that none is forgotten. A rule that changes is changed there, and this list follows.
+A checklist for the next table that is shared by a household and kept live. It was collected when the meal plan became the sixth store (see [`features/meal-planner/slice-1a.md`](../features/meal-planner/slice-1a.md)). The rules themselves are in the root `CLAUDE.md`; this file lists where each one has to be applied so that none is forgotten. A rule that changes is changed there, and this list follows.
 
 ## The checklist (written 2026-10-15)
 
@@ -28,7 +28,7 @@ A checklist for the next table that is shared by a household and kept live. It w
 
 - Unit specs for the utils, the actions (with the fake client; it lacks some filters, such as `gte` and `lte`, so a spec may need to add them) and the store.
 - A spec in `tests/rls/`: its own file for a new feature, so the files keep running in parallel (see "The RLS suite in four files that run in parallel" in [`infra/testing.md`](./testing.md)). A file that uses the secret key starts with `// @vitest-environment node`.
-- An e2e test that starts with `openSignedIn`, and a case in `a11y.e2e.ts` for each new page, dialog and dashboard tile, in both modes. A page that is opened twice in one test is what finds a use of a value before its declaration in `<script setup>` (see "Bugs found on the way" in [`features/meal-planner.md`](../features/meal-planner.md)).
+- An e2e test that starts with `openSignedIn`, and a case in `a11y.e2e.ts` for each new page, dialog and dashboard tile, in both modes. A page that is opened twice in one test is what finds a use of a value before its declaration in `<script setup>` (see "Bugs found on the way" in [`features/meal-planner/slice-1a.md`](../features/meal-planner/slice-1a.md)).
 
 ### Documentation
 
