@@ -79,6 +79,8 @@ Drawn as a rough wireframe at 375 px and approved by the user on 2026-10-12; the
 
 ### Meals
 
+(Overtaken on 2026-10-15: the meals have a page of their own, any kind of stay may have them, and the same recipe may be a meal twice. See "Design review of the meals" in [`features/vacations/slice-3-design.md`](./slice-3-design.md).)
+
 A meal is a pick from the household's recipes. "Put N ingredients on the shopping list" counts the meals that are not on the list yet, adds their ingredients through the shopping store's `ensureLoaded()` and `addAll()`, and stamps `on_shopping_list_at` on each meal whose ingredients were all saved. A second press adds nothing twice; a meal added later is the only one counted. A recipe that was removed since shows as "Recipe was removed".
 
 ### Steps
