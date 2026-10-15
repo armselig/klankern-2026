@@ -454,58 +454,6 @@ export type Database = {
           },
         ];
       };
-      vacation_meals: {
-        Row: {
-          created_at: string;
-          created_by: string;
-          deleted_at: string | null;
-          household_id: string;
-          id: string;
-          on_shopping_list_at: string | null;
-          position: number;
-          recipe_id: string;
-          vacation_id: string;
-        };
-        ComputedFields: never;
-        Insert: {
-          created_at?: string;
-          created_by: string;
-          deleted_at?: string | null;
-          household_id: string;
-          id?: string;
-          on_shopping_list_at?: string | null;
-          position?: number;
-          recipe_id: string;
-          vacation_id: string;
-        };
-        Update: {
-          created_at?: string;
-          created_by?: string;
-          deleted_at?: string | null;
-          household_id?: string;
-          id?: string;
-          on_shopping_list_at?: string | null;
-          position?: number;
-          recipe_id?: string;
-          vacation_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "vacation_meals_recipe_fkey";
-            columns: ["recipe_id", "household_id"];
-            isOneToOne: false;
-            referencedRelation: "recipes";
-            referencedColumns: ["id", "household_id"];
-          },
-          {
-            foreignKeyName: "vacation_meals_vacation_fkey";
-            columns: ["vacation_id", "household_id"];
-            isOneToOne: false;
-            referencedRelation: "vacations";
-            referencedColumns: ["id", "household_id"];
-          },
-        ];
-      };
       vacation_people: {
         Row: {
           created_at: string;

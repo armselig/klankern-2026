@@ -73,3 +73,9 @@ A QA run (gstack `/qa`, Standard tier) went through slice 1b at 375x667 with a d
 
 - **The focus after "Mark as cooked" looked lost** and is not: Quasar gives it back to the "More" button by focusing the `q-focus-helper` span inside it, as for every menu, so `document.activeElement` is a span. `tests/e2e/meal-plan.regression-1.e2e.ts` checks that the focus is inside the button. The e2e helper `mealEntry` now also finds a skipped entry, whose row says "Skipped" after the name.
 - **Left as they are (Low):** after "Remove" the focus falls to the page, since the row goes and the Undo notice cannot hold it; "Add dinner" is indented further than the line of the other slots, and recipe links in the week are in the browser's default blue.
+
+## Tried by hand, and 0020 applied (2026-10-15)
+
+- **The owner tried slice 1b** after its release and reported it working.
+- **Migration 0020 applied** at the owner's go-ahead, by `supabase db push` after a dry run that listed 0020 alone, so the history records the version `0020`. `vacation_meals` is gone, and `database.types.ts` was regenerated: it lost the table's types and nothing else, and `npm run typecheck` passed.
+- **Started on slice 2 before the kill condition's date**, at the owner's choice: the count of planned days (see [`features/meal-planner/measuring.md`](./measuring.md)) was due on 2026-10-29.
