@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "~/types/database.types";
+import type { MealPlanEntry } from "~/types/meal-plan";
 import type { Recipe } from "~/types/recipe";
 import type { ShoppingItem } from "~/types/shopping";
 import type { TodoItem } from "~/types/todo";
@@ -144,6 +145,21 @@ const vacationMealRow: VacationMeal = {
   deleted_at: null,
 };
 
+const mealPlanEntryRow: MealPlanEntry = {
+  id: "entry-1",
+  household_id: "house-1",
+  date: "2026-10-20",
+  slot: "dinner",
+  recipe_id: null,
+  title: "Toast",
+  position: 1,
+  on_shopping_list_at: null,
+  skipped_at: null,
+  created_by: "user-1",
+  created_at: "2026-01-01T00:00:00Z",
+  deleted_at: null,
+};
+
 function listeners() {
   return {
     onTodoItemChange: vi.fn(),
@@ -154,6 +170,7 @@ function listeners() {
     onVacationTaskChange: vi.fn(),
     onVacationPersonChange: vi.fn(),
     onVacationMealChange: vi.fn(),
+    onMealPlanEntryChange: vi.fn(),
     onSubscribed: vi.fn(),
   };
 }
@@ -178,6 +195,7 @@ describe("subscribeToHouseholdChanges", () => {
       "vacation_tasks",
       "vacation_people",
       "vacation_meals",
+      "meal_plan_entries",
     ].flatMap((table) =>
       ["INSERT", "UPDATE"].map((event) => [
         "postgres_changes",
@@ -477,5 +495,40 @@ describe("subscribeToHouseholdChanges", () => {
     expect(fake.removeChannel).not.toHaveBeenCalled();
     unsubscribe();
     expect(fake.removeChannel).toHaveBeenCalledWith(fake.channel);
+  });
+
+  it("passes the plan's entries on to their own listener", () => {
+    const fake = fakeRealtimeClient();
+    const l = listeners();
+    subscribeToHouseholdChanges(fake.client, "house-1", l);
+    const skipped = { ...mealPlanEntryRow, skipped_at: committedLater };
+
+    callbackFor(
+      fake,
+      "meal_plan_entries",
+      "INSERT",
+    )({
+      eventType: "INSERT",
+      new: mealPlanEntryRow,
+      commit_timestamp: committedAt,
+    });
+    callbackFor(
+      fake,
+      "meal_plan_entries",
+      "UPDATE",
+    )({ eventType: "UPDATE", new: skipped, commit_timestamp: committedLater });
+
+    expect(l.onMealPlanEntryChange).toHaveBeenCalledTimes(2);
+    expect(l.onMealPlanEntryChange).toHaveBeenNthCalledWith(1, {
+      eventType: "INSERT",
+      new: mealPlanEntryRow,
+      commitTimestamp: committedAt,
+    });
+    expect(l.onMealPlanEntryChange).toHaveBeenNthCalledWith(2, {
+      eventType: "UPDATE",
+      new: skipped,
+      commitTimestamp: committedLater,
+    });
+    expect(l.onVacationMealChange).not.toHaveBeenCalled();
   });
 });
