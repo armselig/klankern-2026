@@ -6,7 +6,7 @@ Guidance for reading and writing the files in `docs/`. The rules for the code ar
 
 Start with `progress.md`, then read the topic files for what you are about to touch.
 
-- [`progress.md`](./progress.md): the current state. The milestones, what is built and where it is, the deviations from the plan, the environment and the next steps.
+- [`progress.md`](./progress.md): the current state. The milestones and features, what is built, the deviations from the plan, the environment and the next steps.
 - [`plan.md`](./plan.md): the original design and milestone list.
 - [`supabase-support-repro.md`](./supabase-support-repro.md): the write-up of the `INSERT ... RETURNING` finding with its reproduction.
 
@@ -41,10 +41,10 @@ Start with `progress.md`, then read the topic files for what you are about to to
 
 ## Writing documentation
 
-- **`progress.md` is the present, and it is overwritten.** When something changes, replace the old statement; don't keep it beside the new one. It holds no history: how something came about belongs in a topic file. When a milestone, a feature or a notable fix lands, update what it touches there: the status table, the layout listing, the test counts, the last release and the next steps.
+- **`progress.md` is the present, and it is overwritten.** When something changes, replace the old statement; don't keep it beside the new one. It holds no history: how something came about belongs in a topic file. When a milestone, a feature or a notable fix lands, update what it touches there: the status table, the test counts, the last release and the next steps. It names folders, not files: a file-by-file listing went stale with every new file and was dropped (2026-10-15).
 - **A topic file is history, and it grows.** Its sections are dated and stand oldest first; a new one goes at the end. A section is not rewritten later. When a later change overtakes a statement, add a dated remark at that place that names where the newer state is ("Fixed 2026-10-11, see …").
 - **Where new material goes.** A new feature gets a file of its own in `features/`. A feature whose history needs several files gets a folder there with a `CLAUDE.md` of its own, as the vacation planner has; that file lists the folder's files, and the list above has one line for the folder. A fix, a later decision or a check by hand goes into the file of the thing it concerns. What touches several files is written once, where its cause is, and referred to from the others.
-- **Split a file that has grown.** A topic file past about 2,500 words is split the next time it is touched, along its sections, so that each file covers one thing. If `progress.md` grows past about 2,000 words, it has collected history; move that out.
+- **Split a file that has grown.** A topic file past about 2,500 words is split the next time it is touched, along its sections, so that each file covers one thing. `progress.md` stays within two printed pages, about 1,000 words; past that it has collected history or detail, which goes into the topic files.
 - **The list above is part of the change.** A new, renamed or split file gets its line there in the same commit, and the references to the old place are corrected (search `docs/` and the root `CLAUDE.md` for the file's and the sections' names).
 - **A section's heading says what it is and when**: `## Dashboard with live tiles (built 2026-10-11)`. Dates are `YYYY-MM-DD`, without a time.
 - **References name the section.** Within a file: the section's name in quotes. To another file: the name in quotes and a relative link to the file, shown as its path from `docs/`, as in ``see "Milestone 8" in [`infra/deploy-and-pwa.md`](../infra/deploy-and-pwa.md)``. Don't link to a heading's anchor, since headings carry dates and change, and don't refer to a section by its position ("the next section").

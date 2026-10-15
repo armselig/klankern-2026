@@ -24,3 +24,10 @@ On `main` since 2026-10-12, so step 12 is done. The first deploy in the new layo
 - **The worktree did what "Traps" in [`infra/project-layout-plan.md`](project-layout-plan.md) says.** From the `npm ci` of step 5 on, the main checkout, still in the old layout, runs no hooks. It gets them back when it pulls the move and runs `npm ci`. It pulled the move on 2026-10-12, and its hooks ran on the next commit.
 
 The linter found the 21 things measured for the plan, and Prettier changed nine of the twelve files that failed it; the other three are the skill files that `.prettierignore` leaves out.
+
+## The scaffold: Nuxt 4 and the git hooks (built 2026-10-07, written down 2026-10-15)
+
+Moved here from `progress.md` when that file was cut to two pages.
+
+- **Nuxt 4, not the plan's Nuxt 3**: 4 is what `nuxi init` installed. The API is compatible; the folder convention differs, with the source in `app/` and not beside the configuration.
+- **The git hooks were checked through git's own hook dispatcher**, by real commits and pushes, not only by calling the scripts: pre-commit (lint-staged), commit-msg (commitlint) and pre-push (type check and the full test suite). The hooks are in `.husky`, and `npm ci` points `core.hooksPath` at `.husky/_`.

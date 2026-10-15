@@ -32,5 +32,5 @@ A checklist for the next table that is shared by a household and kept live. It w
 
 ### Documentation
 
-- A feature file, and the line in the list in `docs/CLAUDE.md`; the status, layout and test counts in `progress.md`; the root `CLAUDE.md` where it counts the stores and the RLS specs.
+- A feature file, and the line in the list in `docs/CLAUDE.md`; the status and test counts in `progress.md`; the root `CLAUDE.md` where it counts the stores and the RLS specs.
 - Every fix to the list rules belongs in every store; say in the root `CLAUDE.md` how many there are.

@@ -96,3 +96,10 @@ All of it through Netlify's API, each change with the user's go-ahead.
 ### Checked after the repair (2026-10-14)
 
 The user signed in on the deployed site and looked at the update notice in an installed app. Both work; the second item of "Left undone" above is done. The guard against a second Pinia stays proposed and not built.
+
+## No dev container, Podman deferred (decided 2026-10-10, written down 2026-10-15)
+
+Moved here from `progress.md` when that file was cut to two pages. The plan had a dev container (`Containerfile.dev` and `podman-compose.yml`) and production in containers.
+
+- **Development stays on the host.** Node is pinned (`.nvmrc`, `engine-strict`), and the e2e tests drive the host's Chrome against the host's dev server. A dev container would add a `node_modules` volume, user-namespace mapping and a polling file watcher for little gain; add one if a second machine or contributor needs it.
+- **Production is on Netlify** (see "Milestone 8: Netlify deploy"). The Podman production setup is deferred, not dropped: if it is built, it is `Containerfile.prod` (Node 24, not the plan's `node:22-slim`), Quadlet units and Caddy. A throwaway smoke test of a two-container Podman setup, Caddy in front of a Node server, passed beforehand, both with compose and with plain `podman run`.

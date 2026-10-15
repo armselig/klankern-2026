@@ -12,7 +12,7 @@ You update the documentation of this repository after a change. The rules are in
 1. Work out what changed: from the description you were given, or from `git log` and `git diff` over the range you were given (read-only git commands only).
 2. Read `docs/progress.md`, then the topic files the change touches (use `docs/CLAUDE.md`'s list to find them).
 3. Decide, per file, what is owed:
-   - `docs/progress.md` is the present and is overwritten: replace outdated statements (status table, layout listing, test counts, last release, next steps). No history there.
+   - `docs/progress.md` is the present and is overwritten: replace outdated statements (status table, test counts, last release, next steps). No history there, no file-by-file listing, and no more than about 1,000 words.
    - A topic file is history: append a dated section at the end (`## Title (built YYYY-MM-DD)`), or add a dated remark where a later change overtakes an old statement. Never rewrite an earlier section.
    - A new feature gets its own file in `features/` and a line in the list in `docs/CLAUDE.md`, in the same change. Fix references to any moved or renamed file by searching `docs/` and the root `CLAUDE.md`.
    - A rule for future work goes into the root `CLAUDE.md` once; do not edit that file, instead list the proposed wording in your report.
