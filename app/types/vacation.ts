@@ -1,8 +1,9 @@
 import type { Database } from "./database.types";
 import type { RowRealtimeEvent } from "./synced-row";
 
-/** The kind of stay: a house gets a meal plan. The column is text with a
- * check constraint, so the generated type only says `string`. */
+/** The kind of stay, a label that decides nothing: every kind may have a
+ * meal plan. The column is text with a check constraint, so the generated
+ * type only says `string`. */
 export type VacationKind = "house" | "hotel";
 
 /** When a task is due: a task has a phase, not a date. */
@@ -29,9 +30,11 @@ export type VacationTask = Omit<VacationTaskRow, "phase"> & {
   phase: VacationPhase;
 };
 
-/** What a member can change about a vacation after it is added. */
+/** What a member writes about a vacation: when it is added, and when it is
+ * edited. */
 export interface VacationDetails {
   title: string;
+  kind: VacationKind;
   starts_on: string;
   ends_on: string;
 }
@@ -41,9 +44,7 @@ export interface VacationDetails {
 export type VacationDetailsProblem = "title" | "day" | "dates";
 
 /** What the form for a new vacation collects. */
-export interface NewVacation extends VacationDetails {
-  kind: VacationKind;
-}
+export type NewVacation = VacationDetails;
 
 /** Both rows are small, so an UPDATE event carries the whole row (see the
  * byte budget in migration 0015). */

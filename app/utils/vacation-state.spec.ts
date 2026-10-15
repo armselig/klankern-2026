@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { RowRealtimeEvent } from "~/types/synced-row";
-import type { Vacation, VacationPhase, VacationTask } from "~/types/vacation";
+import type {
+  Vacation,
+  VacationDetails,
+  VacationPhase,
+  VacationTask,
+} from "~/types/vacation";
 import {
   UNPACKING_DAYS,
   applyRowEdit,
@@ -180,8 +185,9 @@ describe("applyRowEdit and revertRowEdit", () => {
 });
 
 describe("changedVacationDetails", () => {
-  const previous = {
+  const previous: VacationDetails = {
     title: "Winter week by the sea",
+    kind: "house",
     starts_on: "2026-12-05",
     ends_on: "2026-12-12",
   };
@@ -194,6 +200,12 @@ describe("changedVacationDetails", () => {
     expect(
       changedVacationDetails(previous, { ...previous, ends_on: "2026-12-14" }),
     ).toEqual({ ends_on: "2026-12-14" });
+  });
+
+  it("names a changed kind", () => {
+    expect(
+      changedVacationDetails(previous, { ...previous, kind: "hotel" }),
+    ).toEqual({ kind: "hotel" });
   });
 
   it("trims the title, and does not count spaces around it as a change", () => {
@@ -691,8 +703,9 @@ describe("vacationTilePreview", () => {
 });
 
 describe("vacationDetailsProblem", () => {
-  const details = {
+  const details: VacationDetails = {
     title: "Winter week by the sea",
+    kind: "house",
     starts_on: "2026-12-05",
     ends_on: "2026-12-12",
   };

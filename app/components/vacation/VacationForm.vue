@@ -115,7 +115,7 @@ const titleInput = useTemplateRef<{ focus: () => void }>("titleInput");
 
 const kindOptions = VACATION_KINDS.map((kind) => ({
   value: kind,
-  label: VACATION_KIND_DESCRIPTIONS[kind],
+  label: VACATION_KIND_LABELS[kind],
 }));
 
 /** Adds the vacation and opens its page. */

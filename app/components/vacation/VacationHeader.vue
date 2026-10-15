@@ -32,16 +32,23 @@ const editing = defineModel<boolean>("editing", { required: true });
  * it is open must not replace what is being typed. */
 const draft = reactive<VacationDetails>({
   title: "",
+  kind: "house",
   starts_on: "",
   ends_on: "",
 });
 const problem = ref<VacationDetailsProblem | null>(null);
+
+const kindOptions = VACATION_KINDS.map((kind) => ({
+  value: kind,
+  label: VACATION_KIND_LABELS[kind],
+}));
 
 const titleInput = useTemplateRef<{ focus: () => void }>("titleInput");
 const editButton = useTemplateRef<{ $el: HTMLElement }>("editButton");
 
 function startEditing() {
   draft.title = props.vacation.title;
+  draft.kind = props.vacation.kind;
   draft.starts_on = props.vacation.starts_on;
   draft.ends_on = props.vacation.ends_on;
   problem.value = null;
@@ -110,11 +117,16 @@ function submit() {
         required
         autofocus
       />
-      <!-- Said, not offered: the kind is chosen when the vacation is
-           added. -->
-      <p class="text-muted q-mb-none">
-        {{ VACATION_KIND_DESCRIPTIONS[vacation.kind] }}
-      </p>
+      <!-- As in the form for a new vacation. -->
+      <fieldset class="vacation-header__kind">
+        <legend class="text-muted">Kind of stay</legend>
+        <q-option-group
+          v-model="draft.kind"
+          :options="kindOptions"
+          :data-testid="TEST_IDS.vacation.header.kinds"
+          type="radio"
+        />
+      </fieldset>
       <div class="vacation-header__dates">
         <vacation-date-field
           v-model="draft.starts_on"
@@ -198,6 +210,12 @@ function submit() {
 .vacation-header__ready {
   margin: 4px 0 0;
   font-weight: 500;
+}
+
+.vacation-header__kind {
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
 .vacation-header__dates {

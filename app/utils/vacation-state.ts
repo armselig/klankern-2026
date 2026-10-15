@@ -40,9 +40,11 @@ export const VACATION_PHASES: readonly VacationPhase[] = [
   "after",
 ];
 
-/** What a member reads for a kind of stay. */
+/** What a member reads for a kind of stay: in the trip's summary line and
+ * where the kind is chosen. A kind decides nothing, so the words say only
+ * where the household stays. */
 export const VACATION_KIND_LABELS: Record<VacationKind, string> = {
-  house: "House",
+  house: "House or apartment",
   hotel: "Hotel",
 };
 
@@ -130,8 +132,9 @@ export function changedVacationDetails(
 ): Partial<VacationDetails> {
   const next: VacationDetails = { ...edited, title: edited.title.trim() };
   const changes: Partial<VacationDetails> = {};
-  for (const field of ["title", "starts_on", "ends_on"] as const) {
-    if (next[field] !== previous[field]) changes[field] = next[field];
+  for (const field of ["title", "kind", "starts_on", "ends_on"] as const) {
+    if (next[field] !== previous[field])
+      Object.assign(changes, { [field]: next[field] });
   }
   return changes;
 }
@@ -418,12 +421,6 @@ export const VACATION_DETAILS_MESSAGES = {
   day: "Give each day as year, month and day: YYYY-MM-DD.",
   dates: "The trip can't end before it starts.",
 } as const;
-
-/** What a kind of stay means for the household, said where it is chosen. */
-export const VACATION_KIND_DESCRIPTIONS: Record<VacationKind, string> = {
-  house: "House, we cook ourselves",
-  hotel: "Hotel",
-};
 
 /** The label of a phase's field for a new task. */
 export const VACATION_ADD_TASK_LABELS: Record<VacationPhase, string> = {

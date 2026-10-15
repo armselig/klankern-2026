@@ -170,6 +170,7 @@ export const TEST_IDS = {
       summary: "vacation-header-summary",
       edit: "vacation-header-edit",
       titleInput: "vacation-header-title-input",
+      kinds: "vacation-header-kinds",
       from: "vacation-header-from",
       until: "vacation-header-until",
       save: "vacation-header-save",
