@@ -36,9 +36,16 @@ async function untilPlanSaved(
   expect((await saved).ok()).toBe(true);
 }
 
-/** Today at the given hour on the device, for Playwright's clock. */
-function todayAt(hour: number): Date {
+/**
+ * Yesterday at the given hour on the device, for Playwright's clock. The
+ * moment has to lie in the past: the session's token expires an hour after
+ * the real time, and the app checks that against the browser's clock
+ * (`getClaims`), so a clock pinned further ahead signs the member out. On CI
+ * the device is in UTC, and "today at 12:30" was hours ahead of a morning run.
+ */
+function yesterdayAt(hour: number): Date {
   const moment = new Date();
+  moment.setDate(moment.getDate() - 1);
   moment.setHours(hour, 30, 0, 0);
   return moment;
 }
@@ -75,7 +82,7 @@ test.describe("the meal plan", () => {
   test("the Tonight tile proposes, plans, skips and switches to tomorrow", async ({
     page,
   }) => {
-    await page.clock.setFixedTime(todayAt(12));
+    await page.clock.setFixedTime(yesterdayAt(12));
     await openSignedIn(page, user);
     const tile = tonight(page);
 
@@ -104,7 +111,7 @@ test.describe("the meal plan", () => {
     });
 
     await test.step("from 17:00 the tile is about tomorrow", async () => {
-      await page.clock.setFixedTime(todayAt(17));
+      await page.clock.setFixedTime(yesterdayAt(17));
       await page.reload();
       await expect(dashboardTileLink(page, "tonight")).toHaveText("Tomorrow");
       // Tonight's Pasta counts as cooked, so the one not cooked comes first.
@@ -122,7 +129,7 @@ test.describe("the meal plan", () => {
   test("the week page adds a dinner as text and removes it with Undo", async ({
     page,
   }) => {
-    await page.clock.setFixedTime(todayAt(12));
+    await page.clock.setFixedTime(yesterdayAt(12));
     await openSignedIn(page, user);
     await page.goto(ROUTES.meals);
     const today = page
@@ -159,9 +166,10 @@ test.describe("the meal plan", () => {
   });
 
   test("a day that is not a Monday opens its week", async ({ page }) => {
-    await page.clock.setFixedTime(todayAt(12));
+    const now = yesterdayAt(12);
+    await page.clock.setFixedTime(now);
     await openSignedIn(page, user);
-    const day = localDateOf(new Date());
+    const day = localDateOf(now);
     await page.goto(`${ROUTES.meals}?week=${day}`);
     await expect(page.getByTestId(TEST_IDS.meals.day)).toHaveCount(7);
     await expect(
