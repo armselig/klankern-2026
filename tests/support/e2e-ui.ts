@@ -668,11 +668,13 @@ export async function untilTaskSaved(page: Page, action: () => Promise<void>) {
   expect((await saved).ok()).toBe(true);
 }
 
-/** An entry of the meal plan, by its name. */
+/** An entry of the meal plan, by its name. A skipped entry's row also
+ * says "Skipped" after the name. */
 export function mealEntry(page: Page, name: string) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return page
     .getByTestId(TEST_IDS.meals.entry)
-    .filter({ hasText: exactly(name) });
+    .filter({ hasText: new RegExp(`^\\s*${escaped}\\s*(Skipped\\s*)?$`) });
 }
 
 /** An entry of the meal plan entry's menu, by the key of its id. */
