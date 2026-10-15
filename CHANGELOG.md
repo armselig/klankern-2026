@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.10.0](https://github.com/armselig/klankern-2026/compare/v1.9.0...v1.10.0) (2026-10-15)
+
+### Features
+
+* **vacations:** let a member change a trip's kind of stay ([74f589f](https://github.com/armselig/klankern-2026/commit/74f589fcc53cdeb3883282ea982ea810ba49f392))
+* **vacations:** plan a trip's meals and put them on the shopping list ([afe5171](https://github.com/armselig/klankern-2026/commit/afe5171a82b00399fe335a257da8620339eb8215))
+
+### Code Refactoring
+
+* **layout:** move the version from the footer into the menus ([8a5e798](https://github.com/armselig/klankern-2026/commit/8a5e798a30aae4ee166f1a302828f830f960d882))
+
 ## [1.9.0](https://github.com/armselig/klankern-2026/compare/v1.8.1...v1.9.0) (2026-10-14)
 
 ### Features
