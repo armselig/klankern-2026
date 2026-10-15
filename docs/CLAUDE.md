@@ -18,6 +18,7 @@ Start with `progress.md`, then read the topic files for what you are about to to
 - [`recipes.md`](./features/recipes.md): milestone 10, the shared recipes.
 - [`dashboard.md`](./features/dashboard.md): the dashboard with live tiles.
 - [`vacations/`](./features/vacations/CLAUDE.md): the vacation planner, in a folder of its own with fifteen files: its design, the reviews of the design, and how each slice was built and changed. Its `CLAUDE.md` lists them, in the order to read them, and says where new material goes. Slices 1 and 2 are built and released; slice 3 is built, not yet released.
+- [`meal-planner.md`](./features/meal-planner.md): the meal planner: why it exists, slice 1a (the plan table, the store, `/meals`, the Tonight tile), what is left for 1b, and the query that counts planned days. Slice 1a is built, not yet released.
 - [`avatars.md`](./features/avatars.md): the members' avatars, rosette and Gravatar.
 - [`header.md`](./features/header.md): the header with the wordmark and the account menu.
 
@@ -28,6 +29,7 @@ Start with `progress.md`, then read the topic files for what you are about to to
 
 **Tests, build and delivery** (`infra/`)
 
+- [`new-synced-store.md`](./infra/new-synced-store.md): the checklist for a new table that is shared by a household and kept live: migration, store, wiring, tests, documentation.
 - [`testing.md`](./infra/testing.md): the review of the e2e tests' gaps with the bugs it found, running e2e tests repeatedly, the `pwa` project and a leftover `.output`.
 - [`test-ids.md`](./infra/test-ids.md): how the e2e tests find elements, by `data-testid` and no longer by text: what was decided, what Quasar made of it, and the type check for the tests.
 - [`ci.md`](./infra/ci.md): the checks on GitHub.

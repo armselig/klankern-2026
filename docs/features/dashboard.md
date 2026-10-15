@@ -67,3 +67,7 @@ At 375 px the vacations' tile now shares a row with the recipes' tile, which gro
 ## Tried by hand (2026-10-14)
 
 The user tried the dashboard on a phone by touch and with a second member changing things. Nothing needed changing.
+
+## The Tonight tile spans the first row (built 2026-10-15)
+
+The meal planner added a sixth tile, "Tonight", before To-dos and across the whole first row, because it holds a line of buttons. The whiteboard's tile stays last. Like the vacations' tile it is an exception to "keep everything else in a tile plain text": its buttons lie above the heading's stretched link. The page loads the plan with the other stores, 8 weeks back to 2 days ahead, so the visit fetches a sixth thing. How the tile decides what to say is in "Slice 1a: the plan, the store, `/meals` and the Tonight tile" in [`features/meal-planner.md`](./meal-planner.md). The navigation's name, "Lists, recipes, vacations and whiteboard", was not changed.
