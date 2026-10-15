@@ -107,6 +107,9 @@ export const TEST_IDS = {
     change: "tonight-change",
     writeRecipe: "tonight-write-recipe",
     addText: "tonight-add-text",
+    /** The line that says how many of the week's dinners are open. */
+    unplanned: "tonight-unplanned",
+    fillWeek: "tonight-fill-week",
   },
   /** The meal plan page, /meals. */
   meals: {
@@ -158,6 +161,23 @@ export const TEST_IDS = {
     },
     empty: "meals-empty",
     undoRemoval: "meals-undo-removal",
+    /** "Fill my week" and the controls of its proposal. */
+    fill: {
+      start: "meals-fill-start",
+      choiceLine: "meals-fill-choice-line",
+      dismissNote: "meals-fill-dismiss-note",
+      rerollRest: "meals-fill-reroll-rest",
+      save: "meals-fill-save",
+      cancel: "meals-fill-cancel",
+      notice: "meals-fill-notice",
+    },
+    /** A proposed dinner in a day's dinner row, before it is planned. */
+    draft: {
+      row: "meals-draft-row",
+      name: "meals-draft-name",
+      lock: "meals-draft-lock",
+      reroll: "meals-draft-reroll",
+    },
     previousWeek: "meals-previous-week",
     nextWeek: "meals-next-week",
     thisWeek: "meals-this-week",

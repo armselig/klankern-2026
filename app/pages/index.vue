@@ -119,6 +119,7 @@ const tonightStateNow = computed(() =>
     isToday: tonightIsToday.value,
     skip: tonightSkip.value,
     demoted: new Set(refusals.value.keys()),
+    suggester: repertoireSuggester,
   }),
 );
 const tonightRefusal = computed(() => {
@@ -132,6 +133,22 @@ const tonightLinesNow = computed(() =>
     new Map(recipeStore.visible.map((recipe) => [recipe.id, recipe.title])),
   ),
 );
+/** The open dinners of the tile's week, from the tile's day on; the tile
+ * offers to fill them when one besides the tile's own day is open. */
+const tonightWeek = computed(() => mondayOf(tonight.value));
+const unplannedLine = computed(() => {
+  const open = openDinnerDays(
+    mealPlanStore.visible,
+    weekDays(tonightWeek.value),
+    tonight.value,
+  );
+  if (recipeStore.visible.length === 0) return null;
+  if (!open.some((day) => day !== tonight.value)) return null;
+  return unplannedDinnersLine(
+    open.length,
+    tonightWeek.value !== mondayOf(localDateOf(now.value)),
+  );
+});
 const tonightFailed = computed(
   () =>
     (!mealPlanStore.householdId && !!mealPlanStore.error) ||
@@ -295,6 +312,11 @@ const vacationsFailed = computed(
                 :lines="tonightLinesNow"
                 :is-today="tonightIsToday"
                 :refusal="tonightRefusal"
+                :unplanned="unplannedLine"
+                :fill-week-to="{
+                  path: ROUTES.meals,
+                  query: { week: tonightWeek, fill: '1' },
+                }"
                 @plan-this="planSuggestion"
                 @another="tonightSkip++"
                 @skip="skipTonight(true)"

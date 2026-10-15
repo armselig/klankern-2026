@@ -6,20 +6,21 @@ The current state of the project: what is built, where it deviates from [`plan.m
 
 ## Status
 
-| Part                             | Status                                               | History                                                              |
-| -------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------- |
-| 1. Scaffold and git hooks        | ✅ Done                                              | [`infra/project-layout.md`](infra/project-layout.md)                 |
-| 2. Schema and RLS                | ✅ Done, RLS suite against Supabase Cloud            | [`features/auth-and-households.md`](features/auth-and-households.md) |
-| 3. Auth and household join       | ✅ Done, clicked through                             | [`features/auth-and-households.md`](features/auth-and-households.md) |
-| 4–6. To-dos, live sync, shopping | ✅ Done, clicked through and e2e                     | [`features/lists-and-realtime.md`](features/lists-and-realtime.md)   |
-| 7–8. PWA and deploy to Netlify   | ✅ Done, checked on the deployed site and on Android | [`infra/deploy-and-pwa.md`](infra/deploy-and-pwa.md)                 |
-| 9. Whiteboard                    | ✅ Done, tried on a phone with a second member       | [`features/whiteboard.md`](features/whiteboard.md)                   |
-| 10. Recipes                      | ✅ Done, tried on a phone and on the deployed site   | [`features/recipes.md`](features/recipes.md)                         |
-| Dashboard with live tiles        | ✅ Released 1.5.0                                    | [`features/dashboard.md`](features/dashboard.md)                     |
-| Vacation planner, slices 1–3     | ✅ Released 1.6.0 to 1.10.0, tried by hand           | [`features/vacations/`](features/vacations/CLAUDE.md)                |
-| Meal planner, slice 1a           | ✅ Released 1.11.0, tried by hand                    | [`features/meal-planner/`](features/meal-planner/CLAUDE.md)          |
-| Meal planner, slice 1b           | ✅ Released 1.11.1, tried by hand                    | [`features/meal-planner/`](features/meal-planner/CLAUDE.md)          |
-| Meal planner, slice 2 (the kids) | ✅ Released 1.12.0, not tried on a phone             | [`features/meal-planner/`](features/meal-planner/CLAUDE.md)          |
+| Part                                 | Status                                               | History                                                              |
+| ------------------------------------ | ---------------------------------------------------- | -------------------------------------------------------------------- |
+| 1. Scaffold and git hooks            | ✅ Done                                              | [`infra/project-layout.md`](infra/project-layout.md)                 |
+| 2. Schema and RLS                    | ✅ Done, RLS suite against Supabase Cloud            | [`features/auth-and-households.md`](features/auth-and-households.md) |
+| 3. Auth and household join           | ✅ Done, clicked through                             | [`features/auth-and-households.md`](features/auth-and-households.md) |
+| 4–6. To-dos, live sync, shopping     | ✅ Done, clicked through and e2e                     | [`features/lists-and-realtime.md`](features/lists-and-realtime.md)   |
+| 7–8. PWA and deploy to Netlify       | ✅ Done, checked on the deployed site and on Android | [`infra/deploy-and-pwa.md`](infra/deploy-and-pwa.md)                 |
+| 9. Whiteboard                        | ✅ Done, tried on a phone with a second member       | [`features/whiteboard.md`](features/whiteboard.md)                   |
+| 10. Recipes                          | ✅ Done, tried on a phone and on the deployed site   | [`features/recipes.md`](features/recipes.md)                         |
+| Dashboard with live tiles            | ✅ Released 1.5.0                                    | [`features/dashboard.md`](features/dashboard.md)                     |
+| Vacation planner, slices 1–3         | ✅ Released 1.6.0 to 1.10.0, tried by hand           | [`features/vacations/`](features/vacations/CLAUDE.md)                |
+| Meal planner, slice 1a               | ✅ Released 1.11.0, tried by hand                    | [`features/meal-planner/`](features/meal-planner/CLAUDE.md)          |
+| Meal planner, slice 1b               | ✅ Released 1.11.1, tried by hand                    | [`features/meal-planner/`](features/meal-planner/CLAUDE.md)          |
+| Meal planner, slice 2 (the kids)     | ✅ Released 1.12.0, not tried on a phone             | [`features/meal-planner/`](features/meal-planner/CLAUDE.md)          |
+| Meal planner, slice 3 (Fill my week) | 🔨 Built, not released, not tried on a phone         | [`features/meal-planner/`](features/meal-planner/CLAUDE.md)          |
 
 ## What's built
 
@@ -31,7 +32,7 @@ Nuxt 4 as an SPA (`ssr: false`) with Quasar, Pinia and `@vite-pwa/nuxt`, on Supa
 - `public/`, `scripts/`, `netlify.toml`: the static files, the icon generator and the build settings.
 - `.github/`: the CI and release workflows, and the release tooling as a package of its own.
 
-**Tests**: Vitest, 900 tests in 50 files, the RLS suite (six spec files) included (locally, 2026-10-15). Playwright, 17 files and two projects; locally on 2026-10-15 with slice 2, the `dev` project passed all 40 of its tests and the `pwa` project its 5. CI for v1.12.0 passed on `develop` and `main`, all 45 e2e tests included, `main` after a rerun of a sign-in that failed at Supabase (2026-10-15).
+**Tests**: Vitest, 967 tests in 52 files, the RLS suite (six spec files) included (locally, 2026-10-15, with slice 3). Playwright, 17 files and two projects; locally on 2026-10-15 with slice 3, the `dev` project passed all 41 of its tests; the `pwa` project (5 tests) last ran with slice 2. CI for v1.12.0 passed on `develop` and `main`, all 45 e2e tests included, `main` after a rerun of a sign-in that failed at Supabase (2026-10-15).
 
 ## Deviations from the plan
 
@@ -47,7 +48,7 @@ Nuxt 4 as an SPA (`ssr: false`) with Quasar, Pinia and `@vite-pwa/nuxt`, on Supa
 
 [`features/header.md`](features/header.md) and [`ui/theme-and-contrast.md`](ui/theme-and-contrast.md) name a few things nobody has looked at yet, mostly in dark mode.
 
-1. The meal planner. Slices 1a and 1b are released and were tried by hand. Slice 2 (the kids) is released (1.12.0), built at the owner's choice before the kill condition's date: try it on a phone. Slice 3 is next. On 2026-10-29, call `count_planned_dinner_days` all the same, see [`features/meal-planner/measuring.md`](features/meal-planner/measuring.md).
+1. The meal planner. Slices 1a and 1b are released and were tried by hand. Slice 2 (the kids) is released (1.12.0), built at the owner's choice before the kill condition's date: try it on a phone. Slice 3 (Fill my week) is built on `develop`, also before that date: try it on a phone, run the `pwa` project, then release it. On 2026-10-29, call `count_planned_dinner_days` all the same, see [`features/meal-planner/measuring.md`](features/meal-planner/measuring.md).
 2. The vacation planner. All three slices were tried by hand (slice 3 on 2026-10-15). The app is to get notifications in place of "Tell them"; nothing plans them yet.
 3. Write a README. Deferred (2026-10-14).
 4. A guard against the cause of the broken first deploy after the move to the git root, proposed and not built. See "The move to the git root on `main`, and a broken deploy" in [`infra/deploy-and-pwa.md`](infra/deploy-and-pwa.md).

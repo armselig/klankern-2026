@@ -11,7 +11,8 @@ import { HELD_REMOVAL_MS } from "~/stores/meal-plan";
  * The days of the plan a page shows, a week or a trip: each day's meals,
  * dinner first, with a way to add one, and each entry's menu (move, remove,
  * make a recipe of it, mark it as cooked, record what the kids made of it).
- * Under the days, the button that
+ * A day "Fill my week" proposes a dinner for shows it in place of "Add
+ * dinner"; the week holds the proposal. Under the days, the button that
  * puts the ingredients of what is planned from today on on the shopping
  * list. It renders and wires; the order, the days and the run are worked
  * out in utils/ and composables/.
@@ -20,6 +21,15 @@ const props = defineProps<{
   householdId: string;
   days: LocalDate[];
   today: LocalDate;
+  /** The dinners proposed by "Fill my week", by day, before they are
+   * planned. */
+  drafts?: Readonly<Record<LocalDate, { name: string; locked: boolean }>>;
+  /** A proposed dinner can be swapped for another recipe. */
+  canReroll?: boolean;
+}>();
+const emit = defineEmits<{
+  toggleDraftLock: [day: LocalDate];
+  rerollDraft: [day: LocalDate];
 }>();
 const mealPlanStore = useMealPlanStore();
 const recipeStore = useRecipeStore();
@@ -377,9 +387,18 @@ async function putOnShoppingList() {
                 @make-recipe="makeRecipeOf"
                 @mark-cooked="markCooked"
               />
+              <meal-draft-row
+                v-if="row.slot === 'dinner' && drafts?.[day.day]"
+                :name="drafts[day.day]!.name"
+                :day-label="day.label"
+                :locked="drafts[day.day]!.locked"
+                :can-reroll="canReroll"
+                @toggle-lock="emit('toggleDraftLock', day.day)"
+                @reroll="emit('rerollDraft', day.day)"
+              />
             </ul>
             <q-btn
-              v-if="row.slot === 'dinner'"
+              v-if="row.slot === 'dinner' && !drafts?.[day.day]"
               flat
               no-caps
               align="left"

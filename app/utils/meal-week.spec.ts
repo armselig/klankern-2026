@@ -21,17 +21,17 @@ const TODAY = "2026-10-15";
 describe("dashboardRange", () => {
   it("reaches back by the lookback and ahead by the dashboard's days", () => {
     expect(COOKED_LOOKBACK_WEEKS).toBe(8);
-    expect(DASHBOARD_DAYS_AHEAD).toBe(2);
+    expect(DASHBOARD_DAYS_AHEAD).toBe(7);
     expect(dashboardRange(TODAY)).toEqual({
       from: "2026-08-20",
-      to: "2026-10-17",
+      to: "2026-10-22",
     });
   });
 
   it("crosses the end of a year", () => {
     expect(dashboardRange("2027-01-01")).toEqual({
       from: "2026-11-06",
-      to: "2027-01-03",
+      to: "2027-01-08",
     });
   });
 });

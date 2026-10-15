@@ -2,6 +2,7 @@ import type { MealPlanEntry } from "~/types/meal-plan";
 import type { Recipe } from "~/types/recipe";
 import { COOKED_LOOKBACK_WEEKS } from "./meal-week";
 import { addDays, daysBetween, type LocalDate } from "./local-date";
+import type { MealSuggester } from "./meal-suggester";
 
 /** What the order looks at of an entry. */
 type OrderEntry = Pick<
@@ -112,6 +113,8 @@ export function tonightState<R extends OrderRecipe>(
     skip: number;
     /** Recipes to propose last; see dinnerSuggestionOrder. */
     demoted?: ReadonlySet<string>;
+    /** Who proposes; without one, dinnerSuggestionOrder does. */
+    suggester?: MealSuggester;
   },
 ): TonightState<R> {
   const dinners = entries
@@ -139,7 +142,12 @@ export function tonightState<R extends OrderRecipe>(
   const [skipped] = dinners;
   if (skipped && options.isToday) return { kind: "skipped", dinner: skipped };
 
-  const order = dinnerSuggestionOrder(recipes, entries, day, options.demoted);
+  const order = options.suggester
+    ? options.suggester.dinnerOrder(
+        { recipes, entries, demoted: options.demoted ?? new Set() },
+        day,
+      )
+    : dinnerSuggestionOrder(recipes, entries, day, options.demoted);
   const [only] = order;
   if (!only) return { kind: "empty" };
   if (order.length === 1) return { kind: "only-one", candidate: only };

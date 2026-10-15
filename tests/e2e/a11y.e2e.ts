@@ -631,6 +631,19 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       await page.getByRole("button", { name: "Cancel" }).click();
       await expect(page.getByRole("dialog")).toHaveCount(0);
 
+      // "Fill my week" on next week: the proposal with its locks and
+      // re-rolls, and the note about one recipe. The trip above may have a
+      // dinner on one of its days.
+      await page.goto(
+        `${ROUTES.meals}?week=${addDays(localDateOf(new Date()), 7)}`,
+      );
+      await page.getByRole("button", { name: "Fill my week" }).click();
+      await expect(
+        page.getByRole("button", { name: /^Keep the dinner for / }).first(),
+      ).toBeVisible();
+      await expectNoBlockingViolations(page, "the week's proposal");
+      await page.getByRole("button", { name: "Cancel" }).click();
+
       // The kids: a child is added on the dashboard, a refusal recorded on
       // a dinner of yesterday, and the record read on /kids.
       await page.getByRole("link", { name: "Klankern" }).click();

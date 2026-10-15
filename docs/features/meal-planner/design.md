@@ -10,7 +10,7 @@ The work was reviewed before it was built and split into slices:
 
 - **Slice 1, in two releases.** 1a is the plan table, the store, a list of dinners on `/meals` and the Tonight tile. 1b is the full week with all four slots, a move dialog, a trip's view and the shopping run from the plan.
 - **Slice 2**: a kids' version text on a recipe, children as household records, recording what a child refused (exceptions only), and a visible effect on the suggestion. Its screens are to be approved before it is built.
-- **Slice 3**: "Fill my week" with a lock and a re-roll per slot, the proposer behind a typed interface, and the tile showing the week's proposal.
+- **Slice 3**: "Fill my week" with a lock and a re-roll per slot, the proposer behind a typed interface, and the tile showing the week's proposal. (Built 2026-10-15 with the tile showing a line and a button instead of the proposal, see [`features/meal-planner/slice-3.md`](./slice-3.md).)
 
 Slices 2 and 3 are not designed further than that here. Left out on purpose, so that nobody builds them unasked: copying last week, theme nights, who eats on which day, a share link for a day, a fixed weekly template, retiring `vacation_meals` and its pages, reordering inside a slot, and "exclude this recipe".
 

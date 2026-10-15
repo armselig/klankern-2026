@@ -14,11 +14,13 @@ export const COOKED_LOOKBACK_WEEKS = 8;
  * tonight's is cooked or decided. */
 export const TONIGHT_SWITCH_HOUR = 17;
 
-/** How many days ahead of today the dashboard fetches. */
-export const DASHBOARD_DAYS_AHEAD = 2;
+/** How many days ahead of today the dashboard fetches: up to the Sunday of
+ * the Tonight tile's week, which after the switch on a Sunday evening is the
+ * next one, for the tile's line about the week's open dinners. */
+export const DASHBOARD_DAYS_AHEAD = 7;
 
-/** The days the dashboard needs: the lookback before today, and a little
- * ahead for the planned dinners and the switch to tomorrow. */
+/** The days the dashboard needs: the lookback before today, and the days
+ * ahead for the planned dinners, the switch to tomorrow and the week. */
 export function dashboardRange(today: LocalDate): LoadedDateRange {
   return {
     from: addDays(today, -COOKED_LOOKBACK_WEEKS * 7),

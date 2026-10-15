@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import type { RouteLocationRaw } from "vue-router";
 import type { TonightState } from "~/utils/dinner-order";
 import type { TonightLines } from "~/utils/tonight-lines";
 
 /**
  * What the household eats tonight, or tomorrow from the evening on: the
  * planned dinner, or a recipe to cook with a way to take it and a way to ask
- * for another. It only renders; the page works out the state and saves.
+ * for another; and when more of the week's dinners are open, a line that
+ * says how many and a way to fill the week. It only renders; the page works
+ * out the state and saves.
  *
  * Like the vacations' tile, it is an exception to "keep everything else in a
  * tile plain text": its buttons lie over the tile's own link (see the style).
@@ -18,6 +21,11 @@ defineProps<{
   /** Which child refused the suggestion how often ("Refused twice by
    * Mila"), or null. */
   refusal?: string | null;
+  /** How many of the week's dinners are open ("4 dinners not planned this
+   * week"), or null when there is nothing to fill. */
+  unplanned?: string | null;
+  /** The week page that fills the week. */
+  fillWeekTo?: RouteLocationRaw;
 }>();
 const emit = defineEmits<{
   planThis: [];
@@ -127,6 +135,24 @@ const emit = defineEmits<{
       />
     </template>
   </div>
+  <template v-if="unplanned && fillWeekTo">
+    <p
+      class="tonight-tile__secondary text-muted q-mt-sm q-mb-none"
+      :data-testid="TEST_IDS.tonight.unplanned"
+    >
+      {{ unplanned }}
+    </p>
+    <div class="tonight-tile__actions tonight-tile__actions--week">
+      <q-btn
+        flat
+        no-caps
+        label="Fill my week"
+        :to="fillWeekTo"
+        class="touch-target"
+        :data-testid="TEST_IDS.tonight.fillWeek"
+      />
+    </div>
+  </template>
 </template>
 
 <style scoped>
@@ -152,5 +178,10 @@ const emit = defineEmits<{
   flex-wrap: wrap;
   gap: 4px 8px;
   margin-top: auto;
+}
+
+/* Under the day's buttons, which keep the tile's free space above them. */
+.tonight-tile__actions--week {
+  margin-top: 0;
 }
 </style>
