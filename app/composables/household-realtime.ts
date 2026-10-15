@@ -1,5 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "~/types/database.types";
+import type {
+  HouseholdChild,
+  HouseholdChildRealtimeEvent,
+  MealReaction,
+  MealReactionRealtimeEvent,
+} from "~/types/kids";
 import type { ListRealtimeEvent } from "~/types/list";
 import type { MealPlanEntry, MealPlanRealtimeEvent } from "~/types/meal-plan";
 import type { RecipeChange, RecipeRealtimeEvent } from "~/types/recipe";
@@ -48,6 +54,8 @@ export interface HouseholdChangeListeners {
   onVacationTaskChange: (event: VacationTaskRealtimeEvent) => void;
   onVacationPersonChange: (event: VacationPersonRealtimeEvent) => void;
   onMealPlanEntryChange: (event: MealPlanRealtimeEvent) => void;
+  onHouseholdChildChange: (event: HouseholdChildRealtimeEvent) => void;
+  onMealReactionChange: (event: MealReactionRealtimeEvent) => void;
   /** Fires on the first subscribe and on every automatic rejoin after a
    * dropped connection; postgres_changes has no replay, so this is the cue
    * to refetch. It fires a second time once the server says that the
@@ -105,6 +113,18 @@ export function subscribeToHouseholdChanges(
   const mealPlanEntries = {
     schema: "public",
     table: "meal_plan_entries",
+    filter,
+  } as const;
+
+  const householdChildren = {
+    schema: "public",
+    table: "household_children",
+    filter,
+  } as const;
+
+  const mealReactions = {
+    schema: "public",
+    table: "meal_reactions",
     filter,
   } as const;
 
@@ -191,6 +211,30 @@ export function subscribeToHouseholdChanges(
       "postgres_changes",
       { ...mealPlanEntries, event: "UPDATE" },
       (payload) => listeners.onMealPlanEntryChange(toRowRealtimeEvent(payload)),
+    )
+    .on<HouseholdChild>(
+      "postgres_changes",
+      { ...householdChildren, event: "INSERT" },
+      (payload) =>
+        listeners.onHouseholdChildChange(toRowRealtimeEvent(payload)),
+    )
+    .on<HouseholdChild>(
+      "postgres_changes",
+      { ...householdChildren, event: "UPDATE" },
+      (payload) =>
+        listeners.onHouseholdChildChange(toRowRealtimeEvent(payload)),
+    )
+    // The column is text in the database; the check constraint keeps it to
+    // the two reactions MealReaction names.
+    .on<MealReaction>(
+      "postgres_changes",
+      { ...mealReactions, event: "INSERT" },
+      (payload) => listeners.onMealReactionChange(toRowRealtimeEvent(payload)),
+    )
+    .on<MealReaction>(
+      "postgres_changes",
+      { ...mealReactions, event: "UPDATE" },
+      (payload) => listeners.onMealReactionChange(toRowRealtimeEvent(payload)),
     )
     .on("system", {}, (message: { extension?: string; status?: string }) => {
       if (message.extension === "postgres_changes" && message.status === "ok")

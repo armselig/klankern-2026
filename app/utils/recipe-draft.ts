@@ -10,6 +10,7 @@ export const RECIPE_LIMITS = {
   ingredientName: 200,
   ingredientQuantity: 50,
   instructions: 20000,
+  kidsVersion: 2000,
 } as const;
 
 /** An ingredient row of the form: text inputs hold strings, also for a
@@ -30,6 +31,7 @@ export interface RecipeDraft {
   servings: string;
   ingredients: IngredientDraft[];
   instructions: string;
+  kidsVersion: string;
 }
 
 /** A new, empty ingredient row. The id is the ingredient's for good: it
@@ -46,6 +48,7 @@ export function emptyRecipeDraft(): RecipeDraft {
     servings: "",
     ingredients: [emptyIngredientDraft()],
     instructions: "",
+    kidsVersion: "",
   };
 }
 
@@ -59,6 +62,7 @@ export function recipeDraftFrom(recipe: RecipeContent): RecipeDraft {
       quantity: ingredient.quantity ?? "",
     })),
     instructions: recipe.instructions,
+    kidsVersion: recipe.kids_version ?? "",
   };
 }
 
@@ -79,6 +83,7 @@ export function recipeContentFrom(draft: RecipeDraft): RecipeContent {
       }))
       .filter((ingredient) => ingredient.name !== ""),
     instructions: draft.instructions.trim(),
+    kids_version: draft.kidsVersion.trim() || null,
   };
 }
 
@@ -113,5 +118,7 @@ export function changedRecipeFields(
     changes.ingredients = edited.ingredients;
   if (edited.instructions !== original.instructions)
     changes.instructions = edited.instructions;
+  if (edited.kids_version !== original.kids_version)
+    changes.kids_version = edited.kids_version;
   return changes;
 }

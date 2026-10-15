@@ -97,6 +97,7 @@ describe("insertRecipe", () => {
       servings: "4",
       ingredients,
       instructions: "Mix.\nFry.",
+      kids_version: "Without pepper.",
     });
 
     expect(result).toEqual(row);
@@ -108,6 +109,7 @@ describe("insertRecipe", () => {
         servings: "4",
         ingredients,
         instructions: "Mix.\nFry.",
+        kids_version: "Without pepper.",
         created_by: "user-1",
       },
     ]);
@@ -126,6 +128,7 @@ describe("insertRecipe", () => {
         servings: null,
         ingredients: [],
         instructions: "",
+        kids_version: null,
       }),
     ).rejects.toBe(error);
   });

@@ -32,7 +32,9 @@ function isLiveRecipeDinner(entry: OrderEntry): boolean {
 /**
  * The recipes in the order the Tonight tile proposes them to cook on `day`:
  * the one cooked longest ago first, one never cooked in the lookback before
- * all of them, ties by title so the order is the same on every device.
+ * all of them, ties by title so the order is the same on every device. The
+ * recipes in `demoted`, which a child refused (see refusalsByRecipe), come
+ * after all others, in the same order among themselves.
  *
  * Nothing records that a dinner was cooked; a planned dinner of an earlier day
  * counts as cooked unless it was skipped. Recipes already planned for `day` or
@@ -43,6 +45,7 @@ export function dinnerSuggestionOrder<R extends OrderRecipe>(
   recipes: R[],
   entries: OrderEntry[],
   day: LocalDate,
+  demoted: ReadonlySet<string> = new Set(),
 ): DinnerCandidate<R>[] {
   const earliest = addDays(day, -COOKED_LOOKBACK_WEEKS * 7);
   const lastCooked = new Map<string, LocalDate>();
@@ -64,6 +67,7 @@ export function dinnerSuggestionOrder<R extends OrderRecipe>(
   const open = candidates.filter(({ recipe }) => !planned.has(recipe.id));
   return (open.length > 0 ? open : candidates).sort(
     (a, b) =>
+      Number(demoted.has(a.recipe.id)) - Number(demoted.has(b.recipe.id)) ||
       (a.lastCooked ?? "").localeCompare(b.lastCooked ?? "") ||
       a.recipe.title.localeCompare(b.recipe.title, undefined, {
         sensitivity: "base",
@@ -103,7 +107,12 @@ export function tonightState<R extends OrderRecipe>(
   recipes: R[],
   entries: MealPlanEntry[],
   day: LocalDate,
-  options: { isToday: boolean; skip: number },
+  options: {
+    isToday: boolean;
+    skip: number;
+    /** Recipes to propose last; see dinnerSuggestionOrder. */
+    demoted?: ReadonlySet<string>;
+  },
 ): TonightState<R> {
   const dinners = entries
     .filter(
@@ -130,7 +139,7 @@ export function tonightState<R extends OrderRecipe>(
   const [skipped] = dinners;
   if (skipped && options.isToday) return { kind: "skipped", dinner: skipped };
 
-  const order = dinnerSuggestionOrder(recipes, entries, day);
+  const order = dinnerSuggestionOrder(recipes, entries, day, options.demoted);
   const [only] = order;
   if (!only) return { kind: "empty" };
   if (order.length === 1) return { kind: "only-one", candidate: only };

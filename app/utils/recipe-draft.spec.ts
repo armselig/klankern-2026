@@ -16,6 +16,7 @@ const content: RecipeContent = {
     { id: "i2", name: "Eggs", quantity: null },
   ],
   instructions: "Mix.\nFry.",
+  kids_version: "Without the pepper.",
 };
 
 describe("emptyRecipeDraft", () => {
@@ -26,6 +27,7 @@ describe("emptyRecipeDraft", () => {
       servings: "",
       ingredients: [{ id: expect.any(String), name: "", quantity: "" }],
       instructions: "",
+      kidsVersion: "",
     });
   });
 });
@@ -42,6 +44,12 @@ describe("emptyIngredientDraft", () => {
 });
 
 describe("recipeDraftFrom", () => {
+  it("turns a missing kids' version into empty text", () => {
+    expect(
+      recipeDraftFrom({ ...content, kids_version: null }).kidsVersion,
+    ).toBe("");
+  });
+
   it("turns missing servings and quantities into empty text", () => {
     expect(recipeDraftFrom({ ...content, servings: null })).toEqual({
       title: "Pancakes",
@@ -51,6 +59,7 @@ describe("recipeDraftFrom", () => {
         { id: "i2", name: "Eggs", quantity: "" },
       ],
       instructions: "Mix.\nFry.",
+      kidsVersion: "Without the pepper.",
     });
   });
 
@@ -75,12 +84,14 @@ describe("recipeContentFrom", () => {
         servings: "   ",
         ingredients: [{ id: "i1", name: " Flour ", quantity: " " }],
         instructions: "\nMix.\n\nFry.\n\n",
+        kidsVersion: "  ",
       }),
     ).toEqual({
       title: "Pancakes",
       servings: null,
       ingredients: [{ id: "i1", name: "Flour", quantity: null }],
       instructions: "Mix.\n\nFry.",
+      kids_version: null,
     });
   });
 
@@ -104,6 +115,12 @@ describe("changedRecipeFields", () => {
   it("is empty when nothing changed", () => {
     const same = recipeContentFrom(recipeDraftFrom(content));
     expect(changedRecipeFields(content, same)).toEqual({});
+  });
+
+  it("holds the kids' version when it changed", () => {
+    expect(
+      changedRecipeFields(content, { ...content, kids_version: null }),
+    ).toEqual({ kids_version: null });
   });
 
   it("holds only the changed text fields", () => {

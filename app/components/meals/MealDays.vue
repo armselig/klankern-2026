@@ -2,6 +2,7 @@
 import { mdiPlus } from "@quasar/extras/mdi-v7";
 import { Dialog, Notify } from "quasar";
 import { putMealsOnShoppingList } from "~/composables/meals-on-shopping-list";
+import type { MealReactionChoice } from "~/types/kids";
 import type { MealPlanEntry, MealSlot } from "~/types/meal-plan";
 import type { LocalDate } from "~/utils/local-date";
 import { HELD_REMOVAL_MS } from "~/stores/meal-plan";
@@ -9,7 +10,8 @@ import { HELD_REMOVAL_MS } from "~/stores/meal-plan";
 /**
  * The days of the plan a page shows, a week or a trip: each day's meals,
  * dinner first, with a way to add one, and each entry's menu (move, remove,
- * make a recipe of it, mark it as cooked). Under the days, the button that
+ * make a recipe of it, mark it as cooked, record what the kids made of it).
+ * Under the days, the button that
  * puts the ingredients of what is planned from today on on the shopping
  * list. It renders and wires; the order, the days and the run are worked
  * out in utils/ and composables/.
@@ -22,6 +24,7 @@ const props = defineProps<{
 const mealPlanStore = useMealPlanStore();
 const recipeStore = useRecipeStore();
 const shoppingStore = useShoppingStore();
+const kidsStore = useKidsStore();
 const router = useRouter();
 
 const range = computed(() => ({
@@ -32,7 +35,12 @@ const range = computed(() => ({
 watch(range, (wanted) => void mealPlanStore.load(props.householdId, wanted), {
   immediate: true,
 });
-onMounted(() => void recipeStore.load(props.householdId));
+onMounted(() => {
+  void recipeStore.load(props.householdId);
+  // Not waited for: without the children, an entry only lacks its line
+  // about them and the menu item that records it.
+  void kidsStore.load(props.householdId);
+});
 // Leaving the page sends what is held for "Undo": nobody can press it now.
 onBeforeUnmount(() => void mealPlanStore.flushHeldRemovals());
 
@@ -146,6 +154,42 @@ async function moveEntry(target: { date: LocalDate; slot: MealSlot }) {
   if (!entry) return;
   const moved = await mealPlanStore.move(entry.id, target.date, target.slot);
   if (!moved) notifyFailure();
+}
+
+/** The entry whose reactions the dialog records. It stays set after the
+ * dialog closed, until the dialog has gone, as for the move dialog. */
+const reacting = ref<MealPlanEntry | null>(null);
+const reactionOpen = ref(false);
+
+function openReactions(entry: MealPlanEntry) {
+  reacting.value = entry;
+  reactionOpen.value = true;
+}
+
+function reactionDialogGone() {
+  const entry = reacting.value;
+  reacting.value = null;
+  if (entry) entryRows.get(entry.id)?.focusMore();
+}
+
+/** Whether the menu of an entry offers to record the kids' reactions. */
+function canRecord(entry: MealPlanEntry): boolean {
+  return (
+    kidsStore.children.length > 0 && canRecordReactions(entry, props.today)
+  );
+}
+
+/** Saves what the dialog says for each child; only what changed is sent
+ * (see setReaction). The notice names no child. */
+async function saveReactions(choices: Record<string, MealReactionChoice>) {
+  const entry = reacting.value;
+  if (!entry) return;
+  const saved = await Promise.all(
+    Object.entries(choices).map(([childId, choice]) =>
+      kidsStore.setReaction(entry.id, childId, choice),
+    ),
+  );
+  if (saved.includes(false)) notifyFailure();
 }
 
 async function markCooked(entry: MealPlanEntry) {
@@ -317,7 +361,16 @@ async function putOnShoppingList() {
                 :ref="(row) => rememberRow(entry.id, row)"
                 :entry="entry"
                 :name="nameOf(entry)"
+                :can-record-reactions="canRecord(entry)"
+                :reaction-note="
+                  reactionNote(
+                    kidsStore.reactionsById,
+                    kidsStore.children,
+                    entry.id,
+                  )
+                "
                 @move="openMove"
+                @reactions="openReactions"
                 @remove="removeEntry"
                 @make-recipe="makeRecipeOf"
                 @mark-cooked="markCooked"
@@ -393,6 +446,21 @@ async function putOnShoppingList() {
       :today="today"
       @choose="moveEntry"
       @hide="moveDialogGone"
+    />
+    <reaction-dialog
+      v-if="reacting"
+      v-model="reactionOpen"
+      :name="nameOf(reacting) ?? 'this meal'"
+      :children="kidsStore.children"
+      :initial="
+        reactionChoicesOf(
+          kidsStore.reactionsById,
+          kidsStore.children,
+          reacting.id,
+        )
+      "
+      @save="saveReactions"
+      @hide="reactionDialogGone"
     />
   </div>
 </template>

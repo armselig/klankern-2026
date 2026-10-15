@@ -148,6 +148,16 @@ async function addToShoppingList(ingredients: RecipeIngredient[]) {
         {{ recipe.instructions }}
       </p>
       <p v-else class="text-muted">No instructions written yet.</p>
+
+      <template v-if="recipe.kids_version">
+        <h3 class="text-subtitle1 text-weight-medium">Kids' version</h3>
+        <p
+          class="recipe-view__instructions"
+          :data-testid="TEST_IDS.recipe.view.kidsVersion"
+        >
+          {{ recipe.kids_version }}
+        </p>
+      </template>
     </article>
 
     <!-- Also for another household's recipe: RLS returns no row for it. -->

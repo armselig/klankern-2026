@@ -18,6 +18,7 @@ function pending(
     servings: null,
     ingredients,
     instructions: "",
+    kids_version: null,
     created_by: "user-1",
     created_at: "2026-01-01T00:00:00Z",
     deleted_at: null,

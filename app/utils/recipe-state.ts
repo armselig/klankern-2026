@@ -14,7 +14,11 @@ import { upsertListItem } from "./list-state";
 /** Whether a row from Realtime has the columns an UPDATE can leave out (see
  * RecipeChange). */
 function isWholeRecipe(change: RecipeChange): change is Recipe {
-  return change.ingredients !== undefined && change.instructions !== undefined;
+  return (
+    change.ingredients !== undefined &&
+    change.instructions !== undefined &&
+    change.kids_version !== undefined
+  );
 }
 
 /**
@@ -63,6 +67,7 @@ export function applyRecipeRealtimeEvent(
   return upsertListItem(recipesById, {
     ingredients: [],
     instructions: "",
+    kids_version: null,
     ...local,
     ...incoming,
   });

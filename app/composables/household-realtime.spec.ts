@@ -100,6 +100,7 @@ const recipeRow: Recipe = {
   servings: "4",
   ingredients: [{ id: "ingredient-1", name: "Flour", quantity: "250 g" }],
   instructions: "Mix.\nFry.",
+  kids_version: null,
   created_by: "user-1",
   created_at: "2026-01-01T00:00:00Z",
   deleted_at: null,
@@ -158,6 +159,8 @@ function listeners() {
     onVacationTaskChange: vi.fn(),
     onVacationPersonChange: vi.fn(),
     onMealPlanEntryChange: vi.fn(),
+    onHouseholdChildChange: vi.fn(),
+    onMealReactionChange: vi.fn(),
     onSubscribed: vi.fn(),
   };
 }
@@ -182,6 +185,8 @@ describe("subscribeToHouseholdChanges", () => {
       "vacation_tasks",
       "vacation_people",
       "meal_plan_entries",
+      "household_children",
+      "meal_reactions",
     ].flatMap((table) =>
       ["INSERT", "UPDATE"].map((event) => [
         "postgres_changes",

@@ -81,6 +81,7 @@ export async function insertRecipe(
       servings: recipe.servings,
       ingredients: recipe.ingredients,
       instructions: recipe.instructions,
+      kids_version: recipe.kids_version,
       created_by: userId,
     })
     .select()

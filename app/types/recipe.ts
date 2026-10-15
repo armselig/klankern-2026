@@ -21,6 +21,9 @@ export interface RecipeContent {
   servings: string | null;
   ingredients: RecipeIngredient[];
   instructions: string;
+  /** How the dish is made for the kids ("without the spinach layer"), or
+   * null when there is no kids' version. */
+  kids_version: string | null;
 }
 
 /** A recipe row. The generated type has `ingredients` as `Json` (the column
@@ -30,12 +33,15 @@ export type Recipe = Omit<RecipeRow, "ingredients"> & {
 };
 
 /**
- * A recipe row as Realtime delivers it. `ingredients` and `instructions` can
- * be missing from an UPDATE: Postgres stores a large value out of line and
+ * A recipe row as Realtime delivers it. `ingredients`, `instructions` and
+ * `kids_version` can be missing from an UPDATE: Postgres stores a large value out of line and
  * leaves it out of the change record when the update didn't touch it, as in
  * an edit of the title alone or a soft delete.
  */
-export type RecipeChange = Omit<Recipe, "ingredients" | "instructions"> &
-  Partial<Pick<Recipe, "ingredients" | "instructions">>;
+export type RecipeChange = Omit<
+  Recipe,
+  "ingredients" | "instructions" | "kids_version"
+> &
+  Partial<Pick<Recipe, "ingredients" | "instructions" | "kids_version">>;
 
 export type RecipeRealtimeEvent = RowRealtimeEvent<RecipeChange>;

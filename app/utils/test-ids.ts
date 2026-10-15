@@ -65,10 +65,41 @@ export const TEST_IDS = {
   invite: {
     link: "invite-link",
   },
+  /** The household's children: on the dashboard's roster and on /kids. */
+  kids: {
+    roster: "kids-roster",
+    child: "kids-child",
+    childName: "kids-child-name",
+    childButton: "kids-child-button",
+    childMenu: {
+      group: "kids-child-menu",
+      rename: "kids-child-rename",
+      remove: "kids-child-remove",
+    },
+    addButton: "kids-add-button",
+    recordLink: "kids-record-link",
+    nameDialog: {
+      title: "kids-name-title",
+      input: "kids-name-input",
+      error: "kids-name-error",
+      save: "kids-name-save",
+    },
+    page: {
+      heading: "kids-heading",
+      loading: "kids-loading",
+      failure: "kids-failure",
+      record: "kids-record",
+      refused: "kids-record-refused",
+      pickedAt: "kids-record-picked-at",
+      nothing: "kids-record-nothing",
+      none: "kids-none",
+    },
+  },
   /** The Tonight tile on the dashboard. */
   tonight: {
     headline: "tonight-headline",
     secondary: "tonight-secondary",
+    refusal: "tonight-refusal",
     planThis: "tonight-plan-this",
     another: "tonight-another",
     skip: "tonight-skip",
@@ -88,13 +119,24 @@ export const TEST_IDS = {
     slotHeading: "meals-slot-heading",
     entry: "meals-entry",
     entryRecipeLink: "meals-entry-recipe-link",
+    /** An entry's name where it is no link: a title, or a removed recipe. */
+    entryName: "meals-entry-name",
     entryMore: "meals-entry-more",
     entryMenu: {
       group: "meals-entry-menu",
       makeRecipe: "meals-entry-make-recipe",
       move: "meals-entry-move",
       markCooked: "meals-entry-mark-cooked",
+      reactions: "meals-entry-reactions",
       remove: "meals-entry-remove",
+    },
+    /** The line under an entry that says which child did not eat it. */
+    entryReactionNote: "meals-entry-reaction-note",
+    reactionDialog: {
+      title: "meals-reaction-title",
+      child: "meals-reaction-child",
+      childName: "meals-reaction-child-name",
+      save: "meals-reaction-save",
     },
     add: "meals-add",
     /** The buttons that add a breakfast, a lunch or a snack. */
@@ -191,6 +233,7 @@ export const TEST_IDS = {
       ingredientRemove: "recipe-form-ingredient-remove",
       addIngredient: "recipe-form-add-ingredient",
       instructions: "recipe-form-instructions",
+      kidsVersion: "recipe-form-kids-version",
       save: "recipe-form-save",
       notFound: "recipe-form-not-found",
     },
@@ -203,6 +246,7 @@ export const TEST_IDS = {
       ingredient: "recipe-view-ingredient",
       addToShopping: "recipe-view-add-to-shopping",
       instructions: "recipe-view-instructions",
+      kidsVersion: "recipe-view-kids-version",
       notFound: "recipe-view-not-found",
     },
     addedNotice: "recipe-added-notice",

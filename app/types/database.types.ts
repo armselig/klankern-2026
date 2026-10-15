@@ -84,6 +84,42 @@ export type Database = {
           },
         ];
       };
+      household_children: {
+        Row: {
+          created_at: string;
+          created_by: string;
+          deleted_at: string | null;
+          household_id: string;
+          id: string;
+          name: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string;
+          deleted_at?: string | null;
+          household_id: string;
+          id?: string;
+          name: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string;
+          deleted_at?: string | null;
+          household_id?: string;
+          id?: string;
+          name?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "household_children_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       household_invites: {
         Row: {
           code: string;
@@ -236,6 +272,55 @@ export type Database = {
           },
         ];
       };
+      meal_reactions: {
+        Row: {
+          child_id: string;
+          created_at: string;
+          created_by: string;
+          deleted_at: string | null;
+          entry_id: string;
+          household_id: string;
+          id: string;
+          reaction: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          child_id: string;
+          created_at?: string;
+          created_by?: string;
+          deleted_at?: string | null;
+          entry_id: string;
+          household_id: string;
+          id?: string;
+          reaction: string;
+        };
+        Update: {
+          child_id?: string;
+          created_at?: string;
+          created_by?: string;
+          deleted_at?: string | null;
+          entry_id?: string;
+          household_id?: string;
+          id?: string;
+          reaction?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "meal_reactions_child_fkey";
+            columns: ["child_id", "household_id"];
+            isOneToOne: false;
+            referencedRelation: "household_children";
+            referencedColumns: ["id", "household_id"];
+          },
+          {
+            foreignKeyName: "meal_reactions_entry_fkey";
+            columns: ["entry_id", "household_id"];
+            isOneToOne: false;
+            referencedRelation: "meal_plan_entries";
+            referencedColumns: ["id", "household_id"];
+          },
+        ];
+      };
       recipes: {
         Row: {
           created_at: string;
@@ -245,6 +330,7 @@ export type Database = {
           id: string;
           ingredients: NonNullable<Json>;
           instructions: string;
+          kids_version: string | null;
           servings: string | null;
           title: string;
         };
@@ -257,6 +343,7 @@ export type Database = {
           id?: string;
           ingredients?: NonNullable<Json>;
           instructions?: string;
+          kids_version?: string | null;
           servings?: string | null;
           title: string;
         };
@@ -268,6 +355,7 @@ export type Database = {
           id?: string;
           ingredients?: NonNullable<Json>;
           instructions?: string;
+          kids_version?: string | null;
           servings?: string | null;
           title?: string;
         };

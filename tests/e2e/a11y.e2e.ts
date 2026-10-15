@@ -31,6 +31,7 @@ import {
   whiteboardPreview,
 } from "../support/e2e-ui";
 import { EARLIER_TRIP_TITLE, addEarlierTrip } from "../support/earlier-trip";
+import { recipeRow } from "../support/rls-rows";
 import {
   createHousehold,
   createTestUser,
@@ -629,6 +630,60 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       await expectNoBlockingViolations(page, "the dialog that adds a dinner");
       await page.getByRole("button", { name: "Cancel" }).click();
       await expect(page.getByRole("dialog")).toHaveCount(0);
+
+      // The kids: a child is added on the dashboard, a refusal recorded on
+      // a dinner of yesterday, and the record read on /kids.
+      await page.getByRole("link", { name: "Klankern" }).click();
+      await page.getByRole("button", { name: "Add child" }).click();
+      await expect(page.getByLabel("Name")).toBeFocused();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "the dialog that adds a child");
+      await page.getByLabel("Name").fill("Mia");
+      await page.getByRole("button", { name: "Save" }).click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await expect(
+        page.getByRole("button", { name: "Mia: rename or remove" }),
+      ).toBeVisible();
+      await expectNoBlockingViolations(page, "the dashboard with a child");
+
+      const yesterday = addDays(localDateOf(new Date()), -1);
+      const { data: soup, error: soupError } = await user.client
+        .from("recipes")
+        .insert({ ...recipeRow(user, householdId), title: "Lentil soup" })
+        .select("id")
+        .single();
+      if (soupError) throw soupError;
+      const { error: dinnerError } = await user.client
+        .from("meal_plan_entries")
+        .insert({
+          household_id: householdId,
+          date: yesterday,
+          slot: "dinner",
+          recipe_id: soup.id,
+          created_by: user.userId,
+        });
+      if (dinnerError) throw dinnerError;
+      await page.goto(`${ROUTES.meals}?week=${yesterday}`);
+      await page.getByRole("button", { name: "More: Lentil soup" }).click();
+      await page.getByRole("button", { name: "How did the kids eat?" }).click();
+      await expect(
+        page.getByRole("radio", { name: "Ate it" }).first(),
+      ).toBeChecked();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "the dialog for the kids' meal");
+      await page.getByRole("radio", { name: "Refused" }).click();
+      await page.getByRole("button", { name: "Save" }).click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await expect(page.getByText("Refused: Mia")).toBeVisible();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(page, "a dinner a child refused");
+
+      await page.goto(ROUTES.kids);
+      await expect(page).toHaveTitle("Kids · Klankern");
+      await expect(
+        page.getByRole("link", { name: "Lentil soup" }),
+      ).toBeVisible();
+      await expectNoBlockingViolations(page, "what the kids refused");
     });
   });
 }

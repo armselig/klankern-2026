@@ -145,6 +145,19 @@ function submit() {
       autogrow
     />
 
+    <q-input
+      v-model="draft.kidsVersion"
+      type="textarea"
+      label="Kids' version"
+      :data-testid="TEST_IDS.recipe.form.kidsVersion"
+      :maxlength="RECIPE_LIMITS.kidsVersion"
+      aria-describedby="recipe-form-kids-hint"
+      autogrow
+    />
+    <p id="recipe-form-kids-hint" class="text-muted q-mt-none">
+      What is different for the kids, if anything.
+    </p>
+
     <p
       v-if="error"
       class="text-negative"

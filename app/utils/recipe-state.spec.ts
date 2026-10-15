@@ -18,6 +18,7 @@ function recipe(overrides: Partial<Recipe> = {}): Recipe {
     servings: "4",
     ingredients: [{ id: "i1", name: "Flour", quantity: "250 g" }],
     instructions: "Mix.\nFry.",
+    kids_version: null,
     created_by: "user-1",
     created_at: "2026-01-01T00:00:00Z",
     deleted_at: null,
@@ -30,6 +31,7 @@ function withoutLargeColumns(row: Recipe): RecipeChange {
   const {
     ingredients: _ingredients,
     instructions: _instructions,
+    kids_version: _kidsVersion,
     ...rest
   } = row;
   return rest;
@@ -84,6 +86,34 @@ describe("applyRecipeRealtimeEvent", () => {
     const next = applyRecipeRealtimeEvent(state, event(renamed), HOUSEHOLD);
 
     expect(next["recipe-1"]).toEqual(recipe({ title: "Crêpes" }));
+  });
+
+  it("keeps the kids' version an update leaves out", () => {
+    const state = {
+      "recipe-1": recipe({ kids_version: "Without the onions" }),
+    };
+    const renamed = withoutLargeColumns(recipe({ title: "Crêpes" }));
+
+    const next = applyRecipeRealtimeEvent(state, event(renamed), HOUSEHOLD);
+
+    expect(next["recipe-1"]).toEqual(
+      recipe({ title: "Crêpes", kids_version: "Without the onions" }),
+    );
+  });
+
+  it("takes the kids' version an update carries, also when it is cleared", () => {
+    const state = {
+      "recipe-1": recipe({ kids_version: "Without the onions" }),
+    };
+    const { kids_version: _kidsVersion, ...rest } = recipe();
+
+    const next = applyRecipeRealtimeEvent(
+      state,
+      event({ ...rest, kids_version: null }),
+      HOUSEHOLD,
+    );
+
+    expect(next["recipe-1"]!.kids_version).toBeNull();
   });
 
   it("takes the ingredients and instructions an update carries", () => {
@@ -147,6 +177,15 @@ describe("recipeEventNeedsFetch", () => {
 
   it("is true for part of a live recipe that is not in state", () => {
     expect(recipeEventNeedsFetch({}, event(partial), HOUSEHOLD)).toBe(true);
+  });
+
+  it("is true for an event missing only the kids' version, for a recipe not in state", () => {
+    const { kids_version: _kidsVersion, ...missingKidsVersion } = recipe({
+      title: "Crêpes",
+    });
+    expect(
+      recipeEventNeedsFetch({}, event(missingKidsVersion), HOUSEHOLD),
+    ).toBe(true);
   });
 
   it("is false when the recipe is in state, since the event is laid over it", () => {

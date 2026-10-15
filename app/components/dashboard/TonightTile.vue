@@ -15,6 +15,9 @@ defineProps<{
   lines: TonightLines;
   /** The tile shows today, not tomorrow; only then can a dinner be skipped. */
   isToday: boolean;
+  /** Which child refused the suggestion how often ("Refused twice by
+   * Mila"), or null. */
+  refusal?: string | null;
 }>();
 const emit = defineEmits<{
   planThis: [];
@@ -38,6 +41,13 @@ const emit = defineEmits<{
     :data-testid="TEST_IDS.tonight.secondary"
   >
     {{ lines.secondary }}
+  </p>
+  <p
+    v-if="refusal"
+    class="tonight-tile__secondary q-my-none"
+    :data-testid="TEST_IDS.tonight.refusal"
+  >
+    {{ refusal }}
   </p>
   <!-- No color on the flat buttons: see hover-contrast.css. -->
   <div class="tonight-tile__actions">

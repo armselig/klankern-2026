@@ -4,7 +4,7 @@ import { subscribeToHouseholdChanges } from "./household-realtime";
  * Keeps one Realtime channel open for the signed-in user's household and
  * routes its changes into the stores. Mounted once in the default layout
  * rather than inside a feature component, so every feature (to-dos, shopping,
- * whiteboard, recipes, vacations, the meal plan) shares the channel instead of opening its
+ * whiteboard, recipes, vacations, the meal plan, the kids) shares the channel instead of opening its
  * own.
  *
  * Keyed on the user as well as the household, so the channel closes the
@@ -22,6 +22,7 @@ export function useHouseholdRealtime() {
   const recipeStore = useRecipeStore();
   const vacationStore = useVacationStore();
   const mealPlanStore = useMealPlanStore();
+  const kidsStore = useKidsStore();
 
   const householdId = computed(() =>
     user.value ? (householdStore.household?.id ?? null) : null,
@@ -44,6 +45,8 @@ export function useHouseholdRealtime() {
           vacationStore.applyPersonEvent(event),
         onMealPlanEntryChange: (event) =>
           mealPlanStore.applyRealtimeEvent(event),
+        onHouseholdChildChange: (event) => kidsStore.applyChildEvent(event),
+        onMealReactionChange: (event) => kidsStore.applyReactionEvent(event),
         onSubscribed: () => {
           void todoStore.resync();
           void shoppingStore.resync();
@@ -51,6 +54,7 @@ export function useHouseholdRealtime() {
           void recipeStore.resync();
           void vacationStore.resync();
           void mealPlanStore.resync();
+          void kidsStore.resync();
         },
       });
       onCleanup(unsubscribe);

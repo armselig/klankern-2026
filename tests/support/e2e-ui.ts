@@ -1,8 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
+import type { MealReactionChoice } from "../../app/types/kids";
 import type { MealSlot } from "../../app/types/meal-plan";
 import type { VacationKind, VacationPhase } from "../../app/types/vacation";
 import type { WhiteboardTool } from "../../app/types/whiteboard";
 import { INK_VALUES } from "../../app/utils/ink";
+import { REACTION_CHOICES } from "../../app/utils/kids-state";
 import { SLOTS_IN_ORDER } from "../../app/utils/meal-week";
 import { ROUTES } from "../../app/utils/routes";
 import { TEST_IDS, type DashboardTileKey } from "../../app/utils/test-ids";
@@ -668,13 +670,43 @@ export async function untilTaskSaved(page: Page, action: () => Promise<void>) {
   expect((await saved).ok()).toBe(true);
 }
 
-/** An entry of the meal plan, by its name. A skipped entry's row also
- * says "Skipped" after the name. */
+/** An entry of the meal plan, by its name: the recipe's link or the title.
+ * Found by the name alone, since the row says more: "Skipped", or which
+ * child did not eat it. */
 export function mealEntry(page: Page, name: string) {
-  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const nameOfEntry = page
+    .getByTestId(TEST_IDS.meals.entryRecipeLink)
+    .or(page.getByTestId(TEST_IDS.meals.entryName))
+    .filter({ hasText: exactly(name) });
+  return page.getByTestId(TEST_IDS.meals.entry).filter({ has: nameOfEntry });
+}
+
+/** A child on the dashboard's roster, by name. */
+export function kidOnRoster(page: Page, name: string) {
+  return page.getByTestId(TEST_IDS.kids.child).filter({
+    has: page
+      .getByTestId(TEST_IDS.kids.childName)
+      .filter({ hasText: exactly(name) }),
+  });
+}
+
+/** The radio of a choice for a child in the dialog "How did the kids eat?";
+ * the child's group is found by the name in its legend. */
+export function reactionRadio(
+  page: Page,
+  childName: string,
+  choice: MealReactionChoice,
+) {
+  const index = REACTION_CHOICES.findIndex(({ value }) => value === choice);
   return page
-    .getByTestId(TEST_IDS.meals.entry)
-    .filter({ hasText: new RegExp(`^\\s*${escaped}\\s*(Skipped\\s*)?$`) });
+    .getByTestId(TEST_IDS.meals.reactionDialog.child)
+    .filter({
+      has: page
+        .getByTestId(TEST_IDS.meals.reactionDialog.childName)
+        .filter({ hasText: exactly(childName) }),
+    })
+    .getByRole("radio")
+    .nth(index);
 }
 
 /** An entry of the meal plan entry's menu, by the key of its id. */

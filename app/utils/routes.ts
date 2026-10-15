@@ -14,6 +14,7 @@ export const ROUTES = {
   recipeEdit: (id: string) => `/recipes/${id}/edit`,
   meals: "/meals",
   tripMeals: (vacationId: string) => `/meals?trip=${vacationId}`,
+  kids: "/kids",
   vacations: "/vacations",
   vacationNew: "/vacations/new",
   vacation: (id: string) => `/vacations/${id}`,

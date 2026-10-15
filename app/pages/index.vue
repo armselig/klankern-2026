@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Notify } from "quasar";
+import { Dialog, Notify } from "quasar";
+import type { HouseholdChild } from "~/types/kids";
 import {
   mdiBagSuitcaseOutline,
   mdiCartOutline,
@@ -16,6 +17,7 @@ const whiteboardStore = useWhiteboardStore();
 const recipeStore = useRecipeStore();
 const vacationStore = useVacationStore();
 const mealPlanStore = useMealPlanStore();
+const kidsStore = useKidsStore();
 
 const inviteOpen = ref(false);
 
@@ -36,6 +38,7 @@ watch(
     void whiteboardStore.load(householdId);
     void recipeStore.load(householdId);
     void vacationStore.load(householdId);
+    void kidsStore.load(householdId);
     // Not `today` below: it is declared after this watcher, which runs at
     // once when the household is known already.
     void mealPlanStore.load(
@@ -101,12 +104,28 @@ const dinnersKey = computed(() =>
     .join(),
 );
 watch([tonight, dinnersKey], () => (tonightSkip.value = 0));
+/** The recipes a child refused often enough to be proposed last, with who
+ * refused them; counted up to the tile's day. */
+const refusals = computed(() =>
+  refusalsByRecipe(
+    kidsStore.children,
+    kidsStore.reactionsById,
+    mealPlanStore.visible,
+    tonight.value,
+  ),
+);
 const tonightStateNow = computed(() =>
   tonightState(recipeStore.visible, mealPlanStore.visible, tonight.value, {
     isToday: tonightIsToday.value,
     skip: tonightSkip.value,
+    demoted: new Set(refusals.value.keys()),
   }),
 );
+const tonightRefusal = computed(() => {
+  const state = tonightStateNow.value;
+  if (state.kind !== "suggested" && state.kind !== "only-one") return null;
+  return refusalLine(refusals.value.get(state.candidate.recipe.id) ?? []);
+});
 const tonightLinesNow = computed(() =>
   tonightLines(
     tonightStateNow.value,
@@ -158,6 +177,65 @@ function skipTonight(skipped: boolean) {
       void mealPlanStore.setSkipped(entry.id, skipped);
 }
 
+/** The child the name dialog renames, or null when it adds one. It stays
+ * set after the dialog closed, until the dialog has gone, so the focus can
+ * go back to the child. */
+const namingChild = ref<HouseholdChild | null>(null);
+const childNameOpen = ref(false);
+const childrenRoster = useTemplateRef<{ focusChild: (id: string) => void }>(
+  "childrenRoster",
+);
+
+function openChildName(child: HouseholdChild | null) {
+  namingChild.value = child;
+  childNameOpen.value = true;
+}
+
+function childNameDialogGone() {
+  const child = namingChild.value;
+  if (child) childrenRoster.value?.focusChild(child.id);
+}
+
+/** Shows that a write about a child failed. Names no child: a notice is
+ * read out and seen over a shoulder. */
+function notifyChildFailure() {
+  Notify.create({
+    message: "Could not save. Check your connection and try again.",
+    color: "negative",
+    textColor: "on-accent",
+    attrs: { "data-testid": TEST_IDS.errorMessage },
+  });
+}
+
+async function saveChildName(name: string) {
+  const child = namingChild.value;
+  const saved = child
+    ? await kidsStore.renameChild(child.id, name)
+    : await kidsStore.addChild(name);
+  if (!saved) notifyChildFailure();
+}
+
+/** Removing a child leaves out what was recorded about them, so it asks
+ * first. */
+function confirmRemoveChild(child: HouseholdChild) {
+  Dialog.create({
+    title: `Remove ${child.name}?`,
+    message:
+      "What was recorded about their meals no longer counts, here or in the suggestions.",
+    // No color for the flat button; see SharedWhiteboard.vue.
+    cancel: withTestId(
+      { label: "Cancel", flat: true, color: undefined },
+      TEST_IDS.confirmDialog.cancel,
+    ),
+    ok: withTestId(
+      { label: "Remove", color: "negative", unelevated: true },
+      TEST_IDS.confirmDialog.ok,
+    ),
+  }).onOk(async () => {
+    if (!(await kidsStore.removeChild(child.id))) notifyChildFailure();
+  });
+}
+
 const vacationsFailed = computed(
   () => !vacationStore.householdId && !!vacationStore.error,
 );
@@ -183,6 +261,16 @@ const vacationsFailed = computed(
         {{ householdStore.household.name }}
       </h2>
       <member-roster @invite="inviteOpen = true" />
+      <!-- Only once the children are loaded: an add needs the store to
+           know the household. A failed load leaves the row out. -->
+      <kid-roster
+        v-if="kidsStore.householdId === householdStore.household.id"
+        ref="childrenRoster"
+        :children="kidsStore.children"
+        @add="openChildName(null)"
+        @rename="openChildName"
+        @remove="confirmRemoveChild"
+      />
 
       <!-- A list of links, as a navigation is; a plain ul, because a q-list
            would hold no q-items. role="list" because Safari stops
@@ -206,6 +294,7 @@ const vacationsFailed = computed(
                 :kind="tonightStateNow.kind"
                 :lines="tonightLinesNow"
                 :is-today="tonightIsToday"
+                :refusal="tonightRefusal"
                 @plan-this="planSuggestion"
                 @another="tonightSkip++"
                 @skip="skipTonight(true)"
@@ -307,6 +396,13 @@ const vacationsFailed = computed(
 
       <!-- Beside the roster, whose button opens it: the roster only renders. -->
       <invite-dialog v-model="inviteOpen" />
+      <child-name-dialog
+        v-model="childNameOpen"
+        :title="namingChild ? `Rename ${namingChild.name}` : 'Add a child'"
+        :initial-name="namingChild?.name ?? ''"
+        @save="saveChildName"
+        @hide="childNameDialogGone"
+      />
       <add-meal-dialog
         v-model="addTextOpen"
         :day-label="formatWeekday(tonight)"
