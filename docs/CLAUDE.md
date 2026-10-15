@@ -17,7 +17,7 @@ Start with `progress.md`, then read the topic files for what you are about to to
 - [`whiteboard.md`](./features/whiteboard.md): milestone 9, the shared whiteboard.
 - [`recipes.md`](./features/recipes.md): milestone 10, the shared recipes.
 - [`dashboard.md`](./features/dashboard.md): the dashboard with live tiles.
-- [`vacations/`](./features/vacations/CLAUDE.md): the vacation planner, in a folder of its own with fifteen files: its design, the reviews of the design, and how each slice was built and changed. Its `CLAUDE.md` lists them, in the order to read them, and says where new material goes. All three slices are built and released.
+- [`vacations/`](./features/vacations/CLAUDE.md): the vacation planner, in a folder of its own with sixteen files: its design, the reviews of the design, and how each slice was built and changed. Its `CLAUDE.md` lists them, in the order to read them, and says where new material goes. All three slices are built and released.
 - [`meal-planner.md`](./features/meal-planner.md): the meal planner: why it exists, slice 1a (the plan table, the store, `/meals`, the Tonight tile), what is left for 1b, the query that counts planned days, and the e2e tests that failed on CI because of a pinned clock. Slice 1a is built and released.
 - [`avatars.md`](./features/avatars.md): the members' avatars, rosette and Gravatar.
 - [`header.md`](./features/header.md): the header with the wordmark and the account menu.
@@ -30,7 +30,8 @@ Start with `progress.md`, then read the topic files for what you are about to to
 **Tests, build and delivery** (`infra/`)
 
 - [`new-synced-store.md`](./infra/new-synced-store.md): the checklist for a new table that is shared by a household and kept live: migration, store, wiring, tests, documentation.
-- [`testing.md`](./infra/testing.md): the review of the e2e tests' gaps with the bugs it found, running e2e tests repeatedly, the `pwa` project and a leftover `.output`.
+- [`testing.md`](./infra/testing.md): the review of the e2e tests' gaps with the bugs it found, running e2e tests repeatedly, the `pwa` project and a leftover `.output`, signing in without the form, the RLS suite run in parallel.
+- [`e2e-failures-on-ci.md`](./infra/e2e-failures-on-ci.md): the e2e tests that failed on CI and what was found: a focus that arrived late, a slow auth service, a reload that cancelled an insert, a wrong code that showed no error.
 - [`test-ids.md`](./infra/test-ids.md): how the e2e tests find elements, by `data-testid` and no longer by text: what was decided, what Quasar made of it, and the type check for the tests.
 - [`ci.md`](./infra/ci.md): the checks on GitHub.
 - [`deploy-and-pwa.md`](./infra/deploy-and-pwa.md): milestones 7 and 8, the installable app and its deployment to Netlify; the broken deploy after the move to the git root.

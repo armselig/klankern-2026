@@ -17,7 +17,7 @@ The design review changed things the engineering reviews had checked: the "Vacat
 
 - **A link's parameters are read once and then removed from the address.** The sign-in module remembers the whole address, parameters included, so a task's link survives sign-in. Left in the address, a parameter would mark the row again and tick "Only my tasks" again on every reload, against "it is stored nowhere".
 - **The page waits for its first load before it acts on a link.** Before that, the row to scroll to does not exist.
-- **Both kinds of link are built and read in one module**, `utils/vacation-link.ts`, as plain functions with unit tests. The sentence builder writes the links and the page reads them, so the parameters' names live in one place. A parameter is only a key to find a row in the page's state.
+- **Both kinds of link are built and read in one module**, `utils/vacation-link.ts`, as plain functions with unit tests. The sentence builder writes the links and the page reads them, so the parameters' names live in one place. A parameter is only a key to find a row in the page's state. (The module was removed on 2026-10-13 with "Tell them", see "“Tell them” removed" in [`features/vacations/slice-2-after-trying.md`](./slice-2-after-trying.md).)
 - **The helper that decides a trip's stage also picks the tile's vacation**, so the tile, the list and the page cannot disagree. It takes today's date as a parameter.
 - **The 14 days are date arithmetic on local dates**, done in one time base and compared as `YYYY-MM-DD`, with tests at a month's end.
 - **The sentence for a person has a singular and a plural.**

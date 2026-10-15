@@ -4,9 +4,9 @@ Where the Nuxt project sits in the repository, oldest first. The plan for the mo
 
 ## The move to the git root (built 2026-10-12, not on `main` yet)
 
-Steps 1 to 11 of the plan are done (see "Plan: the Nuxt project moves to the git root" in [`infra/project-layout-plan.md`](project-layout-plan.md)), on the branch `chore/folder-structure` in a `git worktree`, as four commits: the formatting, the move with the edits of step 4, the Markdown linter with its fixes, and this documentation. Step 12 is left: nothing is pushed, and the user has not yet looked at Netlify's own build settings. "What a person has to do" in the same file still holds as written.
+(On `main` since 2026-10-12, so step 12 is done. The first deploy in the new layout was broken; see "The move to the git root on `main`, and a broken deploy" in [`infra/deploy-and-pwa.md`](deploy-and-pwa.md).)
 
-On `main` since 2026-10-12, so step 12 is done. The first deploy in the new layout was broken; see "The move to the git root on `main`, and a broken deploy" in [`infra/deploy-and-pwa.md`](deploy-and-pwa.md).
+Steps 1 to 11 of the plan are done (see "Plan: the Nuxt project moves to the git root" in [`infra/project-layout-plan.md`](project-layout-plan.md)), on the branch `chore/folder-structure` in a `git worktree`, as four commits: the formatting, the move with the edits of step 4, the Markdown linter with its fixes, and this documentation. Step 12 is left: nothing is pushed, and the user has not yet looked at Netlify's own build settings. "What a person has to do" in the same file still holds as written.
 
 ### What was checked
 

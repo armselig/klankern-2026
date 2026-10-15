@@ -29,7 +29,7 @@ Nuxt 4 as an SPA (`ssr: false`) with Quasar, Pinia and `@vite-pwa/nuxt`, on Supa
 - `public/`, `scripts/`, `netlify.toml`: the static files, the icon generator and the build settings.
 - `.github/`: the CI and release workflows, and the release tooling as a package of its own.
 
-**Tests**: Vitest, 745 tests in 46 files, the RLS suite included (CI, 2026-10-15). Playwright, 39 tests in 15 files and two projects. CI on `develop` on 2026-10-15 passed 38 of them, the meal plan's three included after their fix (see "The e2e tests failed on CI: a clock ahead of the session" in [`features/meal-planner.md`](features/meal-planner.md)); "a wrong code shows an error" in `auth.e2e.ts` failed, because the error message did not show, and was not looked into.
+**Tests**: Vitest, 745 tests in 46 files, the RLS suite included (CI, 2026-10-15). Playwright, 39 tests in 15 files and two projects. CI on `develop` on 2026-10-15 passed 38 of them; "a wrong code shows an error" in `auth.e2e.ts` failed and was not looked into (see "A wrong code that showed no error" in [`infra/e2e-failures-on-ci.md`](infra/e2e-failures-on-ci.md)).
 
 ## Deviations from the plan
 
@@ -49,6 +49,5 @@ Nuxt 4 as an SPA (`ssr: false`) with Quasar, Pinia and `@vite-pwa/nuxt`, on Supa
 2. The vacation planner. Try slice 3 on two phones: "After a deploy" in [`features/vacations/slice-3.md`](features/vacations/slice-3.md). The app is to get notifications in place of "Tell them"; nothing plans them yet.
 3. Write a README. Deferred (2026-10-14).
 4. A guard against the cause of the broken first deploy after the move to the git root, proposed and not built. See "The move to the git root on `main`, and a broken deploy" in [`infra/deploy-and-pwa.md`](infra/deploy-and-pwa.md).
-5. Separate development from production: a dev Supabase project, a staging site from `develop` and migrations applied by a workflow. Not approved; four decisions are open. See "Plan: separate development from production" in [`infra/environments.md`](infra/environments.md).
-6. Split [`infra/testing.md`](infra/testing.md) and [`infra/environments.md`](infra/environments.md), both past 2,500 words, the next time they are touched.
-7. Optional, later: the Podman production setup.
+5. Separate development from production: a dev Supabase project, a staging site from `develop` and migrations applied by a workflow. Not approved; four decisions are open. See "Plan: separate development from production" in [`infra/environments.md`](infra/environments.md). That file is past 2,500 words and is split once the plan is carried out, not before.
+6. Optional, later: the Podman production setup.
