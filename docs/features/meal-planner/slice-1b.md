@@ -4,7 +4,7 @@ How slice 1b was built: the other slots, the move dialog, a trip's view, the sho
 
 ## Slice 1b: the week with all slots, the trip's view and the shopping run (built 2026-10-15)
 
-Built on `develop` the same day as 1a's release, not released and not committed when this was written. Migration 0020 is written and **not applied**.
+Built on `develop` the same day as 1a's release, not released and not committed when this was written. Migration 0020 is written and **not applied**. (Released 1.11.1 on 2026-10-15, see "Each release" in [`infra/releases.md`](../../infra/releases.md).)
 
 ### Decisions by the owner (2026-10-15)
 
