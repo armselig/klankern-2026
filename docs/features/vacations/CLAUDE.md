@@ -8,7 +8,7 @@ Read the design first, then the file of the slice you are about to touch. The re
 
 ### The design
 
-- [`design.md`](./design.md): the vacation planner: its design, with tasks by phase, assignment that can be rejected and a meal plan. All three slices are built; slice 3 is not released yet.
+- [`design.md`](./design.md): the vacation planner: its design, with tasks by phase, assignment that can be rejected and a meal plan. All three slices are built and released.
 - [`design-decisions.md`](./design-decisions.md): the rest of that design: its open decisions and how each was answered, what counts as done, and what was considered and not chosen.
 - [`templates.md`](./templates.md): what its house and hotel templates held, until they were replaced by copying (see `features/vacations/copy-tasks.md`): the list the user handed over, how its entries are worded, and the tasks added for the two later phases.
 

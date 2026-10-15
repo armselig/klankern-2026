@@ -20,7 +20,7 @@ The words are fixed so that code, screens and these docs say the same. A **dinne
 
 ## Slice 1a: the plan, the store, `/meals` and the Tonight tile (built 2026-10-15)
 
-Built on `develop`, not released. Migration 0018 is applied to the cloud project (2026-10-15, version recorded as `0018` by `supabase db push`), and `database.types.ts` was regenerated.
+Built on `develop`, not released (released in 1.11.0 on 2026-10-15, see "Releases" in [`infra/releases.md`](../infra/releases.md)). Migration 0018 is applied to the cloud project (2026-10-15, version recorded as `0018` by `supabase db push`), and `database.types.ts` was regenerated.
 
 ### The table
 
@@ -65,7 +65,7 @@ Built on `develop`, not released. Migration 0018 is applied to the cloud project
 
 - Unit specs for every new util (`meal-week`, `dinner-order`, `meal-plan-state`, `tonight-lines`), the actions and the store, and for the new listener in `household-realtime.spec.ts`. 617 unit tests pass, the RLS suite included (`npm test`, 2026-10-15).
 - `tests/rls/meal-plan-isolation.spec.ts` (17 tests, pass) is the **fifth** RLS spec. It covers reading, the foreign household, the foreign recipe, a forged `created_by`, skipping and soft delete, a member of another household changing an entry and a refused hard delete.
-- `tests/e2e/meal-plan.e2e.ts`: the tile proposes, plans, skips and switches to tomorrow, the week page adds a dinner as text and removes it with "Undo", and a day that is not a Monday opens its week. Playwright's clock fixes the time, and the tests start with `openSignedIn`. `a11y.e2e.ts` scans the tile, `/meals` and the add dialog in both modes.
+- `tests/e2e/meal-plan.e2e.ts`: the tile proposes, plans, skips and switches to tomorrow, the week page adds a dinner as text and removes it with "Undo", and a day that is not a Monday opens its week. Playwright's clock fixes the time, and the tests start with `openSignedIn`. (The fixed time made them fail on CI; moved to yesterday on 2026-10-15, see "The e2e tests failed on CI: a clock ahead of the session".) `a11y.e2e.ts` scans the tile, `/meals` and the add dialog in both modes.
 - **`tests/support/fake-supabase-client.ts` has no `gte` or `lte`**, so the meal-plan specs add them to the builder themselves. Not fixed in the shared fake.
 
 ### Known limits
@@ -104,3 +104,13 @@ where e.household_id = params.household_id
 ```
 
 Not checked: the review asked for this query to be tested once in the RLS suite against a seeded household; `meal-plan-isolation.spec.ts` has no such test.
+
+## The e2e tests failed on CI: a clock ahead of the session (fixed 2026-10-15)
+
+On CI for v1.11.0, the first run of `meal-plan.e2e.ts` there, all three tests timed out right after `openSignedIn`: the header never showed the signed-in member. The other 36 e2e tests passed.
+
+- **Cause.** Each test pinned Playwright's clock to 12:30 or 17:30 of the device's day (`todayAt`). `openSignedIn` hands the browser a real session, whose access token expires an hour after the real time. On page load `@nuxtjs/supabase` sets the user from `getClaims()`, and auth-js checks the token's `exp` against the browser's `Date.now()`, which is the pinned clock. CI runs in UTC and started the tests at about 10:45, so 12:30 was more than an hour ahead, the token counted as expired and the user stayed empty. The session itself stayed, so the data still loaded: that is why the 17:30 step passed locally although it lies hours ahead, since nothing there looks at the header. Locally the tests had only been run shortly after 12:30 Berlin time, when the pinned time lay in the past.
+- **Reproduced** with the device's time zone: at 10:55 UTC the test "a day that is not a Monday opens its week" failed under `TZ=Etc/GMT+1` (09:55 local) with the error from CI, and passed under `TZ=Europe/Berlin` (12:55 local).
+- **Fix.** The tests pin the clock to yesterday at 12:30 and 17:30 (`yesterdayAt`), which lies in the past at any time of day; a token whose expiry is still ahead passes the check, whatever its issue time. The test of the week takes its `?week=` day from the same pinned moment instead of the real date. No app code changed.
+- **Verified** by running the whole file under `TZ=Etc/GMT+1`, `Europe/Berlin` and `Etc/GMT-12` (10:00, 13:00 and 23:01 local): 3 passed each time. The whole e2e suite was not run locally; CI runs it with the push.
+- The rule is in the root `CLAUDE.md`, under "What the tests need".
