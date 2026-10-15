@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ItemsById } from "~/types/list";
 import type { ChildRefusal, HouseholdChild, MealReaction } from "~/types/kids";
 import type { MealPlanEntry } from "~/types/meal-plan";
+import type { SyncedRow } from "~/types/synced-row";
 import {
   canRecordReactions,
   childRecords,
@@ -67,7 +68,7 @@ function reaction(overrides: Partial<MealReaction> = {}): MealReaction {
   };
 }
 
-function byId<T extends { id: string }>(...rows: T[]): ItemsById<T> {
+function byId<T extends SyncedRow>(...rows: T[]): ItemsById<T> {
   return Object.fromEntries(rows.map((row) => [row.id, row]));
 }
 
