@@ -60,6 +60,15 @@ export interface VacationGroups {
   past: Vacation[];
 }
 
+type VacationMealRow = Database["public"]["Tables"]["vacation_meals"]["Row"];
+
+/** A meal of a trip: a recipe of the household picked for it. The same
+ * recipe can be a meal more than once. `on_shopping_list_at` is set once
+ * every ingredient of the recipe was put on the shopping list. */
+export type VacationMeal = VacationMealRow;
+
+export type VacationMealRealtimeEvent = RowRealtimeEvent<VacationMeal>;
+
 type VacationPersonRow = Database["public"]["Tables"]["vacation_people"]["Row"];
 
 /** A person on a trip: a member of the household (`user_id`) or just a

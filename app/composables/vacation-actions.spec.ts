@@ -2,13 +2,17 @@ import { describe, expect, it, vi } from "vitest";
 import {
   assignVacationTaskRemote,
   createVacation,
+  fetchVacationMeals,
   fetchVacationPeople,
   fetchVacations,
   fetchVacationTasks,
+  insertVacationMeal,
   insertVacationPerson,
   insertVacationTask,
+  markVacationMealOnShoppingListRemote,
   rejectVacationTaskRemote,
   renameVacationPersonRemote,
+  softDeleteVacationMealRemote,
   softDeleteVacationPersonRemote,
   renameVacationTaskRemote,
   setVacationTaskDone,
@@ -26,6 +30,7 @@ import {
 describe.each([
   ["fetchVacations", fetchVacations, "vacations"],
   ["fetchVacationTasks", fetchVacationTasks, "vacation_tasks"],
+  ["fetchVacationMeals", fetchVacationMeals, "vacation_meals"],
 ] as const)("%s", (_name, fetchRows, table) => {
   it("returns the household's rows that are not removed", async () => {
     const rows = [{ id: "a" }, { id: "b" }];
@@ -295,6 +300,11 @@ describe.each([
     softDeleteVacationPersonRemote,
     "vacation_people",
   ],
+  [
+    "softDeleteVacationMealRemote",
+    softDeleteVacationMealRemote,
+    "vacation_meals",
+  ],
 ] as const)("%s", (_name, softDelete, table) => {
   it("sets deleted_at for the given id", async () => {
     const query = fakeQueryBuilder({ data: null, error: null });
@@ -453,6 +463,72 @@ describe("rejectVacationTaskRemote", () => {
 
     await expect(
       rejectVacationTaskRemote(client as never, "t", "p", "No."),
+    ).rejects.toBe(error);
+  });
+});
+
+describe("insertVacationMeal", () => {
+  const meal = {
+    id: "meal-1",
+    vacationId: "vacation-1",
+    householdId: "h1",
+    recipeId: "recipe-1",
+    position: 2,
+  };
+
+  it("inserts with the client-supplied id and the resolved created_by", async () => {
+    const row = { id: "meal-1", recipe_id: "recipe-1" };
+    const query = fakeQueryBuilder({ data: row, error: null });
+    const client = fakeClient({ userId: "user-1", from: () => query.builder });
+
+    expect(await insertVacationMeal(client as never, meal)).toEqual(row);
+    expect(client.from).toHaveBeenCalledWith("vacation_meals");
+    expect(query.calls.insert).toEqual([
+      {
+        id: "meal-1",
+        vacation_id: "vacation-1",
+        household_id: "h1",
+        recipe_id: "recipe-1",
+        position: 2,
+        created_by: "user-1",
+      },
+    ]);
+  });
+
+  it("throws on error", async () => {
+    const error = { message: "boom" };
+    const query = fakeQueryBuilder({ data: null, error });
+    const client = fakeClient({ from: () => query.builder });
+
+    await expect(insertVacationMeal(client as never, meal)).rejects.toBe(error);
+  });
+});
+
+describe("markVacationMealOnShoppingListRemote", () => {
+  it("sets on_shopping_list_at for the given id", async () => {
+    const query = fakeQueryBuilder({ data: null, error: null });
+    const client = fakeClient({ from: () => query.builder });
+
+    await markVacationMealOnShoppingListRemote(
+      client as never,
+      "meal-1",
+      "2026-10-15T08:00:00.000Z",
+    );
+
+    expect(client.from).toHaveBeenCalledWith("vacation_meals");
+    expect(query.calls.update).toEqual([
+      { on_shopping_list_at: "2026-10-15T08:00:00.000Z" },
+    ]);
+    expect(query.calls.eq).toEqual(["id", "meal-1"]);
+  });
+
+  it("throws on error", async () => {
+    const error = { message: "boom" };
+    const query = fakeQueryBuilder({ data: null, error });
+    const client = fakeClient({ from: () => query.builder });
+
+    await expect(
+      markVacationMealOnShoppingListRemote(client as never, "meal-1", "now"),
     ).rejects.toBe(error);
   });
 });
