@@ -31,7 +31,7 @@ Nuxt 4 as an SPA (`ssr: false`) with Quasar, Pinia and `@vite-pwa/nuxt`, on Supa
 - `public/`, `scripts/`, `netlify.toml`: the static files, the icon generator and the build settings.
 - `.github/`: the CI and release workflows, and the release tooling as a package of its own.
 
-**Tests**: Vitest, 900 tests in 50 files, the RLS suite (six spec files) included (locally, 2026-10-15). Playwright, 17 files and two projects; locally on 2026-10-15 the `dev` project passed all 40 of its tests with slice 2, the `pwa` project was not run. CI for v1.11.1 passed on `develop` and `main`, all 43 e2e tests of then included (2026-10-15).
+**Tests**: Vitest, 900 tests in 50 files, the RLS suite (six spec files) included (locally, 2026-10-15). Playwright, 17 files and two projects; locally on 2026-10-15 with slice 2, the `dev` project passed all 40 of its tests and the `pwa` project its 5. CI for v1.11.1 passed on `develop` and `main`, all 43 e2e tests of then included (2026-10-15).
 
 ## Deviations from the plan
 

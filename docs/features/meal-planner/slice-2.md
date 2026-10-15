@@ -61,3 +61,4 @@ Not done: slice 2 was not tried by hand on a phone, and it is not released.
 ## After a review of the diff (2026-10-15)
 
 - **"Add child" before the children were loaded** called the store's `addChild` without a household and threw. The dashboard now shows the kids' row only once the kids store has loaded the household; a failed load leaves the row out.
+- **The note under a dinner disagreed with what counts.** A refusal recorded and then followed by "We didn't cook this", or by a move to a later day, still showed "Refused: Mila" under the entry, while the record and the suggestions leave such a dinner out and its menu no longer offers to change it. The note now shows only where the reactions can be recorded. After it, `kids.e2e.ts`, `meal-plan.e2e.ts`, `a11y.e2e.ts` and the `pwa` project passed again, 18 tests.
