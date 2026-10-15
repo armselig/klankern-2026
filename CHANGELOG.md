@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.11.0](https://github.com/armselig/klankern-2026/compare/v1.10.0...v1.11.0) (2026-10-15)
+
+### Features
+
+* **meal-planner:** propose tonight's dinner and plan the week's dinners ([f42cc2e](https://github.com/armselig/klankern-2026/commit/f42cc2e626ce3cca319c158c178c8d75b01a38d0))
+
 ## [1.10.0](https://github.com/armselig/klankern-2026/compare/v1.9.0...v1.10.0) (2026-10-15)
 
 ### Features
