@@ -143,4 +143,30 @@ describe("useTodoStore toggle", () => {
     expect(store.itemsById[item.id]!.done).toBe(true);
     expect(store.error).toBe("offline");
   });
+
+  it("sends a quick untick and tick in the order they were made", async () => {
+    const item = todo({ done: true });
+    const firstSave = deferred<QueryResult>();
+    let calls = 0;
+    const { requests } = setUpClient(() =>
+      calls++ === 0 ? firstSave.promise : ok(),
+    );
+    const store = storeHolding(item);
+
+    const untick = store.toggle(item.id);
+    const tick = store.toggle(item.id);
+    // Every promise step the store takes has run by the next macrotask.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    // The tick waits for the untick's save, or the server could commit it
+    // first and keep the untick.
+    expect(requests).toHaveLength(1);
+
+    firstSave.resolve(ok());
+    await Promise.all([untick, tick]);
+    expect(requests.map((request) => request.payload)).toEqual([
+      { done: false },
+      { done: true },
+    ]);
+    expect(store.itemsById[item.id]!.done).toBe(true);
+  });
 });

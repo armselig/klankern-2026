@@ -42,6 +42,8 @@ Three pieces of bookkeeping live at module level in each store, outside Pinia st
 - `utils/changes-during-fetch.ts`: ids changed while a resync fetch is in flight keep their local version, as do `pendingIds`.
 - `utils/realtime-event-order.ts`: Realtime does not deliver a row's events in commit order, so an event with an older `commit_timestamp` than the newest seen for that item is dropped. There is no `updated_at` trigger; don't order by `updated_at`.
 
+The to-do, shopping and vacation stores keep a fourth, `utils/writes-in-order.ts`: an item's ticks and unticks are sent one after the other, each once the one before it has settled, because two requests on their way at once may be committed in either order and leave the item as the person did not.
+
 ## Realtime
 
 `subscribeToHouseholdChanges` (`composables/household-realtime.ts`) opens **one channel per household**, filtered by `household_id=eq.<id>`, and every item table adds its listeners to it (the meal plan's is `onMealPlanEntryChange`). Only INSERT and UPDATE are subscribed: DELETE events can't be filtered and bypass RLS, and the app never hard-deletes. `postgres_changes` has no replay, so every `SUBSCRIBED` (first join and each rejoin) triggers `resync()` on every list store, and so does the server's report "Subscribed to PostgreSQL" a quarter to half a second later: only from then on do changes flow, and one made in between is in no event. A store's `resync()` does nothing while its first load is running, so a load that answers after that report can still miss such a change. A new table also has to be added to the `supabase_realtime` publication (see migration 0011), or events silently never arrive.

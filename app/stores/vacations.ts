@@ -32,6 +32,7 @@ import {
 import { errorMessage } from "~/utils/error-message";
 import { createChangesDuringFetch } from "~/utils/changes-during-fetch";
 import { createInsertsInFlight } from "~/utils/inserts-in-flight";
+import { createWritesInOrder } from "~/utils/writes-in-order";
 import { nextPosition } from "~/utils/position";
 import { createRealtimeEventOrder } from "~/utils/realtime-event-order";
 import {
@@ -60,6 +61,10 @@ import { peopleOfVacation } from "~/utils/vacation-share";
 /** Adds of tasks and people still being saved; see createInsertsInFlight. A
  * vacation has none: it is put into state only once it is saved (see add). */
 const insertsInFlight = createInsertsInFlight();
+
+/** Ticks and unticks of an item, sent in the order they were made; see
+ * createWritesInOrder. */
+const togglesInOrder = createWritesInOrder();
 
 /** Rows changed while a resync fetch is in flight; see createChangesDuringFetch. */
 const changesDuringFetch = createChangesDuringFetch();
@@ -431,24 +436,27 @@ export const useVacationStore = defineStore("vacations", {
     },
 
     /** Optimistic tick or untick; the server update waits for the task's add
-     * to be saved. */
+     * to be saved, and for its previous tick or untick (see
+     * createWritesInOrder). */
     async toggleTask(id: string) {
       const task = this.tasksById[id];
       if (!task) return;
       this.error = null;
       const done = !task.done;
       this.tasksById = upsertListItem(this.tasksById, { ...task, done });
-      await this.withPending(id, async () => {
-        await insertsInFlight.settled(id);
-        // The add failed and took the task with it: nothing left to update.
-        if (!this.tasksById[id]) return;
-        try {
-          await setVacationTaskDone(useSupabaseClient(), id, done);
-        } catch (e) {
-          this.tasksById = revertRowEdit(this.tasksById, task, { done });
-          this.error = errorMessage(e);
-        }
-      });
+      await this.withPending(id, () =>
+        togglesInOrder.run(id, async () => {
+          await insertsInFlight.settled(id);
+          // The add failed and took the task with it: nothing left to update.
+          if (!this.tasksById[id]) return;
+          try {
+            await setVacationTaskDone(useSupabaseClient(), id, done);
+          } catch (e) {
+            this.tasksById = revertRowEdit(this.tasksById, task, { done });
+            this.error = errorMessage(e);
+          }
+        }),
+      );
     },
 
     /**

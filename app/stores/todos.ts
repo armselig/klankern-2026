@@ -11,6 +11,7 @@ import {
 import { errorMessage } from "~/utils/error-message";
 import { createChangesDuringFetch } from "~/utils/changes-during-fetch";
 import { createInsertsInFlight } from "~/utils/inserts-in-flight";
+import { createWritesInOrder } from "~/utils/writes-in-order";
 import { nextPosition } from "~/utils/position";
 import { createRealtimeEventOrder } from "~/utils/realtime-event-order";
 import {
@@ -24,6 +25,10 @@ import {
 
 /** Adds still being saved; see createInsertsInFlight. */
 const insertsInFlight = createInsertsInFlight();
+
+/** Ticks and unticks of an item, sent in the order they were made; see
+ * createWritesInOrder. */
+const togglesInOrder = createWritesInOrder();
 
 /** Items changed while a resync fetch is in flight; see createChangesDuringFetch. */
 const changesDuringFetch = createChangesDuringFetch();
@@ -199,23 +204,26 @@ export const useTodoStore = defineStore("todos", {
       });
     },
 
-    /** Optimistic; the server update waits for the item's add to be saved. */
+    /** Optimistic; the server update waits for the item's add to be saved,
+     * and for its previous tick or untick (see createWritesInOrder). */
     async toggle(id: string) {
       const item = this.itemsById[id];
       if (!item) return;
       const done = !item.done;
       this.itemsById = upsertListItem(this.itemsById, { ...item, done });
-      await this.withPending(id, async () => {
-        await insertsInFlight.settled(id);
-        // The add failed and took the item with it: nothing left to update.
-        if (!this.itemsById[id]) return;
-        try {
-          await setTodoItemDone(useSupabaseClient(), id, done);
-        } catch (e) {
-          this.itemsById = upsertListItem(this.itemsById, item);
-          this.error = errorMessage(e);
-        }
-      });
+      await this.withPending(id, () =>
+        togglesInOrder.run(id, async () => {
+          await insertsInFlight.settled(id);
+          // The add failed and took the item with it: nothing left to update.
+          if (!this.itemsById[id]) return;
+          try {
+            await setTodoItemDone(useSupabaseClient(), id, done);
+          } catch (e) {
+            this.itemsById = upsertListItem(this.itemsById, item);
+            this.error = errorMessage(e);
+          }
+        }),
+      );
     },
 
     /** Optimistic soft delete; like toggle, waits for the item's add to be saved. */

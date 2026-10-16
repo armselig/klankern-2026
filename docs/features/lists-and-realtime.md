@@ -30,3 +30,11 @@ No migration needed: `shopping_lists`/`shopping_items` existed since 0003 and `s
 - E2E: second scenario (add with quantity, check → moves to the bottom, remove), verified to fail with the shopping listener disconnected. Reconnect isn't tested separately for shopping since it uses the same generic merge.
 
 The fake Supabase query builder/client for the unit tests was first copied into `household-actions.spec.ts`, `todo-actions.spec.ts` and `shopping-actions.spec.ts`; since 2026-10-10 it is one shared helper, `tests/support/fake-supabase-client.ts`. New `*-actions.spec.ts` files import it from there.
+
+## A quick untick and tick saved in the wrong order (fixed 2026-10-16)
+
+Found by the e2e test of slice 4 of the playful look, which unticks the last to-do and ticks it again at once (CI run 38919544447 on `develop`): the box stayed unticked. The trace showed the two updates on their way at the same time, sent 76 ms apart, the first taking 151 ms. `toggle` waited for the item's add (`insertsInFlight`) but not for its previous tick or untick, so the server could commit the tick before the untick and store the untick; the Realtime echoes then brought that to the page, and to every other member's, although the person's last tap had ticked it. Older than the playful look: no test had tapped a box twice that fast.
+
+The to-do, shopping and vacation stores now send an item's ticks and unticks one after the other (`createWritesInOrder`, `utils/writes-in-order.ts`): each waits until the one before it has settled, and a failed one doesn't hold the next. Specs: `writes-in-order.spec.ts` (order, a failure, two items apart) and a case in `todos.spec.ts` and `shopping.spec.ts` that holds the untick's save and finds the tick not yet sent; both cases fail without the fix, with the two updates sent at once. The vacation store has no store spec.
+
+Not changed: while the tick waits, the echo of the untick can still arrive and show the box unticked for a moment, until the tick's own echo follows; an event wins over a write in flight (`applyListRealtimeEvent`). Other edits of an item (a rename, a removal right after a tick) are not ordered this way.
