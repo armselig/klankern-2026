@@ -16,7 +16,38 @@ permissions:
   contents: read
 
 jobs:
+  # A release pushes the commit that was just tested on develop to main as
+  # well, and the concurrency group above runs the two one after the other.
+  # On main, a commit that already passed on develop is not tested again: it
+  # is the same code. Any other push to main runs every check.
+  already-tested:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      # Reads this workflow's earlier runs; no secrets in this job.
+      actions: read
+    outputs:
+      passed-on-develop: ${{ steps.lookup.outputs.passed }}
+    steps:
+      - id: lookup
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$GITHUB_REF_NAME" != main ]; then
+            echo "passed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          count=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?branch=develop&head_sha=$GITHUB_SHA&status=success" --jq '.total_count')
+          echo "Successful CI runs of $GITHUB_SHA on develop: $count"
+          if [ "$count" -gt 0 ]; then
+            echo "passed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "passed=false" >> "$GITHUB_OUTPUT"
+          fi
+
   checks:
+    needs: already-tested
+    if: needs.already-tested.outputs.passed-on-develop != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:

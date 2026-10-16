@@ -25,3 +25,15 @@ Since 2026-10-13 `signIn` finds the header's account button by its test id and n
 
 - The same CI run on `develop` once also failed "a signed-out family member joins through the invite link" (`household.e2e.ts`) with the 120 s test timeout, in the step where the member opens the join link. It overlapped with a local e2e run; not explained, and it has not recurred.
 - Not changed: a signed-in user who opens `/login` directly sees the login form.
+
+## A release no longer runs CI twice (2026-10-16)
+
+The user found CI too slow: 20 to 30 minutes, with 10 as the aim. Measured on a green run of 19 minutes (run 38900048463): `npm ci` 50 s; lint, Markdown lint, format and typecheck 38 s; the unit and RLS tests 100 s; the two web servers, the `pwa` build included, about 20 s; and the e2e tests 15.2 minutes, 51 tests one after the other on one worker, of which the two signed-in walks of `a11y.e2e.ts` take 1.8 and 2.1 minutes.
+
+A release pushes the same commit to `develop` and to `main`, and the concurrency group `supabase-cloud` runs the two runs one after the other, so a release took about 40 minutes to be green. Now a first job, `already-tested`, asks the GitHub API on `main` whether CI already passed for the same commit on `develop`; if it did, the job `checks` is skipped and the run is green. The job needs only `actions: read` and holds no secrets. Every other push to `main`, and every push to `develop`, runs every check. The query was tried on a commit that passed on `develop` (1 run) and on one that failed (0).
+
+Proposed and not built:
+
+- **Sharding the e2e tests over three runners**, with the static checks and the unit tests in a job of their own beside them: about 7 minutes a run, at three times the runner minutes.
+- **Splitting the signed-in a11y walk** into one test per group of pages, so that no shard waits on its 2 minutes.
+- **Starting the `pwa` build only where its project runs.** On CI both projects run in one job and the build takes about 20 s, so it saves time only together with the sharding, or locally.
