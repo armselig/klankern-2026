@@ -7,9 +7,11 @@ import {
   addShoppingItem,
   addTodo,
   dashboardTile,
+  dashboardTileLink,
   dragOnWhiteboard,
   expectStrokeCount,
   fillRecipeForm,
+  homeLink,
   listItem,
   memberAvatar,
   openAccountMenu,
@@ -67,6 +69,19 @@ const COLOR_SCHEMES = [
 
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 const BLOCKING_IMPACTS = new Set(["serious", "critical"]);
+
+/** A radius token of the theme in pixels, as the browser computes a corner:
+ * the tokens are in rem, so they depend on the root's font size. */
+async function radiusOf(page: Page, token: string): Promise<string> {
+  return page.evaluate((name) => {
+    const probe = document.createElement("div");
+    probe.style.borderRadius = `var(${name})`;
+    document.body.append(probe);
+    const radius = getComputedStyle(probe).borderTopLeftRadius;
+    probe.remove();
+    return radius;
+  }, token);
+}
 
 /** Scans the page and records its blocking findings in a readable form.
  * Soft, so one run reports the findings of every page, not just the first. */
@@ -222,6 +237,27 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
           page,
           "the dashboard with a tile focused",
         );
+      });
+
+      // The outline of a highlighted tile and of the highlighted wordmark is
+      // drawn along a corner written into their own styles; it has to follow
+      // the theme's radii, or it misses the card's corner.
+      await test.step("the highlights' corners follow the theme's radii", async () => {
+        const cardRadius = await radiusOf(page, "--radius-card");
+        expect
+          .soft(
+            await dashboardTileLink(page, "todos").evaluate(
+              (link) => getComputedStyle(link, "::after").borderTopLeftRadius,
+            ),
+            "the corner of a tile's highlight",
+          )
+          .toBe(cardRadius);
+        await expect
+          .soft(homeLink(page), "the corner of the wordmark's highlight")
+          .toHaveCSS(
+            "border-top-left-radius",
+            await radiusOf(page, "--radius-control"),
+          );
       });
 
       await test.step("a highlighted header button shows the theme's veil", async () => {

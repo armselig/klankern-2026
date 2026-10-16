@@ -343,7 +343,7 @@ async function submit() {
   margin-inline: 0;
   padding: 4px 12px 12px;
   border: 1px solid var(--theme-outline);
-  border-radius: 4px;
+  border-radius: var(--radius-card);
 }
 
 .vacation-form__box-legend {

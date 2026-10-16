@@ -545,11 +545,23 @@ async function putOnShoppingList() {
   padding: 0;
   list-style: none;
   border: 1px solid var(--theme-outline);
-  border-radius: 4px;
+  border-radius: var(--radius-card);
 }
 
 .meal-days > li + li {
   border-top: 1px solid var(--theme-separator);
+}
+
+/* The first and the last day round off with the list, so that today's tint
+   stays inside its corners. */
+.meal-days > li:first-child {
+  border-start-start-radius: inherit;
+  border-start-end-radius: inherit;
+}
+
+.meal-days > li:last-child {
+  border-end-start-radius: inherit;
+  border-end-end-radius: inherit;
 }
 
 /* The date in a narrow column, the meals beside it. */
@@ -609,7 +621,7 @@ async function putOnShoppingList() {
   justify-content: center;
   padding: 0 0 6px;
   border: 0;
-  border-radius: 4px;
+  border-radius: var(--radius-control);
   background: none;
   color: var(--theme-text-muted);
   font: inherit;

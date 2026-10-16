@@ -103,7 +103,7 @@ defineProps<{
   content: "";
   position: absolute;
   inset: -4px;
-  border-radius: 4px;
+  border-radius: var(--radius-field);
 }
 
 /* Hover and focus as on the tile itself (see DashboardTile.vue): an

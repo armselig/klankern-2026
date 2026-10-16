@@ -123,7 +123,7 @@ async function signOut() {
      word where the toolbar's own padding puts it. */
   margin-left: -6px;
   padding: 10px 8px 12px;
-  border-radius: 4px;
+  border-radius: var(--radius-control);
   color: inherit;
   text-decoration: none;
 }

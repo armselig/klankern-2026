@@ -192,7 +192,7 @@ function chooseTypedText() {
   place-items: center;
   min-height: 44px;
   border: 1px solid var(--theme-outline);
-  border-radius: 4px;
+  border-radius: var(--radius-control);
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;

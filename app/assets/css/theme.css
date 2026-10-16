@@ -26,8 +26,9 @@
   --theme-page: light-dark(var(--ctp-latte-base), var(--ctp-mocha-base));
   /* Cards, menus, dialogs, the whiteboard. Latte has nothing lighter than
      its base, and mauve text on anything darker falls below 4.5:1, so a
-     light surface is the page's color and stands out by its shadow. A
-     shadow can't be seen on a dark page; a lighter surface can. */
+     light surface is the page's color and a card stands out by its edge
+     (see .q-card below). In dark mode the surface is lighter than the
+     page. */
   --theme-surface: light-dark(var(--ctp-latte-base), var(--ctp-mocha-surface0));
   --theme-text: light-dark(var(--ctp-latte-text), var(--ctp-mocha-text));
   --theme-text-muted: light-dark(
@@ -71,6 +72,85 @@
     rgb(var(--ctp-latte-mauve-rgb) / 0.08),
     rgb(var(--ctp-mocha-mauve-rgb) / 0.08)
   );
+  /* Selected text: the text's color on the primary color at 20%, at 5.31:1
+     (light) and 5.82:1 (dark, on a surface) or more. */
+  --theme-selection: light-dark(
+    rgb(var(--ctp-latte-mauve-rgb) / 0.2),
+    rgb(var(--ctp-mocha-mauve-rgb) / 0.2)
+  );
+
+  /*
+   * One color per feature, the same on its tile, its page's heading and its
+   * empty state. Three tokens each:
+   *
+   * --feature-<name>: the accent, for a pen stroke and nothing that has to
+   *   be told apart from what is around it: Latte's pastels are below 3:1.
+   * --feature-<name>-tint: the accent laid over the page or a surface. Its
+   *   strength is the most that keeps the text, the muted text, a hovered
+   *   flat button and the red error text above 4.5:1 on it, on the page and
+   *   on a surface, up to 6% in light mode and 8% in dark mode (the Tonight
+   *   tile's).
+   * --feature-<name>-strong: see the @supports block below.
+   *
+   * utils/theme-tokens.spec.ts calculates every one of these pairs.
+   */
+  --feature-todos: light-dark(var(--ctp-latte-blue), var(--ctp-mocha-blue));
+  --feature-todos-tint: light-dark(
+    rgb(var(--ctp-latte-blue-rgb) / 0.05),
+    rgb(var(--ctp-mocha-blue-rgb) / 0.08)
+  );
+  --feature-shopping: light-dark(
+    var(--ctp-latte-green),
+    var(--ctp-mocha-green)
+  );
+  --feature-shopping-tint: light-dark(
+    rgb(var(--ctp-latte-green-rgb) / 0.06),
+    rgb(var(--ctp-mocha-green-rgb) / 0.07)
+  );
+  --feature-meals: light-dark(var(--ctp-latte-peach), var(--ctp-mocha-peach));
+  --feature-meals-tint: light-dark(
+    rgb(var(--ctp-latte-peach-rgb) / 0.06),
+    rgb(var(--ctp-mocha-peach-rgb) / 0.08)
+  );
+  --feature-recipes: light-dark(
+    var(--ctp-latte-yellow),
+    var(--ctp-mocha-yellow)
+  );
+  --feature-recipes-tint: light-dark(
+    rgb(var(--ctp-latte-yellow-rgb) / 0.06),
+    rgb(var(--ctp-mocha-yellow-rgb) / 0.07)
+  );
+  --feature-vacations: light-dark(var(--ctp-latte-teal), var(--ctp-mocha-teal));
+  --feature-vacations-tint: light-dark(
+    rgb(var(--ctp-latte-teal-rgb) / 0.06),
+    rgb(var(--ctp-mocha-teal-rgb) / 0.07)
+  );
+  --feature-whiteboard: light-dark(
+    var(--ctp-latte-pink),
+    var(--ctp-mocha-pink)
+  );
+  --feature-whiteboard-tint: light-dark(
+    rgb(var(--ctp-latte-pink-rgb) / 0.06),
+    rgb(var(--ctp-mocha-pink-rgb) / 0.07)
+  );
+  /* The household and its kids. */
+  --feature-household: light-dark(
+    var(--ctp-latte-mauve),
+    var(--ctp-mocha-mauve)
+  );
+  --feature-household-tint: light-dark(
+    rgb(var(--ctp-latte-mauve-rgb) / 0.04),
+    rgb(var(--ctp-mocha-mauve-rgb) / 0.08)
+  );
+
+  /* Corners by size, in rem so that they grow with the reader's text size:
+     the bigger a thing, the rounder. Round things (avatars, round buttons,
+     the tick) stay round. */
+  --radius-field: 0.5rem;
+  --radius-control: 0.625rem;
+  --radius-menu: 0.75rem;
+  --radius-card: 1rem;
+  --radius-dialog: 1.25rem;
 
   --q-primary: light-dark(var(--ctp-latte-mauve), var(--ctp-mocha-mauve));
   --q-secondary: light-dark(var(--ctp-latte-blue), var(--ctp-mocha-blue));
@@ -93,6 +173,70 @@
   --ink-teal: light-dark(var(--ctp-latte-teal), var(--ctp-mocha-teal));
   --ink-orange: light-dark(var(--ctp-latte-peach), var(--ctp-mocha-peach));
   --ink-pink: light-dark(var(--ctp-latte-pink), var(--ctp-mocha-pink));
+}
+
+/*
+ * --feature-<name>-strong: the feature's color at 3:1 or more on the page,
+ * on a surface and on its own tint, for an icon or an edge that carries
+ * meaning; never for text. In dark mode that is the accent itself. In light mode only blue,
+ * teal and mauve reach it; the others are mixed with Latte's text until
+ * they do, which keeps their hue.
+ *
+ * A mix of the package's variables is left to the browser by the build
+ * (Chrome 111, Safari 16.2, Firefox 113), and a browser without color-mix()
+ * would find the token invalid. So the tokens exist only inside this block,
+ * and every use names what an older browser gets instead, a color that
+ * passes already: `var(--feature-todos-strong, var(--theme-outline))` for
+ * an edge or an outline, `var(--feature-todos-strong, var(--theme-text))`
+ * for an icon.
+ */
+@supports (color: color-mix(in oklab, red, red)) {
+  :root {
+    --feature-todos-strong: light-dark(
+      var(--ctp-latte-blue),
+      var(--ctp-mocha-blue)
+    );
+    --feature-shopping-strong: light-dark(
+      color-mix(in oklab, var(--ctp-latte-green) 89%, var(--ctp-latte-text)),
+      var(--ctp-mocha-green)
+    );
+    --feature-meals-strong: light-dark(
+      color-mix(in oklab, var(--ctp-latte-peach) 78%, var(--ctp-latte-text)),
+      var(--ctp-mocha-peach)
+    );
+    --feature-recipes-strong: light-dark(
+      color-mix(in oklab, var(--ctp-latte-yellow) 69%, var(--ctp-latte-text)),
+      var(--ctp-mocha-yellow)
+    );
+    --feature-vacations-strong: light-dark(
+      var(--ctp-latte-teal),
+      var(--ctp-mocha-teal)
+    );
+    --feature-whiteboard-strong: light-dark(
+      color-mix(in oklab, var(--ctp-latte-pink) 70%, var(--ctp-latte-text)),
+      var(--ctp-mocha-pink)
+    );
+    --feature-household-strong: light-dark(
+      var(--ctp-latte-mauve),
+      var(--ctp-mocha-mauve)
+    );
+  }
+}
+
+/*
+ * The browser's own surfaces in the theme's colors, so that no browser blue
+ * or grey is left: selected text, the text cursor, scrollbars and native
+ * controls.
+ */
+:root {
+  accent-color: var(--q-primary);
+  caret-color: var(--q-primary);
+  scrollbar-color: var(--theme-outline) transparent;
+}
+
+::selection {
+  background: var(--theme-selection);
+  color: var(--theme-text);
 }
 
 /*
@@ -124,6 +268,47 @@ body.body--dark,
 .q-card,
 .q-menu {
   background: var(--theme-surface);
+}
+
+/*
+ * A card has an edge all around and no shadow: in light mode the edge is
+ * what sets it off from the page, which has its color. What floats above
+ * the page keeps its shadow: dialogs (their content is a card too), menus
+ * and notices. So a shadow means "above the page", an edge "a card".
+ */
+.q-card:not(.q-dialog .q-card) {
+  border: 1px solid var(--theme-separator);
+  box-shadow: none;
+}
+
+/*
+ * Quasar's corners are 3 or 4px, written into its precompiled CSS. Here
+ * they follow the --radius-* scale, for the components the app uses (a
+ * filled field or a button group would keep Quasar's until added). Its
+ * rounded, round, push and square variants keep their own. The selectors
+ * outweigh Quasar's, whichever stylesheet comes first.
+ */
+.q-field.q-field--outlined .q-field__control {
+  border-radius: var(--radius-field);
+}
+
+.q-btn.q-btn--rectangle {
+  border-radius: var(--radius-control);
+}
+
+.q-menu.q-menu,
+.q-tooltip.q-tooltip--style,
+.q-notification.q-notification,
+.q-date.q-date {
+  border-radius: var(--radius-menu);
+}
+
+.q-card.q-card {
+  border-radius: var(--radius-card);
+}
+
+.q-dialog .q-dialog__inner > div {
+  border-radius: var(--radius-dialog);
 }
 
 /* Quasar's calendar fades the names of the weekdays and the days it doesn't

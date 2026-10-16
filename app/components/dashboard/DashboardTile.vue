@@ -72,7 +72,7 @@ defineProps<{
   content: "";
   position: absolute;
   inset: 0;
-  border-radius: 4px;
+  border-radius: var(--radius-card);
 }
 
 /* Hover and keyboard focus are an outline around the tile, not the theme's

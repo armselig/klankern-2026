@@ -62,7 +62,7 @@ const emit = defineEmits<{ toggleLock: []; reroll: [] }>();
   align-items: center;
   padding-left: 12px;
   border: 1px dashed var(--theme-outline);
-  border-radius: 4px;
+  border-radius: var(--radius-control);
 }
 
 .meal-draft__name {

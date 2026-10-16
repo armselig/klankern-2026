@@ -16,7 +16,8 @@ Klankern is a family-organizer PWA: shared to-do and shopping lists, a shared wh
 - [`architecture.md`](./architecture.md): "Layers", "Shared list logic" and "Realtime": how a feature is split, the rules every synced store follows, what differs per store, the bookkeeping, and the one channel per household.
 - [`database.md`](./database.md): "Database and security" and "Migrations and types": RLS, the SECURITY DEFINER functions, the rules that came out of bugs, applying migrations and generating the types.
 - [`delivery.md`](./delivery.md): "Deployment" and "Releases": the static build on Netlify and the releases by semantic-release.
-- [`conventions.md`](./conventions.md): "Conventions and gotchas": the user id, routes, icons, avatars, the dashboard's tiles, colors and contrast, the layout for small screens, the e2e tests' ids, and the gotchas of Vue and Quasar.
+- [`look.md`](./look.md): "Colors and contrast", "Feature colors", "Corners and edges" and "Motion": the theme's tokens, text on accents, tints and edges, hover and focus, the inks, a color per feature with its tint and strong shade, the radius scale, cards and shadows, and the rules for animation.
+- [`conventions.md`](./conventions.md): "Conventions and gotchas": the user id, routes, icons, avatars, the dashboard's tiles, the layout for small screens, the e2e tests' ids, and the gotchas of Vue and Quasar.
 
 ## Writing the rule files
 

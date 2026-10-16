@@ -112,7 +112,7 @@ function currentLine(vacation: Vacation): string {
   padding: 0;
   list-style: none;
   border: 1px solid var(--theme-outline);
-  border-radius: 4px;
+  border-radius: var(--radius-card);
 }
 
 .vacation-list li + li {
