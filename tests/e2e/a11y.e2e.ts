@@ -778,5 +778,29 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       ).toBeVisible();
       await expectNoBlockingViolations(page, "what the kids refused");
     });
+
+    // The suite runs with reduced motion (playwright.config.ts), so that no
+    // color is measured halfway through a fade. Once with motion on, so that
+    // what the motion leaves behind is scanned as well.
+    test.describe("with motion on", () => {
+      test.use({ reducedMotion: "no-preference" });
+
+      test("the dashboard and a list pass once they are still", async ({
+        page,
+      }) => {
+        await openSignedIn(page, user);
+        await expect(dashboardTile(page, "todos")).toBeVisible();
+        await untilFadesEnd(page);
+        await expectNoBlockingViolations(page, "the dashboard, motion on");
+
+        await openList(page, "todos");
+        await addTodo(page, `Moving item ${runId}`);
+        await untilSaved(page, () =>
+          listItem(page, `Moving item ${runId}`).click(),
+        );
+        await untilFadesEnd(page);
+        await expectNoBlockingViolations(page, "the to-do list, motion on");
+      });
+    });
   });
 }

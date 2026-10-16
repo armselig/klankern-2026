@@ -202,9 +202,13 @@ export function whiteboardPreview(page: Page) {
 }
 
 /** Every item of the list on the page, in its order. Both lists render an
- * item as a checkbox whose text is the item's. */
+ * item as a checkbox whose text is the item's. A row that is fading out is
+ * `inert` and gone for the person (`makeLeavingRowInert`), so it is not
+ * counted; the helpers below build on this one and skip it as well. */
 export function listItems(page: Page) {
-  return page.getByTestId(TEST_IDS.list.checkbox);
+  return page
+    .getByTestId(TEST_IDS.list.checkbox)
+    .and(page.locator(":not([inert] *)"));
 }
 
 /** The item with this text. */

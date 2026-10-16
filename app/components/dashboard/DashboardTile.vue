@@ -137,6 +137,25 @@ const strokeVariant = computed(() =>
   }
 }
 
+/* The tile lifts under a pointer and gives way when pressed, as a whole,
+   since its link is stretched over it. Only for the link: a button inside
+   the tile (Tonight's) gives way on its own. */
+@media (prefers-reduced-motion: no-preference) {
+  .dashboard-tile {
+    transition: transform 150ms ease-out;
+  }
+
+  .dashboard-tile:has(.dashboard-tile__link:active) {
+    transform: scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) and (any-hover: hover) {
+  .dashboard-tile:has(.dashboard-tile__link:hover):not(:active) {
+    transform: translateY(-2px);
+  }
+}
+
 .dashboard-tile__link:focus-visible {
   outline: none;
 }

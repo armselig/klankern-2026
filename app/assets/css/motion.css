@@ -1,0 +1,110 @@
+/*
+ * The app's motion: a pressed control gives way, the rows of a list slide
+ * in and collapse, and the person's own tick springs and strikes its title
+ * through. Every animation is inside `prefers-reduced-motion:
+ * no-preference`; nothing loops or starts on its own. Transforms and
+ * opacity only, so nothing shifts the layout. The rules are in "Motion" in
+ * docs/rules/look.md.
+ */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* A pressed button gives way a little. */
+  .q-btn {
+    transition: transform 120ms ease-out;
+  }
+
+  .q-btn:not(.disabled):active {
+    transform: scale(0.97);
+  }
+
+  /*
+   * The rows of a list in a <transition-group name="list-row">, on a list
+   * with the class list-rows. A leaving row is taken out of the flow, so
+   * the rows below slide up into its place by transform (the -move class)
+   * instead of the list collapsing its height. A shopping item ticked off
+   * slides to its place among the ticked ones the same way.
+   */
+  .list-rows {
+    position: relative;
+  }
+
+  .list-row-enter-active,
+  .list-row-leave-active,
+  .list-row-move {
+    transition:
+      transform 200ms ease-out,
+      opacity 200ms ease-out;
+  }
+
+  .list-row-enter-from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+
+  .list-row-leave-active {
+    position: absolute;
+    width: 100%;
+  }
+
+  .list-row-leave-to {
+    opacity: 0;
+    transform: scaleY(0.5);
+    transform-origin: top;
+  }
+
+  /*
+   * The person's own tick (useTickDrawing): the box overshoots once, the
+   * app's only bounce, and the strike-through is drawn across the title
+   * from left to right. The drawn line is a background on the title's
+   * inline span, so it strikes every line of a title that wraps; it only
+   * repaints and moves nothing. The title's static line-through is off
+   * while it is drawn and takes over when the drawing ends. The name of
+   * the drawing's animation is TICK_DRAWING_ANIMATION in
+   * composables/use-tick-drawing.ts.
+   */
+  .list-tick--drawing.text-strike {
+    text-decoration: none;
+  }
+
+  .list-tick--drawing .q-checkbox__inner {
+    animation: list-tick-spring 200ms ease-out;
+  }
+
+  .list-tick--drawing .list-tick__title {
+    background: linear-gradient(currentcolor, currentcolor) no-repeat 0 55%;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    animation: list-tick-strike 200ms ease-out;
+  }
+}
+
+@keyframes list-tick-spring {
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes list-tick-strike {
+  from {
+    background-size: 0 0.0625em;
+  }
+
+  to {
+    background-size: 100% 0.0625em;
+  }
+}
+
+/*
+ * Quasar's own motion doesn't ask for the reader's preference: the ripple
+ * of a pressed button or checkbox, and the checkbox's fill and tick.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .q-ripple {
+    display: none;
+  }
+
+  .q-checkbox__bg,
+  .q-checkbox__inner path {
+    transition: none;
+  }
+}

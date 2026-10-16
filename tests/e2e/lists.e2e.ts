@@ -5,6 +5,7 @@ import {
   addShoppingItem,
   addTodo,
   delayItemInserts,
+  exactly,
   listEmpty,
   listItem,
   listItems,
@@ -132,6 +133,56 @@ test.describe("lists for a single member", () => {
       await page.reload();
       await expect(listItems(page)).toHaveText(["Milk", "Apples (6)"]);
       await expect(listItem(page, "Apples (6)")).toBeChecked();
+    });
+  });
+
+  // The suite runs with reduced motion, and a row is gone at once. Here the
+  // motion is on, and slowed by a style so that the test can look while a
+  // row leaves and while a tick is drawn: Vue ends a leave by the computed
+  // duration as well as by its event.
+  test.describe("with motion on", () => {
+    test.use({ reducedMotion: "no-preference" });
+
+    test("a leaving row is not counted, a drawn tick keeps the row's name", async ({
+      page,
+    }) => {
+      const kept = `Kept ${runId}`;
+      const ticked = `Ticked ${runId}`;
+      const removed = `Removed ${runId}`;
+      await openSignedIn(page, user);
+      await openList(page, "todos");
+      await addTodo(page, kept);
+      await addTodo(page, ticked);
+      await untilAdded(page, () => addTodo(page, removed));
+      await page.addStyleTag({
+        content: `.list-row-leave-active { transition-duration: 3s !important; }
+          .list-tick--drawing * { animation-duration: 3s !important; }`,
+      });
+      const count = await listItems(page).count();
+
+      await test.step("a leaving row is inert and not counted", async () => {
+        const leaving = page
+          .locator("[inert]")
+          .getByTestId(TEST_IDS.list.checkbox);
+        await removeListItem(page, removed);
+        await expect(leaving).toHaveText(exactly(removed));
+        // Counted once, not retried: a retried count would pass as soon as
+        // the row is gone. The row must still be leaving after the count.
+        expect(await listItems(page).count()).toBe(count - 1);
+        expect(await listItem(page, removed).count()).toBe(0);
+        expect(await leaving.count()).toBe(1);
+        await expect(leaving).toHaveCount(0);
+      });
+
+      await test.step("the person's tick is drawn, and the row keeps its name", async () => {
+        await listItem(page, ticked).click();
+        const item = listItem(page, ticked);
+        await expect(item).toHaveClass(/list-tick--drawing/);
+        await expect(item).toHaveAccessibleName(ticked);
+        await expect(item).not.toHaveClass(/list-tick--drawing/);
+        await expect(item).toBeChecked();
+        await expect(item).toHaveAccessibleName(ticked);
+      });
     });
   });
 

@@ -27,6 +27,9 @@ export default defineConfig({
   use: {
     channel: "chrome",
     trace: "retain-on-failure",
+    // Without motion, a row is gone at once and no color is measured
+    // halfway through a fade. The specs that check the motion turn it on.
+    reducedMotion: "reduce",
   },
   projects: [
     {

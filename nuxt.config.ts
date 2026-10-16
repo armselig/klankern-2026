@@ -19,13 +19,15 @@ export default defineNuxtConfig({
     "@nuxtjs/supabase",
   ],
   components: [{ path: "~/components", pathPrefix: false }],
-  // Loaded on every page: the color palette for light and dark mode, and the
+  // Loaded on every page: the color palette for light and dark mode, the
   // correction of a contrast problem of Quasar's hover and focus highlight
-  // that no single component could fix for itself.
+  // that no single component could fix for itself, and the motion shared by
+  // the buttons and the lists.
   css: [
     "~/assets/css/theme.css",
     "~/assets/css/hover-contrast.css",
     "~/assets/css/touch-target.css",
+    "~/assets/css/motion.css",
   ],
   runtimeConfig: {
     public: {

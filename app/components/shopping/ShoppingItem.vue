@@ -11,6 +11,15 @@ const label = computed(() =>
     ? `${props.item.title} (${props.item.quantity})`
     : props.item.title,
 );
+
+const { drawing, startFromTap, endDrawing } = useTickDrawing();
+
+/** The person's own tap: draws the tick here, where a Realtime change can't
+ * reach, then lets the list toggle the item. */
+function toggleFromTap(checked: boolean) {
+  startFromTap(checked);
+  emit("toggle", props.item.id);
+}
 </script>
 
 <template>
@@ -18,11 +27,15 @@ const label = computed(() =>
     <q-item-section>
       <q-checkbox
         :model-value="item.checked"
-        :label="label"
         :data-testid="TEST_IDS.list.checkbox"
-        :class="{ 'text-strike text-muted': item.checked }"
-        @update:model-value="emit('toggle', item.id)"
-      />
+        :class="{
+          'text-strike text-muted': item.checked,
+          'list-tick--drawing': drawing,
+        }"
+        @update:model-value="toggleFromTap"
+        @animationend="endDrawing"
+        ><span class="list-tick__title">{{ label }}</span></q-checkbox
+      >
     </q-item-section>
     <q-item-section side>
       <!-- Icon only, to keep rows narrow on phones; the name comes from aria-label. -->

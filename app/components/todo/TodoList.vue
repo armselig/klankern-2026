@@ -43,14 +43,24 @@ async function add() {
 
     <q-spinner v-if="todoStore.loading" color="primary" />
 
-    <q-list v-else bordered separator :data-testid="TEST_IDS.list.items">
-      <todo-item
-        v-for="item in todoStore.visible"
-        :key="item.id"
-        :item="item"
-        @toggle="todoStore.toggle"
-        @remove="todoStore.remove"
-      />
+    <q-list
+      v-else
+      bordered
+      separator
+      class="list-rows"
+      :data-testid="TEST_IDS.list.items"
+    >
+      <!-- No tag: the rows stay the list's own children, for its separators
+           and its role. The motion is in assets/css/motion.css. -->
+      <transition-group name="list-row" @before-leave="makeLeavingRowInert">
+        <todo-item
+          v-for="item in todoStore.visible"
+          :key="item.id"
+          :item="item"
+          @toggle="todoStore.toggle"
+          @remove="todoStore.remove"
+        />
+      </transition-group>
       <q-item v-if="todoStore.visible.length === 0">
         <q-item-section>
           <empty-state feature="todos">
