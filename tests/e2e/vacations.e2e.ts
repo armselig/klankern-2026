@@ -600,11 +600,14 @@ test.describe("a vacation's tasks, shared between its people", () => {
         new RegExp(`${nameB}.*0$`),
         /\d+$/,
       ]);
-      // The closed menu gives the focus back to the row's button late: only
-      // once the button's tooltip has gone too. Going on before that, the
-      // focus arrives there afterwards and is taken from "Change people"
-      // below, which failed on a slow runner. The focus is on a span inside
-      // the button, so the button itself never counts as focused.
+      // The closed menu gives the focus back to the row's button: the row
+      // does it itself when it closes, if the focus has fallen to the page,
+      // and Quasar's menu does it too, late, once the button's tooltip has
+      // gone. Going on before the tooltip is gone, Quasar's return arrives
+      // afterwards and takes the focus from "Change people" below, which
+      // failed on a slow runner; Quasar runs it before it removes the
+      // tooltip. The focus is on a span inside the button, so the button
+      // itself never counts as focused.
       await expect
         .poll(() =>
           taskWhoButton(pageA, "iPad").evaluate((button) =>
@@ -612,6 +615,7 @@ test.describe("a vacation's tasks, shared between its people", () => {
           ),
         )
         .toBe(true);
+      await expect(pageA.getByRole("tooltip")).toHaveCount(0);
 
       await pageA.getByTestId(TEST_IDS.vacation.share.changePeople).click();
       // Only the name of a person without an account is a field.

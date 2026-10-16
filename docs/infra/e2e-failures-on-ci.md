@@ -11,7 +11,7 @@ Reproduced with a script that gives a task from the menu and opens and closes "C
 Fixed in the test: after giving the task it waits until the focus is inside the task's button. With that the script kept the focus on "Change people" in 12 of 12 tries, at normal speed and with the processor slowed 4 and 8 times. Waiting for the menu to be gone was tried first and was not enough.
 
 - The focus is on a span inside a Quasar button, so `toBeFocused()` on the button fails; the test asks whether the button contains the focused element.
-- In the app this can take the focus from a control that is reached within a moment of choosing from a task's menu. Not changed: it needs a person to be faster than the tooltip's fading.
+- In the app this can take the focus from a control that is reached within a moment of choosing from a task's menu. Not changed: it needs a person to be faster than the tooltip's fading. (2026-10-16: on CI the focus later did not come back at all, and the app now sets it itself; see "The focus that never came back after a give".)
 
 The other three failures of those runs were a to-do list, a shopping list and the recipes not shown within 15 seconds after a reload. Not explained. Browser tests were run from this machine against the same cloud project during all three runs, which the queueing of CI runs is meant to prevent; whether that was the cause is not known.
 
@@ -52,3 +52,24 @@ CI on `develop` for slice 4 of the playful look (run 38916969962) failed one sof
 ## A blank page while the signing keys didn't come (2026-10-16)
 
 CI on `main` for the same commit (run 38916970192) failed once in `auth.e2e.ts` (line 78, "a full reload keeps the user signed in"): after the reload the account button did not appear within 15 seconds. The trace shows the page blank for all of that time, and the request for Supabase's signing keys (`/auth/v1/.well-known/jwks.json`) without an answer. `@nuxtjs/supabase`'s client plugin awaits `getClaims()` before the app starts (`dist/runtime/plugins/supabase.client.js`), and `getClaims()` fetches those keys, so while the request hangs, nothing renders. Before the reload the same request had answered in 0.9 seconds. Not changed: a person on a slow connection would see the same blank page; a limit on that wait would have to go into the plugin or around it.
+
+## The focus that never came back after a give (2026-10-16)
+
+From 2026-10-15 (`8c80205`) on, journey 2 of `vacations.e2e.ts` failed on CI in six runs (38806155303, 38877883098, 38900126248, 38923817473, 38928899660, 38935458714), always at the same place: the wait added in "The focus taken from \"Change people\" in journey 2" for the focus to be inside the iPad task's person button ran out after 15 seconds. It passed in between, on code that differed by a line of docs. The page's snapshot from the failure showed the task given to Mia and the counts right, no menu and no tooltip left in the page, and the focus on the page itself (`body`). So the focus was not late, as on 2026-10-13; it never came.
+
+How a give goes, read from Quasar 2.35's source (its focus manager and the composable with which a menu gives the focus back) and seen with a script that logged every focus change: the test chooses the person about 50 ms after opening the list, before the list has finished opening; the chosen entry has the focus and is removed with the list, so the focus falls to `body` on every give, also on one that passes. Quasar then hands it back to the button it remembered when the list opened. It queues that step until no popup is opening or closing any more (here the button's tooltip), runs only the last queued step, and skips it silently when the remembered element is no longer in the page. On CI that step did not land; which of these it was is not known.
+
+Not reproduced on this machine:
+
+- A script of 24 gives (to Mia, from Mia to the other member, back to nobody, and after the "Nobody yet" line pressed twice as the journey does), at normal speed and with the processor slowed 4 and 8 times: the focus came back every time, about 300 ms after the list closed.
+- A copy of journey 2 with that logging, the processor slowed 4 times: 3 of 3 passed. The same with every Supabase REST request of A's browser held back 250 ms: 3 of 3 passed. Delaying every request of the page by 250 ms made the sign-in run out before the journey began, so it showed nothing.
+- The swap of the button's empty circle for the person's picture was suspected and ruled out: the focused element stayed in the page.
+- Quasar's focus manager could not be looked into: `nuxt dev` serves Quasar prebundled, so the hook meant to read its queue never attached. The trace's page snapshots are stored as differences and were not rebuilt.
+
+No CI run overlapped the runs from this machine.
+
+Fixed in the app at the user's choice, rather than in the test: when the list closes after a person was chosen and the focus is on `body`, `VacationTask.vue` puts it on the person button itself (`keepFocusAfterGive`, on the menu's `hide`). Only then: when Quasar's own return lands nothing changes, a close by Escape or a click elsewhere is left to Quasar and to the click, and a focus set from outside Quasar is not its own return, which the tooltip can take for keyboard navigation and show. A keyboard or screen reader user could be left on the page after a give in the same way; whether that happens outside CI is not known. Not chosen: only waiting in the test for the list and the tooltip to be gone, which would no longer notice a lost focus.
+
+The app's focus can come before Quasar's late return, so the journey now also waits for the tooltip to be gone before "Change people": Quasar runs a queued return before it removes the tooltip.
+
+After the change `vacations.e2e.ts` passed on this machine, 3 of 3 journeys. Whether it holds on CI shows only there, with the next runs.

@@ -59,6 +59,30 @@ const menuOpen = ref(false);
 /** The list of people to give the task to, opened from the row's person
  * button. */
 const giveOpen = ref(false);
+/** Whether the list is closing because a person was chosen in it. */
+const gaveFromMenu = ref(false);
+
+/** Gives the task from the list, which closes on the choice. */
+function give(personId: string | null) {
+  gaveFromMenu.value = true;
+  emit("give", props.task.id, personId);
+}
+
+/**
+ * Puts the focus back on the person button once the list has closed after a
+ * choice, if Quasar's menu did not. The chosen entry had the focus and is
+ * gone with the list; Quasar then hands the focus back to the button, but on
+ * CI it now and then never arrived and stayed on the page itself. Only then:
+ * a close by Escape or a click elsewhere leaves the focus to Quasar and to
+ * the click, and a focus set here is not Quasar's own return, which its
+ * tooltip can take for keyboard navigation and show.
+ */
+function keepFocusAfterGive() {
+  if (!gaveFromMenu.value) return;
+  gaveFromMenu.value = false;
+  const active = document.activeElement;
+  if (active === null || active === document.body) whoButton.value?.$el.focus();
+}
 
 /** The row is edited in place: its title turns into a field where it
  * stands. Only the title, so the tick box and the menu give way to it. */
@@ -215,6 +239,7 @@ defineExpose({
               role="group"
               :aria-label="`Give to…: ${task.title}`"
               :data-testid="TEST_IDS.vacation.giveMenu.group"
+              @hide="keepFocusAfterGive"
             >
               <div class="column vacation-task__menu">
                 <!-- The member first: taking a task is as close as giving
@@ -226,7 +251,7 @@ defineExpose({
                   align="left"
                   class="touch-target"
                   :data-testid="TEST_IDS.vacation.giveMenu.me"
-                  @click="emit('give', task.id, me.id)"
+                  @click="give(me.id)"
                 >
                   <person-avatar :email="emailOf(me)" :person="me" :size="24" />
                   <span class="q-ml-sm">Me</span>
@@ -239,7 +264,7 @@ defineExpose({
                   align="left"
                   class="touch-target"
                   :data-testid="TEST_IDS.vacation.giveMenu.person"
-                  @click="emit('give', task.id, person.id)"
+                  @click="give(person.id)"
                 >
                   <person-avatar
                     :email="emailOf(person)"
@@ -258,7 +283,7 @@ defineExpose({
                   align="left"
                   label="Nobody"
                   class="touch-target text-muted"
-                  @click="emit('give', task.id, null)"
+                  @click="give(null)"
                 />
               </div>
             </q-menu>

@@ -35,7 +35,7 @@ Start with `progress.md`, then read the topic files for what you are about to to
 
 - [`new-synced-store.md`](./infra/new-synced-store.md): the checklist for a new table that is shared by a household and kept live: migration, store, wiring, tests, documentation.
 - [`testing.md`](./infra/testing.md): the review of the e2e tests' gaps with the bugs it found, running e2e tests repeatedly, the `pwa` project and a leftover `.output`, signing in without the form, the RLS suite run in parallel.
-- [`e2e-failures-on-ci.md`](./infra/e2e-failures-on-ci.md): the e2e tests that failed on CI and what was found: a focus that arrived late, a slow auth service, a reload that cancelled an insert, a wrong code that showed no error.
+- [`e2e-failures-on-ci.md`](./infra/e2e-failures-on-ci.md): the e2e tests that failed on CI and what was found: a focus that arrived late and later not at all, a slow auth service, a reload that cancelled an insert, a wrong code that showed no error.
 - [`test-ids.md`](./infra/test-ids.md): how the e2e tests find elements, by `data-testid` and no longer by text: what was decided, what Quasar made of it, and the type check for the tests.
 - [`ci.md`](./infra/ci.md): the checks on GitHub, and a release that no longer runs them twice.
 - [`deploy-and-pwa.md`](./infra/deploy-and-pwa.md): milestones 7 and 8, the installable app and its deployment to Netlify; the broken deploy after the move to the git root.
