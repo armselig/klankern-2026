@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.13.1](https://github.com/armselig/klankern-2026/compare/v1.13.0...v1.13.1) (2026-10-16)
+
+### Code Refactoring
+
+* **meal-planner:** lay out the week at a glance ([c9b12fe](https://github.com/armselig/klankern-2026/commit/c9b12fe8c2a804171f86c461c54e328a6e9414a6))
+
 ## [1.13.0](https://github.com/armselig/klankern-2026/compare/v1.12.0...v1.13.0) (2026-10-15)
 
 ### Features
