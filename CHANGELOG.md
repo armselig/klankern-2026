@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.13.3](https://github.com/armselig/klankern-2026/compare/v1.13.2...v1.13.3) (2026-10-16)
+
+### Code Refactoring
+
+* **ui:** celebrations for the playful look ([314c0bd](https://github.com/armselig/klankern-2026/commit/314c0bded77583386ff51057f30214ebc49b664c))
+
 ## [1.13.2](https://github.com/armselig/klankern-2026/compare/v1.13.1...v1.13.2) (2026-10-16)
 
 ### Code Refactoring
