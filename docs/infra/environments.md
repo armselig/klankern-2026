@@ -16,7 +16,7 @@ There is one Supabase project, and everything uses it. The frontend is already s
 - The production secret key and database password are in `.env` on the developer's machine and in GitHub's secrets. Nothing in production needs either one, since there is no server.
 - A migration's first run is on real data. The free plan has no downloadable backups.
 - `.mcp.json` gives an agent SQL write access to production.
-- Test sign-ins and real sign-ins share one project's auth limits. This is why CI runs one at a time and why Netlify's deploy previews and branch deploys are off.
+- Test sign-ins and real sign-ins share one project's auth limits. This is why CI runs one at a time and why Netlify's deploy previews and branch deploys are off. (Since 2026-10-16 `develop` has a branch deploy, see "The branch deploy of `develop` is on".)
 
 ### Target
 
@@ -154,3 +154,13 @@ Each of these was assumed or read in a third-party source on 2026-10-12, and is 
 - Which GitHub plan a reviewer gate needs on a private repository.
 - What `CONTEXT` is under `netlify serve --offline`, which serves the build that the `pwa` project tests.
 - Whether the Supabase MCP server can be added a second time, read-only, for production.
+
+## The branch deploy of `develop` is on (2026-10-16)
+
+The user switched on Netlify's branch deploy of `develop`, before the rest of the plan above: Netlify builds `main` and `develop` (its "allowed branches"); deploy previews of pull requests stay off. It is the staging frontend of the target table, with a stable address of its own, and it rebuilds on every push to `develop`. Checked the same day, read from Netlify's API and by rendering the deploy of `57d5e5a` in Chrome: the login and the join page render, with no page errors.
+
+Not yet as the plan has it:
+
+- **It uses the production Supabase project.** The site's environment has one `SUPABASE_URL` for every context, so the branch deploy's bundle names the same project as production's. A sign-in on staging works on the family's real households with code that is not released. Until the dev project exists, staging is for looking, or for a test household.
+- **No `noindex`.** The deploy sends no `X-Robots-Tag`, and `public/robots.txt` allows everything, as "The staging frontend" foresaw.
+- **No environment label.** Staging shows production's version (semantic-release raises it on `main` only) and looks the same.

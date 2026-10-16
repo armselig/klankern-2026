@@ -9,7 +9,7 @@ Production is Netlify, serving the static output of `nuxt generate`; there is no
 - The fallback for client-side routes (`/join/<code>`) is `public/_redirects`, not `netlify.toml`: Nitro's Netlify preset writes its own catch-all into `_redirects` unless one is there, and that file wins.
 - Netlify's environment holds only `SUPABASE_URL` and `SUPABASE_KEY`, baked into the bundle at build time.
 - `NODE_VERSION` in `netlify.toml` is exact; raise it together with `engines` in `package.json`.
-- Deploy previews and branch deploys stay off: they would all use the one production Supabase project.
+- Netlify builds `main` (production) and `develop` (a branch deploy, the staging site of "Plan: separate development from production" in [`infra/environments.md`](../infra/environments.md)); deploy previews of pull requests stay off. The `develop` deploy uses the production Supabase project, as everything does until that plan gives it the dev project: a sign-in there works on real households with code that is not released.
 
 ## Releases
 
