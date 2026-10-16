@@ -34,7 +34,7 @@ Nuxt 4 as an SPA (`ssr: false`) with Quasar, Pinia and `@vite-pwa/nuxt`, on Supa
 - `public/`, `scripts/`, `netlify.toml`: the static files, the icon generator and the build settings.
 - `.github/`: the CI and release workflows, and the release tooling as a package of its own.
 
-**Tests**: Vitest, 993 tests in 55 files, the RLS suite (six spec files) included (locally, 2026-10-16, with slice 3 of the playful look). Playwright, 18 files and two projects; locally on 2026-10-16 with slice 3 of the playful look, the `dev` project passed all 45 of its tests (three of them on a second run, see "Tests and screenshots" in [`ui/playful-look/slice-3.md`](ui/playful-look/slice-3.md)); the `pwa` project (5 tests) ran in CI.
+**Tests**: Vitest, 1011 tests in 55 files, the RLS suite (six spec files) included (locally, 2026-10-16, after the kids on a trip were merged with slice 3 of the playful look). Playwright, 18 files and two projects; locally on 2026-10-16 with both, the `dev` project passed 45 of its 46 tests; the light-mode walk of `a11y.e2e.ts` failed once and passed three times when rerun, its cause not found. The `pwa` project (5 tests) ran in CI.
 
 ## Deviations from the plan
 
