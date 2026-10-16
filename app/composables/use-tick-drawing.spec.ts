@@ -1,7 +1,11 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { TICK_DRAWING_ANIMATION, useTickDrawing } from "./use-tick-drawing";
+import {
+  TICK_DRAWING_ANIMATION,
+  TICK_SPRING_ANIMATION,
+  useTickDrawing,
+} from "./use-tick-drawing";
 
 /** The only field `endDrawing` reads from the browser's event. */
 function animationEnd(animationName: string) {
@@ -53,21 +57,35 @@ describe("useTickDrawing", () => {
     const { drawing, startFromTap, endDrawing } = useTickDrawing();
     startFromTap(true);
 
-    endDrawing(animationEnd("list-tick-spring"));
+    endDrawing(animationEnd(TICK_SPRING_ANIMATION));
 
     expect(drawing.value).toBe(true);
   });
+
+  it("ends with the overshoot where no strike-through is drawn", () => {
+    const { drawing, startFromTap, endDrawing } = useTickDrawing(
+      TICK_SPRING_ANIMATION,
+    );
+    startFromTap(true);
+
+    endDrawing(animationEnd(TICK_DRAWING_ANIMATION));
+    expect(drawing.value).toBe(true);
+
+    endDrawing(animationEnd(TICK_SPRING_ANIMATION));
+    expect(drawing.value).toBe(false);
+  });
 });
 
-describe("TICK_DRAWING_ANIMATION", () => {
-  it("is the name of a @keyframes rule in motion.css", () => {
-    const css = readFileSync(
-      resolve(process.cwd(), "app/assets/css/motion.css"),
-      "utf8",
-    );
+describe("the animations' names", () => {
+  it.each([TICK_DRAWING_ANIMATION, TICK_SPRING_ANIMATION])(
+    "%s is the name of a @keyframes rule in motion.css",
+    (name) => {
+      const css = readFileSync(
+        resolve(process.cwd(), "app/assets/css/motion.css"),
+        "utf8",
+      );
 
-    expect(css).toMatch(
-      new RegExp(`@keyframes\\s+${TICK_DRAWING_ANIMATION}\\s*\\{`),
-    );
-  });
+      expect(css).toMatch(new RegExp(`@keyframes\\s+${name}\\s*\\{`));
+    },
+  );
 });

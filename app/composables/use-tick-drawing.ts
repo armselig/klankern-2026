@@ -3,6 +3,9 @@ import { ref } from "vue";
 /** The name of the strike-through's animation in assets/css/motion.css. */
 export const TICK_DRAWING_ANIMATION = "list-tick-strike";
 
+/** The name of the box's overshoot in assets/css/motion.css. */
+export const TICK_SPRING_ANIMATION = "list-tick-spring";
+
 /**
  * Whether a list item's tick is being drawn: the box's overshoot and the
  * strike-through drawn across the title (assets/css/motion.css).
@@ -12,8 +15,13 @@ export const TICK_DRAWING_ANIMATION = "list-tick-strike";
  * by Realtime from another member's phone is struck through at once. Under
  * reduced motion the flag is set as well but changes nothing, since the
  * styles that read it are inside `prefers-reduced-motion: no-preference`.
+ *
+ * `endsWith` is the animation whose end ends the drawing: the
+ * strike-through, or the overshoot for a checkbox whose title is not
+ * struck through when ticked (a recipe's ingredient, which is chosen, not
+ * done), where no strike-through is drawn and would never end.
  */
-export function useTickDrawing() {
+export function useTickDrawing(endsWith = TICK_DRAWING_ANIMATION) {
   const drawing = ref(false);
 
   /** Called with the checkbox's new value by the person's tap: only a tick
@@ -22,10 +30,10 @@ export function useTickDrawing() {
     drawing.value = checked;
   }
 
-  /** Ends the drawing once the strike-through is drawn; the box's
-   * overshoot ends at the same time and is ignored. */
+  /** Ends the drawing once its last animation has ended; the other one
+   * ends at the same time and is ignored. */
   function endDrawing(event: AnimationEvent) {
-    if (event.animationName === TICK_DRAWING_ANIMATION) drawing.value = false;
+    if (event.animationName === endsWith) drawing.value = false;
   }
 
   return { drawing, startFromTap, endDrawing };

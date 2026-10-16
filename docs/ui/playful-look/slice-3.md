@@ -50,3 +50,15 @@ Noticed, not changed:
 
 - **Both lines of a wrapped title are struck at the same time**, each from its own left edge, since `box-decoration-break: clone` gives every line its own background. Drawn one after the other would need the line split per line box in script.
 - **A Realtime tick is not checked against the drawing by a spec.** It can't set the flag, since nothing reads the item's state for it; the spec that a Realtime change doesn't set off a celebration is part of slice 4 (T7 of the design review).
+
+## The tick on a vacation's tasks and a recipe's ingredients (built 2026-10-16)
+
+After slice 3 was pushed, the user ticked a task off a vacation's checklist and saw no motion. The slice had covered the to-do and the shopping list only, as the plan and the eng review named them (`components/todo`, `components/shopping`). Two levels were offered: the tick alone, or the rows sliding as well, which in `VacationPhase.vue` meets the focus that goes back to a moved task's tick box (`focusTickBox`), the rows' refs and the vacation helpers of the e2e tests. The user chose the tick alone, and for a recipe's ingredients too.
+
+- **A vacation's task** ticks as a to-do does: `VacationTask.vue` uses `useTickDrawing()`, with the title in a `list-tick__title` span in the checkbox's slot. Its `overflow-wrap: anywhere` reaches the span from the label.
+- **A recipe's ingredient** only springs. Its tick means "put it on the shopping list", not "done", and its name is not struck through, so no line is drawn, and a drawing that waited for the line's end would never end. `useTickDrawing` takes the animation that ends it, and the ingredients pass `TICK_SPRING_ANIMATION`. One flag serves the list: the box the person ticked last springs. An untick doesn't spring, as on the lists.
+- `use-tick-drawing.spec.ts` checks the drawing that ends with the overshoot, and that both names are `@keyframes` in `motion.css`.
+
+Checked in the browser with motion on, slowed to 4s: a task whose title wraps is struck on both lines and keeps its name; an ingredient's box is at 1.15 halfway with no strike-through, and an untick adds no class. `vacations.e2e.ts` and `recipes.e2e.ts` pass as they were.
+
+The rows of a vacation's phase still don't slide in, collapse or move.

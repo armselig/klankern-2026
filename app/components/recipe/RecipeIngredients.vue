@@ -27,6 +27,24 @@ function label(ingredient: RecipeIngredient) {
     : ingredient.name;
 }
 
+/** One tick box springs at a time: the one the person just ticked. Only
+ * the overshoot, since a chosen ingredient is not struck through. */
+const { drawing, startFromTap, endDrawing } = useTickDrawing(
+  TICK_SPRING_ANIMATION,
+);
+const springingIngredient = ref<string | null>(null);
+const springingId = computed(() =>
+  drawing.value ? springingIngredient.value : null,
+);
+
+/** The person's own tap: springs the box when it is ticked, then changes
+ * the choice. */
+function chooseFromTap(id: string, isChosen: boolean) {
+  springingIngredient.value = id;
+  startFromTap(isChosen);
+  setChosen(id, isChosen);
+}
+
 function setChosen(id: string, isChosen: boolean) {
   skippedIds.value = isChosen
     ? skippedIds.value.filter((skippedId) => skippedId !== id)
@@ -45,8 +63,10 @@ function setChosen(id: string, isChosen: boolean) {
             :model-value="!skippedIds.includes(ingredient.id)"
             :label="label(ingredient)"
             class="recipe-ingredients__name"
+            :class="{ 'list-tick--drawing': springingId === ingredient.id }"
             :data-testid="TEST_IDS.recipe.view.ingredient"
-            @update:model-value="(value) => setChosen(ingredient.id, value)"
+            @update:model-value="(value) => chooseFromTap(ingredient.id, value)"
+            @animationend="endDrawing"
           />
         </q-item-section>
       </q-item>

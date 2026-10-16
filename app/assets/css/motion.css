@@ -58,9 +58,10 @@
    * from left to right. The drawn line is a background on the title's
    * inline span, so it strikes every line of a title that wraps; it only
    * repaints and moves nothing. The title's static line-through is off
-   * while it is drawn and takes over when the drawing ends. The name of
-   * the drawing's animation is TICK_DRAWING_ANIMATION in
-   * composables/use-tick-drawing.ts.
+   * while it is drawn and takes over when the drawing ends. A recipe's
+   * ingredient, which is chosen rather than done, only springs. The two
+   * animations' names are TICK_DRAWING_ANIMATION and TICK_SPRING_ANIMATION
+   * in composables/use-tick-drawing.ts.
    */
   .list-tick--drawing.text-strike {
     text-decoration: none;

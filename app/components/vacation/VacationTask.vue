@@ -36,6 +36,15 @@ interface HasElement {
   $el: HTMLElement;
 }
 const tickBox = useTemplateRef<HasElement>("tickBox");
+
+const { drawing, startFromTap, endDrawing } = useTickDrawing();
+
+/** The person's own tap: draws the tick here, where a Realtime change can't
+ * reach, then lets the phase toggle the task. */
+function toggleFromTap(checked: boolean) {
+  startFromTap(checked);
+  emit("toggle", props.task.id);
+}
 const moreButton = useTemplateRef<HasElement>("moreButton");
 const whoButton = useTemplateRef<HasElement>("whoButton");
 
@@ -161,12 +170,16 @@ defineExpose({
           <q-checkbox
             ref="tickBox"
             :model-value="task.done"
-            :label="task.title"
             class="vacation-task__tick"
             :data-testid="TEST_IDS.vacation.task.checkbox"
-            :class="{ 'text-strike text-muted': task.done }"
-            @update:model-value="emit('toggle', task.id)"
-          />
+            :class="{
+              'text-strike text-muted': task.done,
+              'list-tick--drawing': drawing,
+            }"
+            @update:model-value="toggleFromTap"
+            @animationend="endDrawing"
+            ><span class="list-tick__title">{{ task.title }}</span></q-checkbox
+          >
           <!-- Who has the task, and the one control to change that: the
                person's picture, or an empty circle for nobody. One line per
                task keeps the list short enough to scan; a second line with
