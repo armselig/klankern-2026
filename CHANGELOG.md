@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.13.2](https://github.com/armselig/klankern-2026/compare/v1.13.1...v1.13.2) (2026-10-16)
+
+### Code Refactoring
+
+* **ui:** color on the screens for the playful look ([7394846](https://github.com/armselig/klankern-2026/commit/7394846828fd22f54a8ee3470e4049d3558a0d42))
+* **ui:** motion for the playful look ([5bcfd6d](https://github.com/armselig/klankern-2026/commit/5bcfd6d32db6684a6a6c328629301d58f1d05fd7))
+* **ui:** tick a vacation's tasks and a recipe's ingredients with motion ([57d5e5a](https://github.com/armselig/klankern-2026/commit/57d5e5aca2c9dbe4285e19d5f2fff67e8b064447)), closes [#9](https://github.com/armselig/klankern-2026/issues/9)
+* **ui:** tokens and shape for the playful look ([1943fea](https://github.com/armselig/klankern-2026/commit/1943fea70f4d224973414a27a4478c7593acf7ed))
+* **vacations:** pick the household's kids for a trip ([abb40dd](https://github.com/armselig/klankern-2026/commit/abb40dd4b116317f425e38971d40ebf75942b1a2))
+
 ## [1.13.1](https://github.com/armselig/klankern-2026/compare/v1.13.0...v1.13.1) (2026-10-16)
 
 ### Code Refactoring
