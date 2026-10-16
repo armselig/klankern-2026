@@ -271,9 +271,11 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
           .toBeCloseTo((wordmark?.width ?? 0) - 16, 0);
         const todosCard = dashboardTile(page, "todos").locator(".q-card");
         // elementFromPoint() sees only what is in the viewport, and the tile
-        // can run past its bottom: bring the whole card in, not only a part.
+        // can run past its bottom; at the bottom's middle lies the button of
+        // Nuxt DevTools (`nuxt dev` only), over the tile's corner. In the
+        // middle of the viewport the corner is clear of both.
         await todosCard.evaluate((card) =>
-          card.scrollIntoView({ block: "nearest" }),
+          card.scrollIntoView({ block: "center" }),
         );
         const card = await todosCard.boundingBox();
         const atCorner = await page.evaluate(
