@@ -1,6 +1,6 @@
 # Vacation planner: the design's open decisions
 
-The second half of the vacation planner's design: what it left open, what a person had to do before the build, what counts as done, and what was considered and not chosen. The first half is "Design: a vacation planner" in [`features/vacations/design.md`](./design.md), from which this was split on 2026-10-13 without a change to its text. The current state is in [`progress.md`](../../progress.md); [`CLAUDE.md`](../../CLAUDE.md) lists the other topic files.
+The second half of the vacation planner's design: what it left open, what a person had to do before the build, what counts as done, and what was considered and not chosen. The first half is "Design: a vacation planner" in [`features/vacations/design.md`](./design.md), from which this was split on 2026-10-13 without a change to its text. The current state is in [`progress.md`](../../progress.md); [`README.md`](../../README.md) lists the other topic files.
 
 ## Design: open decisions and what was not chosen (2026-10-12)
 

@@ -1,6 +1,6 @@
 # Recipes
 
-The history of the shared recipes, oldest first. The current state is in [`progress.md`](../progress.md); [`CLAUDE.md`](../CLAUDE.md) lists the other topic files.
+The history of the shared recipes, oldest first. The current state is in [`progress.md`](../progress.md); [`README.md`](../README.md) lists the other topic files.
 
 ## Milestone 10: Shared recipes (built 2026-10-11)
 

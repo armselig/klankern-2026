@@ -1,6 +1,6 @@
 # Vacation planner: the rendered screens
 
-The screens of the reviewed design as they were rendered and approved, and what the rendering showed for the build. They were split from [`features/vacations/design-review.md`](./design-review.md) on 2026-10-13, when that file had grown past the size at which a topic file is split, without a change beyond the two references back to it. The current state is in [`progress.md`](../../progress.md); [`CLAUDE.md`](../../CLAUDE.md) lists the other topic files.
+The screens of the reviewed design as they were rendered and approved, and what the rendering showed for the build. They were split from [`features/vacations/design-review.md`](./design-review.md) on 2026-10-13, when that file had grown past the size at which a topic file is split, without a change beyond the two references back to it. The current state is in [`progress.md`](../../progress.md); [`README.md`](../../README.md) lists the other topic files.
 
 ## Screens rendered and approved (2026-10-13)
 

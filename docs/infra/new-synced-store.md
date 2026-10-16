@@ -1,6 +1,6 @@
 # Adding a synced store
 
-A checklist for the next table that is shared by a household and kept live. It was collected when the meal plan became the sixth store (see [`features/meal-planner/slice-1a.md`](../features/meal-planner/slice-1a.md)). The rules themselves are in the root `CLAUDE.md`; this file lists where each one has to be applied so that none is forgotten. A rule that changes is changed there, and this list follows.
+A checklist for the next table that is shared by a household and kept live. It was collected when the meal plan became the sixth store (see [`features/meal-planner/slice-1a.md`](../features/meal-planner/slice-1a.md)). The rules themselves are in [`rules/`](../rules/README.md); this file lists where each one has to be applied so that none is forgotten. A rule that changes is changed there, and this list follows.
 
 ## The checklist (written 2026-10-15)
 
@@ -8,13 +8,13 @@ A checklist for the next table that is shared by a household and kept live. It w
 
 - The table has `household_id` and RLS with `is_household_member(household_id)`; soft delete only, so no `delete` grant to `authenticated`; `update` granted per column when some columns must not change (`household_id`, `created_by`). A column that names the author defaults to `auth.uid()` and is checked on insert.
 - It is added to the `supabase_realtime` publication, or events never arrive. A new function in `public` gets `revoke execute ... from public, anon` and an explicit grant.
-- Regenerate `app/types/database.types.ts` after applying it. Ask before applying (see "Migrations and types" in the root `CLAUDE.md`).
+- Regenerate `app/types/database.types.ts` after applying it. Ask before applying (see "Migrations and types" in [`rules/database.md`](../rules/database.md)).
 
 ### Store
 
 - Actions in `composables/*-actions.ts`, the store in `stores/`, the reducers that differ in `utils/*-state.ts`; the generic ones come from `utils/list-state.ts`.
 - The three pieces of bookkeeping at module level: inserts in flight, changes during a fetch, Realtime event order. `pendingIds` in state. Events and `resync()` wait for `householdId` when the rows hang on the household.
-- A table with a large column needs a reducer that lays an event over the local row (the TOAST rule in "Realtime" in the root `CLAUDE.md`).
+- A table with a large column needs a reducer that lays an event over the local row (the TOAST rule in "Realtime" in [`rules/architecture.md`](../rules/architecture.md)).
 - A store that holds only part of a table (the meal plan holds date ranges) has to keep what lies outside the part on a resync.
 
 ### Wiring
@@ -32,5 +32,5 @@ A checklist for the next table that is shared by a household and kept live. It w
 
 ### Documentation
 
-- A feature file, and the line in the list in `docs/CLAUDE.md`; the status and test counts in `progress.md`; the root `CLAUDE.md` where it counts the stores and the RLS specs.
-- Every fix to the list rules belongs in every store; say in the root `CLAUDE.md` how many there are.
+- A feature file, and the line in the list in `docs/README.md`; the status and test counts in `progress.md`; `rules/architecture.md`, `rules/commands.md` and `rules/conventions.md` where they count the stores and the RLS specs.
+- Every fix to the list rules belongs in every store; say in `rules/architecture.md` how many there are.

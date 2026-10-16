@@ -1,6 +1,6 @@
 # Vacation planner: the templates
 
-What the two templates of the vacation planner hold and how that was decided. The design is "Design: a vacation planner" in [`features/vacations/design.md`](./design.md). The current state is in [`progress.md`](../../progress.md); [`CLAUDE.md`](../../CLAUDE.md) lists the other topic files.
+What the two templates of the vacation planner hold and how that was decided. The design is "Design: a vacation planner" in [`features/vacations/design.md`](./design.md). The current state is in [`progress.md`](../../progress.md); [`README.md`](../../README.md) lists the other topic files.
 
 ## The house and hotel templates (decided 2026-10-13, not built yet)
 

@@ -1,6 +1,6 @@
 # Lists and live sync
 
-The history of the to-do and shopping lists and their live sync, oldest first. The current state is in [`progress.md`](../progress.md); [`CLAUDE.md`](../CLAUDE.md) lists the other topic files.
+The history of the to-do and shopping lists and their live sync, oldest first. The current state is in [`progress.md`](../progress.md); [`README.md`](../README.md) lists the other topic files.
 
 ## Milestone 5: Realtime sync (done 2026-10-08)
 

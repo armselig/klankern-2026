@@ -1,6 +1,6 @@
 # Dashboard
 
-The history of the dashboard, oldest first. The current state is in [`progress.md`](../progress.md); [`CLAUDE.md`](../CLAUDE.md) lists the other topic files.
+The history of the dashboard, oldest first. The current state is in [`progress.md`](../progress.md); [`README.md`](../README.md) lists the other topic files.
 
 ## Dashboard with live tiles (built 2026-10-11)
 

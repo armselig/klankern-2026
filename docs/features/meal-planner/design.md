@@ -1,6 +1,6 @@
 # Meal planner: why it exists and the slices
 
-The household's meal plan: what is cooked on which day, and the Tonight tile on the dashboard that proposes a dinner. It is built in slices; each has a file in this folder, listed in [`CLAUDE.md`](./CLAUDE.md). The state is in [`progress.md`](../../progress.md).
+The household's meal plan: what is cooked on which day, and the Tonight tile on the dashboard that proposes a dinner. It is built in slices; each has a file in this folder, listed in [`README.md`](./README.md). The state is in [`progress.md`](../../progress.md).
 
 ## Why it exists, and the slices (decided 2026-10-15)
 

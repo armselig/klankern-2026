@@ -1,6 +1,6 @@
 # PWA and deployment
 
-The history of the installable app and its deployment to Netlify, oldest first. The current state is in [`progress.md`](../progress.md); [`CLAUDE.md`](../CLAUDE.md) lists the other topic files.
+The history of the installable app and its deployment to Netlify, oldest first. The current state is in [`progress.md`](../progress.md); [`README.md`](../README.md) lists the other topic files.
 
 ## Milestone 7: PWA installability (built 2026-10-09)
 

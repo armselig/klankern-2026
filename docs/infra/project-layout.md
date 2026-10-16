@@ -1,6 +1,6 @@
 # Project layout
 
-Where the Nuxt project sits in the repository, oldest first. The plan for the move to the git root is in [`infra/project-layout-plan.md`](project-layout-plan.md). The current state is in [`progress.md`](../progress.md); [`CLAUDE.md`](../CLAUDE.md) lists the other topic files.
+Where the Nuxt project sits in the repository, oldest first. The plan for the move to the git root is in [`infra/project-layout-plan.md`](project-layout-plan.md). The current state is in [`progress.md`](../progress.md); [`README.md`](../README.md) lists the other topic files.
 
 ## The move to the git root (built 2026-10-12, not on `main` yet)
 
@@ -31,3 +31,11 @@ Moved here from `progress.md` when that file was cut to two pages.
 
 - **Nuxt 4, not the plan's Nuxt 3**: 4 is what `nuxi init` installed. The API is compatible; the folder convention differs, with the source in `app/` and not beside the configuration.
 - **The git hooks were checked through git's own hook dispatcher**, by real commits and pushes, not only by calling the scripts: pre-commit (lint-staged), commit-msg (commitlint) and pre-push (type check and the full test suite). The hooks are in `.husky`, and `npm ci` points `core.hooksPath` at `.husky/_`.
+
+## CLAUDE.md files of at most 500 characters (decided and built 2026-10-16)
+
+The user set a new rule for the project: no `CLAUDE.md` may exceed 500 characters. The four there were had 35,365 (the root), 7,953 (`docs/`), 5,176 (`features/vacations/`) and 2,535 characters (`features/meal-planner/`).
+
+- **The rules for the code moved to `rules/`, read on demand.** The user chose that over keeping them loaded through `@` imports in the root `CLAUDE.md`, which would have kept the file short and the context as large as before. The root `CLAUDE.md` now says what the app is and points to [`rules/README.md`](../rules/README.md), which lists the rule files. The text moved word for word, and each section kept its heading, so a topic file that names a section of "the root `CLAUDE.md`" can still be followed by name: "Layout", "Commands" and "What the tests need" are in `rules/commands.md`; "Layers", "Shared list logic" and "Realtime" in `rules/architecture.md`; "Database and security" and "Migrations and types" in `rules/database.md`; "Deployment" and "Releases" in `rules/delivery.md`; "Conventions and gotchas" in `rules/conventions.md`; "What this is" and "Skill routing" in `rules/README.md`. The only changes to the text are the references between the sections, which now name the file, and the placeholder in the migrations' file name, now `<NNNN>_<name>`.
+- **The lists of the documentation are `README.md` files.** `docs/CLAUDE.md` and the two feature folders' became `README.md`, each beside a `CLAUDE.md` of one line that points to it, so that it still loads when a file in the folder is read. The opening lines of the topic files, `progress.md`, `infra/new-synced-store.md`, `infra/test-ids.md`, the `docs-updater` and `test-writer` agents and the `docs-audit` skill were changed to the new places; the dated sections that name the root `CLAUDE.md` were left as they were.
+- **The docs check enforces it.** `.claude/hooks/docs-check.mjs` reports every `CLAUDE.md` that git tracks or would track and that has more than 500 characters (`claude-md-size`), reads its lists from the `README.md` files, and leaves the `CLAUDE.md` pointers out of the duplicate check, since they are alike on purpose. Its findings were compared before and after the move: the same, under the new file names.

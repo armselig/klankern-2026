@@ -1,6 +1,6 @@
 # Releases
 
-The history of the automated releases and the changelog, oldest first. The current state is in [`progress.md`](../progress.md); [`CLAUDE.md`](../CLAUDE.md) lists the other topic files.
+The history of the automated releases and the changelog, oldest first. The current state is in [`progress.md`](../progress.md); [`README.md`](../README.md) lists the other topic files.
 
 ## Releases: automated versions and changelog (built 2026-10-10, v1.0.0 released the same day)
 

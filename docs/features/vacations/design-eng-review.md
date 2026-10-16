@@ -1,6 +1,6 @@
 # Vacation planner: engineering review of the design review's changes
 
-The third engineering pass over the vacation planner's plan. The design review it checks is "Design review" in [`features/vacations/design-review.md`](./design-review.md); the two earlier passes are in [`features/vacations/review.md`](./review.md). The current state is in [`progress.md`](../../progress.md); [`CLAUDE.md`](../../CLAUDE.md) lists the other topic files.
+The third engineering pass over the vacation planner's plan. The design review it checks is "Design review" in [`features/vacations/design-review.md`](./design-review.md); the two earlier passes are in [`features/vacations/review.md`](./review.md). The current state is in [`progress.md`](../../progress.md); [`README.md`](../../README.md) lists the other topic files.
 
 ## Engineering review of the design review's changes (2026-10-12)
 

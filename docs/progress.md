@@ -1,6 +1,6 @@
 # Klankern — Progress
 
-The current state of the project: what is built, where it deviates from [`plan.md`](./plan.md) and what comes next. It is kept to two printed pages. How each part came about (the decisions, the bugs found, what was checked by hand) is in the topic files that [`CLAUDE.md`](./CLAUDE.md) lists; the rules for the code are in the root `CLAUDE.md`.
+The current state of the project: what is built, where it deviates from [`plan.md`](./plan.md) and what comes next. It is kept to two printed pages. How each part came about (the decisions, the bugs found, what was checked by hand) is in the topic files that [`README.md`](./README.md) lists; the rules for the code are in [`rules/`](./rules/README.md).
 
 **Resuming in a new session**: the last release is v1.13.0 (2026-10-15), slice 3 of the meal planner, "Fill my week" (no migration). Before it the same day: v1.12.0 (slice 2, the kids; its migration 0021 is applied, as is 0020, which dropped the old trip meals), v1.11.1 (slice 1b), v1.11.0 (slice 1a) and v1.10.0 (slice 3 of the vacation planner). Each release and how it was checked is in [`infra/releases.md`](infra/releases.md). Read this file, then the topic files for what you are about to touch. The repo and these docs are the source of truth, not any prior chat history.
 
@@ -16,15 +16,15 @@ The current state of the project: what is built, where it deviates from [`plan.m
 | 9. Whiteboard                        | ✅ Done, tried on a phone with a second member       | [`features/whiteboard.md`](features/whiteboard.md)                   |
 | 10. Recipes                          | ✅ Done, tried on a phone and on the deployed site   | [`features/recipes.md`](features/recipes.md)                         |
 | Dashboard with live tiles            | ✅ Released 1.5.0                                    | [`features/dashboard.md`](features/dashboard.md)                     |
-| Vacation planner, slices 1–3         | ✅ Released 1.6.0 to 1.10.0, tried by hand           | [`features/vacations/`](features/vacations/CLAUDE.md)                |
-| Meal planner, slice 1a               | ✅ Released 1.11.0, tried by hand                    | [`features/meal-planner/`](features/meal-planner/CLAUDE.md)          |
-| Meal planner, slice 1b               | ✅ Released 1.11.1, tried by hand                    | [`features/meal-planner/`](features/meal-planner/CLAUDE.md)          |
-| Meal planner, slice 2 (the kids)     | ✅ Released 1.12.0, not tried on a phone             | [`features/meal-planner/`](features/meal-planner/CLAUDE.md)          |
-| Meal planner, slice 3 (Fill my week) | ✅ Released 1.13.0, not tried on a phone             | [`features/meal-planner/`](features/meal-planner/CLAUDE.md)          |
+| Vacation planner, slices 1–3         | ✅ Released 1.6.0 to 1.10.0, tried by hand           | [`features/vacations/`](features/vacations/README.md)                |
+| Meal planner, slice 1a               | ✅ Released 1.11.0, tried by hand                    | [`features/meal-planner/`](features/meal-planner/README.md)          |
+| Meal planner, slice 1b               | ✅ Released 1.11.1, tried by hand                    | [`features/meal-planner/`](features/meal-planner/README.md)          |
+| Meal planner, slice 2 (the kids)     | ✅ Released 1.12.0, not tried on a phone             | [`features/meal-planner/`](features/meal-planner/README.md)          |
+| Meal planner, slice 3 (Fill my week) | ✅ Released 1.13.0, not tried on a phone             | [`features/meal-planner/`](features/meal-planner/README.md)          |
 
 ## What's built
 
-Nuxt 4 as an SPA (`ssr: false`) with Quasar, Pinia and `@vite-pwa/nuxt`, on Supabase Cloud through `@nuxtjs/supabase`; served by Netlify as a static build. Every feature follows the layers of "Architecture" in the root `CLAUDE.md`.
+Nuxt 4 as an SPA (`ssr: false`) with Quasar, Pinia and `@vite-pwa/nuxt`, on Supabase Cloud through `@nuxtjs/supabase`; served by Netlify as a static build. Every feature follows the layers of "Layers" in [`rules/architecture.md`](./rules/architecture.md).
 
 - `app/`: the source, by Nuxt 4's folders (`composables/`, `stores/`, `utils/`, `types/`, `components/` with one folder per feature, `pages/`).
 - `supabase/migrations/`: `0001` to `0021` applied to the cloud project.

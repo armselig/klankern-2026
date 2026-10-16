@@ -1,6 +1,6 @@
 # Vacation planner: design review
 
-The design review of the vacation planner's screens. The design is "Design: a vacation planner" in [`features/vacations/design.md`](./design.md), the engineering reviews are in [`features/vacations/review.md`](./review.md) and the scope review is "Scope review" in [`features/vacations/scope-review.md`](./scope-review.md). The current state is in [`progress.md`](../../progress.md); [`CLAUDE.md`](../../CLAUDE.md) lists the other topic files.
+The design review of the vacation planner's screens. The design is "Design: a vacation planner" in [`features/vacations/design.md`](./design.md), the engineering reviews are in [`features/vacations/review.md`](./review.md) and the scope review is "Scope review" in [`features/vacations/scope-review.md`](./scope-review.md). The current state is in [`progress.md`](../../progress.md); [`README.md`](../../README.md) lists the other topic files.
 
 ## Design review (2026-10-12)
 

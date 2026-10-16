@@ -1,6 +1,6 @@
 # Theme and contrast
 
-The history of the colors of light and dark mode and the contrast of text on them, oldest first. The current state is in [`progress.md`](../progress.md); [`CLAUDE.md`](../CLAUDE.md) lists the other topic files.
+The history of the colors of light and dark mode and the contrast of text on them, oldest first. The current state is in [`progress.md`](../progress.md); [`README.md`](../README.md) lists the other topic files.
 
 ## Hover and focus contrast on the primary color (fixed 2026-10-11)
 

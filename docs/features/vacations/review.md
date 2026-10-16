@@ -1,6 +1,6 @@
 # Vacation planner: engineering reviews
 
-The engineering reviews of the vacation planner's plan, oldest first. The scope review between them is "Scope review" in [`features/vacations/scope-review.md`](./scope-review.md). The design is "Design: a vacation planner" in [`features/vacations/design.md`](./design.md). The current state is in [`progress.md`](../../progress.md); [`CLAUDE.md`](../../CLAUDE.md) lists the other topic files.
+The engineering reviews of the vacation planner's plan, oldest first. The scope review between them is "Scope review" in [`features/vacations/scope-review.md`](./scope-review.md). The design is "Design: a vacation planner" in [`features/vacations/design.md`](./design.md). The current state is in [`progress.md`](../../progress.md); [`README.md`](../../README.md) lists the other topic files.
 
 ## Engineering review (2026-10-12)
 

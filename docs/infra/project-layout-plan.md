@@ -1,6 +1,6 @@
 # Project layout: the plan for the move
 
-The plan to move the Nuxt project from `app/` to the git root. How the move went is in [`infra/project-layout.md`](project-layout.md), which held this plan until the file was split on 2026-10-12. The current state is in [`progress.md`](../progress.md); [`CLAUDE.md`](../CLAUDE.md) lists the other topic files.
+The plan to move the Nuxt project from `app/` to the git root. How the move went is in [`infra/project-layout.md`](project-layout.md), which held this plan until the file was split on 2026-10-12. The current state is in [`progress.md`](../progress.md); [`README.md`](../README.md) lists the other topic files.
 
 ## Plan: the Nuxt project moves to the git root (written and approved 2026-10-12, not implemented yet)
 

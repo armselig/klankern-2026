@@ -1,6 +1,6 @@
 # Meal planner, the week at a glance
 
-The redesign of the week on `/meals`, decided in a design consultation on 2026-10-16 and built the same day (see "The week at a glance: built"). The slices are in [`features/meal-planner/CLAUDE.md`](./CLAUDE.md); the colors and their contrast are in [`ui/theme-and-contrast.md`](../../ui/theme-and-contrast.md).
+The redesign of the week on `/meals`, decided in a design consultation on 2026-10-16 and built the same day (see "The week at a glance: built"). The slices are in [`features/meal-planner/README.md`](./README.md); the colors and their contrast are in [`ui/theme-and-contrast.md`](../../ui/theme-and-contrast.md).
 
 ## The week at a glance: design (decided 2026-10-16)
 

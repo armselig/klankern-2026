@@ -1,6 +1,6 @@
 # Vacation planner: design review of slice 3, the meals
 
-The design pass over slice 3 before it is built. The text design it reviews is "Meals" and "Steps" in [`features/vacations/design.md`](./design.md); the rules that came out of the earlier reviews are in [`features/vacations/review.md`](./review.md) and [`features/vacations/design-review.md`](./design-review.md). The current state is in [`progress.md`](../../progress.md); [`CLAUDE.md`](../../CLAUDE.md) lists the other topic files.
+The design pass over slice 3 before it is built. The text design it reviews is "Meals" and "Steps" in [`features/vacations/design.md`](./design.md); the rules that came out of the earlier reviews are in [`features/vacations/review.md`](./review.md) and [`features/vacations/design-review.md`](./design-review.md). The current state is in [`progress.md`](../../progress.md); [`README.md`](../../README.md) lists the other topic files.
 
 ## Design review of the meals (2026-10-15)
 

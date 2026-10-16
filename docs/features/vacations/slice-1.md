@@ -1,6 +1,6 @@
 # Vacation planner: slice 1
 
-How the first slice of the vacation planner was built. The design is "Design: a vacation planner" in [`features/vacations/design.md`](./design.md); the reviews it went through and the templates are in the other vacation files that [`CLAUDE.md`](../../CLAUDE.md) lists. The current state is in [`progress.md`](../../progress.md).
+How the first slice of the vacation planner was built. The design is "Design: a vacation planner" in [`features/vacations/design.md`](./design.md); the reviews it went through and the templates are in the other vacation files that [`README.md`](../../README.md) lists. The current state is in [`progress.md`](../../progress.md).
 
 ## Slice 1: a trip checklist from a template (built 2026-10-13)
 

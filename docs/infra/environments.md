@@ -1,6 +1,6 @@
 # Environments
 
-Which environments the app has and what each one talks to, oldest first. The current state is in [`progress.md`](../progress.md); [`CLAUDE.md`](../CLAUDE.md) lists the other topic files.
+Which environments the app has and what each one talks to, oldest first. The current state is in [`progress.md`](../progress.md); [`README.md`](../README.md) lists the other topic files.
 
 ## Plan: separate development from production (discussed 2026-10-12, not implemented yet)
 
@@ -114,7 +114,7 @@ GitHub's own gate would be an environment with a required reviewer, where the jo
 
 #### Documentation
 
-15. The root `CLAUDE.md`: "What the tests need", the CI comment, "Deployment" (the line that says branch deploys stay off), "Migrations and types". `progress.md`: the environment section and the next steps. Dated remarks in [`infra/ci.md`](ci.md), [`infra/deploy-and-pwa.md`](deploy-and-pwa.md) and [`features/auth-and-households.md`](../features/auth-and-households.md). A new section at the end of this file tells what was done and what turned out differently.
+15. The root `CLAUDE.md`: "What the tests need", the CI comment, "Deployment" (the line that says branch deploys stay off), "Migrations and types". (2026-10-16: these sections are now in `rules/commands.md`, `rules/delivery.md` and `rules/database.md`, see "CLAUDE.md files of at most 500 characters" in [`infra/project-layout.md`](project-layout.md).) `progress.md`: the environment section and the next steps. Dated remarks in [`infra/ci.md`](ci.md), [`infra/deploy-and-pwa.md`](deploy-and-pwa.md) and [`features/auth-and-households.md`](../features/auth-and-households.md). A new section at the end of this file tells what was done and what turned out differently.
 
 ### Traps
 

@@ -1,6 +1,6 @@
 # Testing
 
-The history of the end-to-end tests and their tooling, oldest first. The e2e tests that failed on CI are in [`infra/e2e-failures-on-ci.md`](e2e-failures-on-ci.md), split from this file on 2026-10-15. The current state is in [`progress.md`](../progress.md); [`CLAUDE.md`](../CLAUDE.md) lists the other topic files.
+The history of the end-to-end tests and their tooling, oldest first. The e2e tests that failed on CI are in [`infra/e2e-failures-on-ci.md`](e2e-failures-on-ci.md), split from this file on 2026-10-15. The current state is in [`progress.md`](../progress.md); [`README.md`](../README.md) lists the other topic files.
 
 ## E2E gap review (2026-10-09)
 

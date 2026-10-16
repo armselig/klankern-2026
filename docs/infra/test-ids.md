@@ -1,6 +1,6 @@
 # Test ids
 
-How the end-to-end tests find the elements of a page. The rule itself is in the root [`CLAUDE.md`](../../CLAUDE.md); the rest of the tests' history is in [`infra/testing.md`](./testing.md).
+How the end-to-end tests find the elements of a page. The rule itself is in "Conventions and gotchas" in [`rules/conventions.md`](../rules/conventions.md); the rest of the tests' history is in [`infra/testing.md`](./testing.md).
 
 ## Test ids instead of text (2026-10-13)
 

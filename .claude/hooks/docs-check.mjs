@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 /**
  * The mechanical half of the documentation audit (the judgment half is the
- * docs-audit skill). docs/ grows with every feature, and docs/CLAUDE.md sets
+ * docs-audit skill). docs/ grows with every feature, and docs/README.md sets
  * limits nobody checks by hand: this finds what a script can.
  *
  * - size: progress.md past ~1,000 words, a topic file past ~2,500
- * - unlisted: a file in docs/ that no CLAUDE.md list links to
+ * - unlisted: a file in docs/ that no README.md list links to
+ * - claude-md-size: a CLAUDE.md anywhere in the repository past 500
+ *   characters; it only points to files, the rules are in docs/rules/
  * - broken-link: a relative Markdown link to a file that does not exist
  * - missing-path: a path in backticks that does not exist (in a topic file
  *   that can be history; verify before changing it)
@@ -15,6 +17,7 @@
  * --summary prints one line, and nothing at all when there are no findings;
  * that is what the SessionStart hook runs. It always exits 0.
  */
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -22,8 +25,9 @@ const root = process.env.CLAUDE_PROJECT_DIR || process.cwd();
 const docsDir = path.join(root, "docs");
 const PROGRESS_LIMIT = 1000;
 const TOPIC_LIMIT = 2500;
+const CLAUDE_MD_LIMIT = 500;
 const DUPLICATE_MIN_WORDS = 14;
-/** Folders the docs name without their leading `app/` (root CLAUDE.md, "Layout"). */
+/** Folders the docs name without their leading `app/` (docs/rules/commands.md, "Layout"). */
 const APP_FOLDERS = [
   "composables",
   "stores",
@@ -71,20 +75,48 @@ for (const [file, text] of texts) {
     });
 }
 
-// A file is listed when a CLAUDE.md in docs/ links to it.
+// Every CLAUDE.md the repository tracks or would track, so node_modules and
+// the build folders are left out.
+/** The repository's files by git, or none when git fails: the hook always exits 0. */
+function repositoryFiles() {
+  try {
+    return execFileSync(
+      "git",
+      ["ls-files", "--cached", "--others", "--exclude-standard"],
+      { cwd: root, encoding: "utf8" },
+    ).split("\n");
+  } catch {
+    return [];
+  }
+}
+const claudeFiles = repositoryFiles()
+  .filter((file) => path.basename(file).toLowerCase() === "claude.md")
+  .filter((file) => fs.existsSync(path.join(root, file)));
+for (const file of claudeFiles) {
+  const characters = [...fs.readFileSync(path.join(root, file), "utf8")].length;
+  if (characters > CLAUDE_MD_LIMIT)
+    findings.push({
+      kind: "claude-md-size",
+      file,
+      detail: `${characters} characters, limit ${CLAUDE_MD_LIMIT}`,
+    });
+}
+
+// A file is listed when a README.md in docs/ links to it.
 const listed = new Set();
 for (const [file, text] of texts) {
-  if (path.basename(file) !== "CLAUDE.md") continue;
+  if (path.basename(file) !== "README.md") continue;
   for (const [, target] of text.matchAll(/\]\(([^)#\s]+\.md)\)/g)) {
     listed.add(path.normalize(path.join(path.dirname(file), target)));
   }
 }
 for (const file of docs) {
-  if (path.basename(file) === "CLAUDE.md" && file !== "docs/CLAUDE.md")
+  // A CLAUDE.md only points to its folder's README.md, and docs/README.md is
+  // the top of the lists.
+  if (path.basename(file) === "CLAUDE.md" || file === "docs/README.md")
     continue;
-  if (file === "docs/CLAUDE.md") continue;
   if (!listed.has(file))
-    findings.push({ kind: "unlisted", file, detail: "in no CLAUDE.md list" });
+    findings.push({ kind: "unlisted", file, detail: "in no README.md list" });
 }
 
 for (const [file, text] of texts) {
@@ -123,11 +155,9 @@ for (const [file, text] of texts) {
 
 /** Sentences long enough that standing twice is duplication, not a shared phrase. */
 const sentenceFiles = new Map();
-const sources = [
-  ...texts,
-  ["CLAUDE.md", fs.readFileSync(path.join(root, "CLAUDE.md"), "utf8")],
-];
-for (const [file, text] of sources) {
+for (const [file, text] of texts) {
+  // The CLAUDE.md pointers are alike on purpose.
+  if (path.basename(file) === "CLAUDE.md") continue;
   const sentences = prose(text)
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/[*_`>|#-]/g, " ")
@@ -171,6 +201,7 @@ if (process.argv.includes("--summary")) {
 if (findings.length === 0) console.log("Docs check: no findings.");
 for (const kind of [
   "size",
+  "claude-md-size",
   "unlisted",
   "broken-link",
   "missing-path",

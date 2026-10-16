@@ -1,6 +1,6 @@
 # CI
 
-The history of the checks that run on GitHub, oldest first. The current state is in [`progress.md`](../progress.md); [`CLAUDE.md`](../CLAUDE.md) lists the other topic files.
+The history of the checks that run on GitHub, oldest first. The current state is in [`progress.md`](../progress.md); [`README.md`](../README.md) lists the other topic files.
 
 ## CI (added 2026-10-10)
 

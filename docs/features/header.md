@@ -1,6 +1,6 @@
 # Header and account menu
 
-The history of the header and the account menu, oldest first. The current state is in [`progress.md`](../progress.md); [`CLAUDE.md`](../CLAUDE.md) lists the other topic files.
+The history of the header and the account menu, oldest first. The current state is in [`progress.md`](../progress.md); [`README.md`](../README.md) lists the other topic files.
 
 ## Header shows the signed-in user (2026-10-08)
 

@@ -202,7 +202,7 @@ defineExpose({
 }
 
 /* The text's color, not the browser's link blue; the underline says it is
-   a link (see the root CLAUDE.md). */
+   a link (see docs/rules/conventions.md). */
 a.meal-entry__name {
   color: inherit;
   text-decoration-color: var(--theme-outline);

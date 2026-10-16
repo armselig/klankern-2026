@@ -1,6 +1,6 @@
 # Sign-in, households and the database rules
 
-The history of sign-in by email code, households and invites, and the database rules that came out of building them, oldest first. The current state is in [`progress.md`](../progress.md); [`CLAUDE.md`](../CLAUDE.md) lists the other topic files.
+The history of sign-in by email code, households and invites, and the database rules that came out of building them, oldest first. The current state is in [`progress.md`](../progress.md); [`README.md`](../README.md) lists the other topic files.
 
 ## Resolved: the "Supabase RLS bug" was `INSERT ... RETURNING` (2026-10-08)
 

@@ -1,6 +1,6 @@
 # Member avatars
 
-The history of the members' avatars, oldest first. The current state is in [`progress.md`](../progress.md); [`CLAUDE.md`](../CLAUDE.md) lists the other topic files.
+The history of the members' avatars, oldest first. The current state is in [`progress.md`](../progress.md); [`README.md`](../README.md) lists the other topic files.
 
 ## Member avatars from Gravatar (built 2026-10-10)
 

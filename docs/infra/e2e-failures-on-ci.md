@@ -1,6 +1,6 @@
 # E2E failures on CI
 
-The e2e tests that failed on CI and what was found about each, oldest first. Split from [`infra/testing.md`](testing.md) on 2026-10-15, without a change to the sections' text; the tests' other history is there. The current state is in [`progress.md`](../progress.md); [`CLAUDE.md`](../CLAUDE.md) lists the other topic files.
+The e2e tests that failed on CI and what was found about each, oldest first. Split from [`infra/testing.md`](testing.md) on 2026-10-15, without a change to the sections' text; the tests' other history is there. The current state is in [`progress.md`](../progress.md); [`README.md`](../README.md) lists the other topic files.
 
 ## The focus taken from "Change people" in journey 2 (2026-10-13)
 
