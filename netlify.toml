@@ -20,6 +20,14 @@
 # public/_redirects, not here: Nitro writes its own catch-all into
 # `_redirects`, and that file takes precedence over rules in this one.
 
+# The branch deploy of `develop` is staging: kept out of search engines. A
+# header and not robots.txt, which would stop crawlers from seeing it.
+# netlify.toml has no headers per deploy context, so the build adds the
+# header to the `_headers` that Nitro writes; production's build is the one
+# above.
+[context.develop]
+  command = "npm run generate && printf '\\n/*\\n  X-Robots-Tag: noindex\\n' >> dist/_headers"
+
 # Netlify serves `.webmanifest` as application/octet-stream by default.
 [[headers]]
   for = "/manifest.webmanifest"

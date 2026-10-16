@@ -162,5 +162,5 @@ The user switched on Netlify's branch deploy of `develop`, before the rest of th
 Not yet as the plan has it:
 
 - **It uses the production Supabase project.** The site's environment has one `SUPABASE_URL` for every context, so the branch deploy's bundle names the same project as production's. A sign-in on staging works on the family's real households with code that is not released. Until the dev project exists, staging is for looking, or for a test household.
-- **No `noindex`.** The deploy sends no `X-Robots-Tag`, and `public/robots.txt` allows everything, as "The staging frontend" foresaw.
+- **No `noindex`.** The deploy sends no `X-Robots-Tag`, and `public/robots.txt` allows everything, as "The staging frontend" foresaw. (Added the same day: `[context.develop]` in `netlify.toml` builds as production does and then appends `X-Robots-Tag: noindex` for every path to the `_headers` that Nitro writes, since `netlify.toml` has no headers per deploy context. A header and not `robots.txt`, which would keep crawlers from seeing it. This answers "How a `noindex` is set for one deploy context only" above.)
 - **No environment label.** Staging shows production's version (semantic-release raises it on `main` only) and looks the same.
