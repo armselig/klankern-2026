@@ -1,6 +1,6 @@
 # Documentation of the vacation planner
 
-Guidance for reading and writing the files in this folder. The rules for all documentation are in [`CLAUDE.md`](../../CLAUDE.md) one level up from `features/` and are not repeated here; the rules for the code are in the root `CLAUDE.md`. The current state of the planner is in [`progress.md`](../../progress.md).
+Guidance for reading and writing the files in this folder. The rules for all documentation are in [`README.md`](../../README.md) one level up from `features/` and are not repeated here; the rules for the code are in [`rules/`](../../rules/README.md). The current state of the planner is in [`progress.md`](../../progress.md).
 
 ## Where things are
 
@@ -36,5 +36,5 @@ Read the design first, then the file of the slice you are about to touch. The re
 - **A slice gets a file of its own when it is built** (`slice-3.md` was the last of the three): the migration, what was decided and found during the build, its tests, "When it breaks" and "After a deploy".
 - **What changes after a slice is built goes into that slice's file**, as a dated section at its end. Once such a file passes about 2,500 words, the changes get a file of their own beside it, as `slice-2-after-trying.md` did.
 - **A decision that overtakes a review is not written into the review.** The review gets a dated remark at the place it overtakes, which names the section that holds the newer state.
-- **The list above is part of the change**: a new or renamed file gets its line here in the same commit. The list in the documentation's `CLAUDE.md` has one line for the whole folder and changes only when what the folder covers does.
+- **The list above is part of the change**: a new or renamed file gets its line here in the same commit. The list in the documentation's `README.md` has one line for the whole folder and changes only when what the folder covers does.
 - **A reference to a file of this folder is shown as its path from `docs/`**, as everywhere: `features/vacations/slice-2.md`.
