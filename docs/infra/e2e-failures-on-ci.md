@@ -44,3 +44,7 @@ CI on `main` for v1.9.0 failed in `lists.e2e.ts`, "shopping: add with and withou
 ## A wrong code that showed no error (2026-10-15)
 
 CI on `develop` on 2026-10-15, the run after the fix of the meal plan's e2e tests (see "The e2e tests failed on CI: a clock ahead of the session" in [`features/meal-planner/ci-clock-failure.md`](../features/meal-planner/ci-clock-failure.md)), passed 38 of the 39 e2e tests. "a wrong code shows an error" in `auth.e2e.ts` failed, because the error message did not show. Not looked into.
+
+## A tile's corner pressed below the viewport (2026-10-16)
+
+CI on `develop` for slice 4 of the playful look (run 38916969962) failed one soft check of the signed-in walk in dark mode, `a11y.e2e.ts`: "a press in a tile's corner is its link's" found no link (`null`) 8px inside the To-dos tile's bottom-right corner. The trace's frame of that moment shows the tile running past the bottom of the 667px viewport, under a tall Tonight tile. `scrollIntoViewIfNeeded()` leaves an element that is partly visible where it is, so the corner stayed below the viewport, where `elementFromPoint()` finds nothing. Whether it is below depends on the scroll position the hover and focus steps before it leave, which is why light mode and local runs passed. The check now brings the whole card into view (`scrollIntoView({ block: "nearest" })`) before it measures. The app was not at fault.

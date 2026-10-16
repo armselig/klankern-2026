@@ -270,8 +270,11 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
           .soft(stroke?.width, "the wordmark's stroke spans the word")
           .toBeCloseTo((wordmark?.width ?? 0) - 16, 0);
         const todosCard = dashboardTile(page, "todos").locator(".q-card");
-        // elementFromPoint() sees only what is in the viewport.
-        await todosCard.scrollIntoViewIfNeeded();
+        // elementFromPoint() sees only what is in the viewport, and the tile
+        // can run past its bottom: bring the whole card in, not only a part.
+        await todosCard.evaluate((card) =>
+          card.scrollIntoView({ block: "nearest" }),
+        );
         const card = await todosCard.boundingBox();
         const atCorner = await page.evaluate(
           ([x, y]) =>
