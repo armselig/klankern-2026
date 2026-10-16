@@ -4,7 +4,9 @@ import {
   dashboardRange,
   DASHBOARD_DAYS_AHEAD,
   daysOfRange,
+  daysToFold,
   dinnersPlannedLine,
+  foldedDaysLine,
   formatWeekday,
   isRangeLoaded,
   mondayOf,
@@ -14,6 +16,7 @@ import {
   tonightDay,
   weekDays,
   weekFromParam,
+  weekHeading,
 } from "./meal-week";
 
 const TODAY = "2026-10-15";
@@ -322,5 +325,49 @@ describe("dinnersPlannedLine", () => {
 
   it("uses the plural for several", () => {
     expect(dinnersPlannedLine(3)).toBe("3 dinners planned");
+  });
+});
+
+describe("daysToFold", () => {
+  const week = weekDays("2026-10-12");
+
+  it("folds the days before yesterday in the week of today", () => {
+    expect(daysToFold(week, "2026-10-16")).toEqual([
+      "2026-10-12",
+      "2026-10-13",
+      "2026-10-14",
+    ]);
+  });
+
+  it("folds nothing on a Monday or a Tuesday", () => {
+    expect(daysToFold(week, "2026-10-12")).toEqual([]);
+    expect(daysToFold(week, "2026-10-13")).toEqual([]);
+  });
+
+  it("folds nothing in a week without today", () => {
+    expect(daysToFold(week, "2026-10-20")).toEqual([]);
+    expect(daysToFold(week, "2026-10-05")).toEqual([]);
+  });
+});
+
+describe("foldedDaysLine", () => {
+  it("names the first and the last folded day", () => {
+    expect(foldedDaysLine(["2026-10-12", "2026-10-13", "2026-10-14"])).toBe(
+      "Earlier this week · Mon to Wed",
+    );
+  });
+
+  it("names a single folded day once", () => {
+    expect(foldedDaysLine(["2026-10-12"])).toBe("Earlier this week · Mon");
+  });
+});
+
+describe("weekHeading", () => {
+  it("leaves the year out within today's year", () => {
+    expect(weekHeading("2026-10-12", TODAY)).toBe("Week of 12 Oct");
+  });
+
+  it("names the year of a week in another year", () => {
+    expect(weekHeading("2025-12-29", TODAY)).toBe("Week of 29 Dec 2025");
   });
 });

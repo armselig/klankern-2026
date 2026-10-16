@@ -8,7 +8,9 @@ import {
 /**
  * A dinner "Fill my week" proposes for a day, in the place of the day's
  * "Add dinner" until it is planned: its name, a lock that keeps it when the
- * rest is proposed anew, and a button for another one. It only renders and
+ * rest is proposed anew, and a button for another one. The dashed edge says
+ * it is not planned yet, as an open dinner's does; the lock says whether it
+ * is kept, so there is no word for either. It only renders and
  * reports; the week holds the proposal.
  */
 defineProps<{
@@ -31,7 +33,6 @@ const emit = defineEmits<{ toggleLock: []; reroll: [] }>();
         }}</span>
       </transition>
     </span>
-    <span class="text-muted">{{ locked ? "Kept" : "Proposed" }}</span>
     <q-btn
       flat
       round
@@ -59,13 +60,15 @@ const emit = defineEmits<{ toggleLock: []; reroll: [] }>();
 .meal-draft {
   display: flex;
   align-items: center;
-  gap: 0 8px;
+  padding-left: 12px;
+  border: 1px dashed var(--theme-outline);
+  border-radius: 4px;
 }
 
 .meal-draft__name {
   flex: 1 1 auto;
   min-width: 0;
-  font-style: italic;
+  font-weight: 500;
   overflow-wrap: anywhere;
 }
 

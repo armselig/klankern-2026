@@ -117,13 +117,16 @@ export const TEST_IDS = {
     loading: "meals-loading",
     failure: "meals-failure",
     day: "meals-day",
-    /** A slot's part of a day: Dinner, Breakfast, Lunch or Snack. */
-    slot: "meals-slot",
-    slotHeading: "meals-slot-heading",
+    /** The fold of the days before yesterday ("Earlier this week"). */
+    earlier: "meals-earlier",
+    /** The button over a day's date that adds to that day. */
+    addToDay: "meals-add-to-day",
     entry: "meals-entry",
     entryRecipeLink: "meals-entry-recipe-link",
     /** An entry's name where it is no link: a title, or a removed recipe. */
     entryName: "meals-entry-name",
+    /** The slot's name in front of an entry that is no dinner. */
+    entrySlot: "meals-entry-slot",
     entryMore: "meals-entry-more",
     entryMenu: {
       group: "meals-entry-menu",
@@ -141,9 +144,8 @@ export const TEST_IDS = {
       childName: "meals-reaction-child-name",
       save: "meals-reaction-save",
     },
+    /** An open dinner's button, in the dinner's place. */
     add: "meals-add",
-    /** The buttons that add a breakfast, a lunch or a snack. */
-    addOtherSlot: "meals-add-other-slot",
     putOnList: "meals-put-on-list",
     putOnListNotice: "meals-put-on-list-notice",
     putOnListFailure: "meals-put-on-list-failure",
@@ -159,7 +161,6 @@ export const TEST_IDS = {
       date: "meals-move-date",
       submit: "meals-move-submit",
     },
-    empty: "meals-empty",
     undoRemoval: "meals-undo-removal",
     /** "Fill my week" and the controls of its proposal. */
     fill: {
@@ -186,6 +187,8 @@ export const TEST_IDS = {
       input: "meals-dialog-input",
       recipe: "meals-dialog-recipe",
       addText: "meals-dialog-add-text",
+      /** A radio for the slot; its value is the slot. */
+      slot: "meals-dialog-slot",
       error: "meals-dialog-error",
     },
   },

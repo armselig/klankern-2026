@@ -1,6 +1,6 @@
 # Meal planner, the week at a glance
 
-The redesign of the week on `/meals`, decided in a design consultation on 2026-10-16 and not built yet. The slices are in [`features/meal-planner/CLAUDE.md`](./CLAUDE.md); the colors and their contrast are in [`ui/theme-and-contrast.md`](../../ui/theme-and-contrast.md).
+The redesign of the week on `/meals`, decided in a design consultation on 2026-10-16 and built the same day (see "The week at a glance: built"). The slices are in [`features/meal-planner/CLAUDE.md`](./CLAUDE.md); the colors and their contrast are in [`ui/theme-and-contrast.md`](../../ui/theme-and-contrast.md).
 
 ## The week at a glance: design (decided 2026-10-16)
 
@@ -42,3 +42,30 @@ Three states have no design yet and are settled while building: an open dinner o
 ### Found, not part of the layout
 
 "Fill my week" proposed pancakes, a breakfast, for a Sunday's dinner: the suggester knows recipes, not slots.
+
+## The week at a glance: built (2026-10-16)
+
+Built on `develop` the same day, not released when this was written. Checked at 375x667 in both modes against the mockup; nothing was tried on a phone.
+
+### Where it deviates from the design
+
+- **The fold is a disclosure button, not `<details>`.** The days stay in the one list of days, and a folded day is hidden (`v-show`) until "Earlier this week" is pressed (`aria-expanded`). A `<details>` would have needed the markup of a day twice, once inside it and once in the list.
+- **The shopping run's button keeps its label**, "Put 2 ingredients on the shopping list", which the tests and the accessibility walk check. At 375 px it does not fit beside "Fill my week" and wraps onto a line of its own. It is outlined now, so that "Fill my week" stays the one filled button.
+- **The date's button lies over the whole date** (`MealDays.vue`, absolutely placed), so its press target is the date column; the heading under it says the day ("Fri 16 Today"), the button is named "Add to Fri 16 Oct".
+- **The three states without a design:** an open dinner on a past day shows "Add dinner" as on any day; a day with two dinners lists both, the second added from the date; the "Got it" note stays in "Fill my week"'s line above the days.
+
+### The code
+
+- `utils/meal-week.ts`: `daysToFold` (the days before yesterday, in the week of today only), `foldedDaysLine` and `weekHeading`, with specs.
+- `theme.css`: the token `--theme-tint`, the primary color at 8% over the page.
+- `MealDays.vue` lays out the rows and holds the fold, and takes the page's actions in a slot `actions`, where `MealWeekView.vue` puts `MealFillBar.vue` (now `display: contents`). The trip's view folds nothing.
+- `AddMealDialog.vue` has native radios for the slot when `choose-slot` is set (`v-model:meal-slot`); the Tonight tile's dialog has none.
+- `MealEntry.vue` shows the slot's name in front of an entry that is no dinner (`TEST_IDS.meals.entrySlot`); `MealDraftRow.vue` lost "Proposed" and "Kept" and has the dashed edge.
+- `TEST_IDS.meals`: `slot`, `slotHeading`, `addOtherSlot` and `empty` are gone; `earlier`, `addToDay`, `entrySlot` and `dialog.slot` are new.
+
+### Tests
+
+- `tests/e2e/meal-week.e2e.ts` (new): on a Thursday, Monday and Tuesday are folded and shown by the button, and the date adds a lunch while the dinner stays open.
+- `meal-plan.e2e.ts`: the two tests that add a dinner to today use the date's button, since a planned day has no "Add dinner" now (the tile's test plans tonight first); the wait after a reload waits for today, since the first day may be folded; the slot of a moved entry is read from `entrySlot`.
+- `a11y.e2e.ts`: the walk waits for a date's button instead of seven "Add dinner" buttons, and scans the dialog opened from a date, with the radios, in both modes.
+- The whole `dev` project, `npm test` (974 tests), the type check and the linters pass.

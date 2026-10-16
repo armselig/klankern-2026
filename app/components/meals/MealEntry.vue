@@ -3,8 +3,9 @@ import { mdiDotsVertical } from "@quasar/extras/mdi-v7";
 import type { MealPlanEntry } from "~/types/meal-plan";
 
 /**
- * One entry of the plan in its slot's list: its name, a link where it is a
- * recipe, and one menu with what can be done to it. Under it, only when a
+ * One entry of a day's list: the slot's name in front where it is no
+ * dinner, its name, a link where it is a recipe, and one menu with what can
+ * be done to it. Under it, only when a
  * child did not eat it, a line that says who. It only renders and reports;
  * the day list does the writes.
  */
@@ -12,6 +13,8 @@ const props = defineProps<{
   entry: MealPlanEntry;
   /** The entry's name; null when its recipe was removed. */
   name: string | null;
+  /** The slot's name ("Lunch"); null for a dinner, which has none. */
+  slotLabel?: string | null;
   /** Whether the menu offers to record what the kids made of it. */
   canRecordReactions?: boolean;
   /** Which child refused it or picked at it; null when every child ate it. */
@@ -63,6 +66,12 @@ defineExpose({
 
 <template>
   <li class="meal-entry" :data-testid="TEST_IDS.meals.entry">
+    <span
+      v-if="slotLabel"
+      class="meal-entry__slot text-muted"
+      :data-testid="TEST_IDS.meals.entrySlot"
+      >{{ slotLabel }}</span
+    >
     <nuxt-link
       v-if="entry.recipe_id && name"
       :to="ROUTES.recipe(entry.recipe_id)"
@@ -190,6 +199,19 @@ defineExpose({
   flex: 1 1 auto;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+/* The text's color, not the browser's link blue; the underline says it is
+   a link (see the root CLAUDE.md). */
+a.meal-entry__name {
+  color: inherit;
+  text-decoration-color: var(--theme-outline);
+  text-underline-offset: 3px;
+}
+
+.meal-entry__slot {
+  flex: none;
+  font-size: 0.8125rem;
 }
 
 .meal-entry__menu {

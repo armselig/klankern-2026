@@ -63,6 +63,15 @@
     rgb(var(--ctp-mocha-text-rgb) / 0.18)
   );
 
+  /* Marks a row, such as today's on /meals: the primary color at 8% over
+     the page. The text is at 6.31:1 (light) and 9.72:1 (dark) on it, the
+     muted text at 4.94:1 and 6.31:1; the primary color as text is at
+     4.28:1 in light mode, so it is never text on the tint. */
+  --theme-tint: light-dark(
+    rgb(var(--ctp-latte-mauve-rgb) / 0.08),
+    rgb(var(--ctp-mocha-mauve-rgb) / 0.08)
+  );
+
   --q-primary: light-dark(var(--ctp-latte-mauve), var(--ctp-mocha-mauve));
   --q-secondary: light-dark(var(--ctp-latte-blue), var(--ctp-mocha-blue));
   --q-accent: light-dark(var(--ctp-latte-pink), var(--ctp-mocha-pink));

@@ -1,6 +1,7 @@
 import {
   addDays,
   daysBetween,
+  formatDay,
   isLocalDate,
   type LocalDate,
 } from "./local-date";
@@ -72,6 +73,39 @@ export function weekFromParam(param: unknown, today: LocalDate): LocalDate {
   return mondayOf(
     typeof param === "string" && isLocalDate(param) ? param : today,
   );
+}
+
+/**
+ * The days of a week that fold away under "Earlier this week": those before
+ * yesterday, and only in the week of today. Yesterday stays open, since
+ * what the kids made of a dinner is mostly recorded the day after.
+ */
+export function daysToFold(days: LocalDate[], today: LocalDate): LocalDate[] {
+  if (!days.includes(today)) return [];
+  const yesterday = addDays(today, -1);
+  return days.filter((day) => day < yesterday);
+}
+
+/** What the fold of earlier days says: "Earlier this week · Mon to Wed", or
+ * with one day, "Earlier this week · Mon". */
+export function foldedDaysLine(days: LocalDate[]): string {
+  const weekday = (day: LocalDate) =>
+    new Intl.DateTimeFormat("en-GB", {
+      weekday: "short",
+      timeZone: "UTC",
+    }).format(new Date(`${day}T00:00:00Z`));
+  const first = days[0];
+  const last = days.at(-1);
+  if (!first || !last) return "Earlier this week";
+  return first === last
+    ? `Earlier this week · ${weekday(first)}`
+    : `Earlier this week · ${weekday(first)} to ${weekday(last)}`;
+}
+
+/** The week page's heading: "Week of 12 Oct", with the year when the week
+ * starts in another year than today. */
+export function weekHeading(monday: LocalDate, today: LocalDate): string {
+  return `Week of ${formatDay(monday, monday.slice(0, 4) !== today.slice(0, 4))}`;
 }
 
 /** A day for a member to read, with its weekday: "Tue 20 Oct". Formatted in

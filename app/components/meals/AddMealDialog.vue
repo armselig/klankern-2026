@@ -1,23 +1,42 @@
 <script setup lang="ts">
+import type { MealSlot } from "~/types/meal-plan";
 import type { Recipe } from "~/types/recipe";
 
 /**
  * Asks what to put in a day's slot: a recipe of the household or a few
  * words ("toast"). A plain form, so it works without the extras: the text
  * field, then a button for each recipe that matches it, then the button that
- * adds the text as it is. It only reports the choice; saving is the page's.
+ * adds the text as it is. With `chooseSlot`, radios for the slot stand above
+ * the field, so that one button per day adds any meal (see
+ * docs/features/meal-planner/week-layout.md). It only reports the choice;
+ * saving is the page's.
  */
 const props = defineProps<{
   /** The day, as a member reads it ("Tue 20 Oct"). */
   dayLabel: string;
-  /** The slot, as a member reads it ("Dinner"). */
+  /** The slot, as a member reads it ("Dinner"); the title's when the slot
+   * is not chosen here. */
   slotLabel: string;
   recipes: Recipe[];
+  /** Whether the dialog asks for the slot, which `mealSlot` then holds. */
+  chooseSlot?: boolean;
 }>();
 const open = defineModel<boolean>({ required: true });
+/** The slot chosen in the radios; only read with `chooseSlot`. */
+const mealSlot = defineModel<MealSlot>("mealSlot", { default: "dinner" });
 const emit = defineEmits<{
   choose: [choice: { recipeId: string | null; title: string | null }];
 }>();
+
+/** The radios in the order the day runs. */
+const SLOTS_BY_TIME: readonly MealSlot[] = [
+  "breakfast",
+  "lunch",
+  "dinner",
+  "snack",
+];
+// The prop `slotLabel` shadows the auto-imported helper in the template.
+const slotLabelOf = slotLabel;
 
 const query = ref("");
 const blank = ref(false);
@@ -62,8 +81,28 @@ function chooseTypedText() {
           class="text-h6 q-my-none"
           :data-testid="TEST_IDS.meals.dialog.title"
         >
-          {{ slotLabel }} on {{ dayLabel }}
+          <template v-if="chooseSlot">Add to {{ dayLabel }}</template>
+          <template v-else>{{ slotLabel }} on {{ dayLabel }}</template>
         </h2>
+        <!-- Native radios, so the choice works without Quasar's extras;
+             each label is the button a thumb presses. -->
+        <fieldset v-if="chooseSlot" class="add-meal-dialog__slots">
+          <legend class="add-meal-dialog__legend text-muted">Meal</legend>
+          <label
+            v-for="choice in SLOTS_BY_TIME"
+            :key="choice"
+            class="add-meal-dialog__slot"
+          >
+            <input
+              v-model="mealSlot"
+              type="radio"
+              name="slot"
+              :value="choice"
+              :data-testid="TEST_IDS.meals.dialog.slot"
+            />
+            {{ slotLabelOf(choice) }}
+          </label>
+        </fieldset>
         <q-input
           v-model="query"
           label="What will you eat?"
@@ -129,6 +168,56 @@ function chooseTypedText() {
   flex-direction: column;
   gap: 12px;
   padding: 16px;
+}
+
+/* Four buttons in a row, the chosen one filled. */
+.add-meal-dialog__slots {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.add-meal-dialog__legend {
+  margin-bottom: 4px;
+  padding: 0;
+  font-size: 0.8125rem;
+}
+
+.add-meal-dialog__slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  border: 1px solid var(--theme-outline);
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* The radio itself is pressed, laid unseen over its label. */
+.add-meal-dialog__slot input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.add-meal-dialog__slot:has(input:checked) {
+  background: var(--q-primary);
+  border-color: var(--q-primary);
+  color: var(--theme-on-accent);
+}
+
+.add-meal-dialog__slot:has(input:focus-visible) {
+  outline: 2px solid var(--theme-text);
+  outline-offset: 2px;
 }
 
 .add-meal-dialog__list {

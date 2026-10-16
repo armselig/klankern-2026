@@ -149,7 +149,8 @@ test.describe("the meal plan", () => {
     const toast = mealEntry(page, "Toast");
 
     await test.step("a dinner is added as text", async () => {
-      await today.getByTestId(TEST_IDS.meals.add).click();
+      // Today may have a dinner already: the date adds another.
+      await today.getByTestId(TEST_IDS.meals.addToDay).click();
       await page.getByTestId(TEST_IDS.meals.dialog.input).fill("Toast");
       await untilPlanSaved(page, "POST", () =>
         page.getByTestId(TEST_IDS.meals.dialog.addText).click(),
@@ -169,7 +170,8 @@ test.describe("the meal plan", () => {
         chooseFromMealEntryMenu(page, "Toast", "remove"),
       );
       await page.reload();
-      await expect(page.getByTestId(TEST_IDS.meals.day).first()).toBeVisible();
+      // Not the first day: in this week the earlier days are folded.
+      await expect(today).toBeVisible();
       await expect(toast).toHaveCount(0);
     });
   });
@@ -200,7 +202,7 @@ test.describe("the meal plan", () => {
       await page
         .getByTestId(TEST_IDS.meals.day)
         .filter({ hasText: "Today" })
-        .getByTestId(TEST_IDS.meals.add)
+        .getByTestId(TEST_IDS.meals.addToDay)
         .click();
       await page.getByTestId(TEST_IDS.meals.dialog.input).fill("Lasagne");
       await untilPlanSaved(page, "POST", () =>
@@ -221,12 +223,9 @@ test.describe("the meal plan", () => {
       await untilPlanSaved(page, "PATCH", () => moveDayButton(page, 1).click());
       // Tomorrow may be in the next week.
       await page.goto(`${ROUTES.meals}?week=${tomorrow}`);
-      await expect(
-        page
-          .getByTestId(TEST_IDS.meals.slot)
-          .filter({ has: lasagne })
-          .getByTestId(TEST_IDS.meals.slotHeading),
-      ).toHaveText("Lunch");
+      await expect(lasagne.getByTestId(TEST_IDS.meals.entrySlot)).toHaveText(
+        "Lunch",
+      );
     });
 
     await test.step("a recipe made of it takes the title's place", async () => {

@@ -3,7 +3,9 @@
  * "Fill my week" above the week's days, and once it has proposed dinners,
  * what to do with them: plan them, propose the ones not kept anew, or drop
  * them, with a line that says how many recipes they were chosen from. It
- * only renders and reports; useWeekFill holds the proposal.
+ * stands in the day list's row of actions, beside the shopping run's
+ * button, and has no box of its own. It only renders and reports;
+ * useWeekFill holds the proposal.
  */
 defineProps<{
   /** There is a proposal on the days. */
@@ -28,7 +30,10 @@ const emit = defineEmits<{
 <template>
   <div class="meal-fill">
     <template v-if="drafting">
-      <p class="q-my-none" :data-testid="TEST_IDS.meals.fill.choiceLine">
+      <p
+        class="meal-fill__line q-my-none"
+        :data-testid="TEST_IDS.meals.fill.choiceLine"
+      >
         {{ choiceLine.text }}
         <!-- No color on the flat button: see hover-contrast.css. -->
         <q-btn
@@ -87,18 +92,24 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
-.meal-fill:empty {
-  display: none;
+/* Its parts are items of the row of actions it stands in. */
+.meal-fill {
+  display: contents;
 }
 
-.meal-fill {
-  margin-bottom: 8px;
+/* A proposal takes the row: its line, then its buttons on a line. */
+.meal-fill__line,
+.meal-fill__actions {
+  flex: 1 0 100%;
+}
+
+.meal-fill__line {
+  font-size: 0.875rem;
 }
 
 .meal-fill__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 8px;
-  margin-top: 4px;
 }
 </style>

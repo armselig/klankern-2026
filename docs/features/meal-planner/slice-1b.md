@@ -28,7 +28,7 @@ It is applied only with the owner's go-ahead, **after the release is live and th
 
 ### The screens
 
-- **`MealDays.vue`** is the list of days that the week and the trip share. The dinner is the main row of a day; breakfast, lunch and snack show only when something is planned, and one line of "+ Breakfast", "+ Lunch" and "+ Snack" buttons per day adds them. Each entry has one overflow menu (`MealEntry.vue`): "Make a recipe from this" for a title entry, "Move", "Mark as cooked" for a skipped one, and "Remove". The menu is opened by its button's own press, as in the root `CLAUDE.md`.
+- **`MealDays.vue`** is the list of days that the week and the trip share. The dinner is the main row of a day; breakfast, lunch and snack show only when something is planned, and one line of "+ Breakfast", "+ Lunch" and "+ Snack" buttons per day adds them. Each entry has one overflow menu (`MealEntry.vue`): "Make a recipe from this" for a title entry, "Move", "Mark as cooked" for a skipped one, and "Remove". The menu is opened by its button's own press, as in the root `CLAUDE.md`. (The rows and the add buttons were redone on 2026-10-16, see "The week at a glance: built" in [`features/meal-planner/week-layout.md`](./week-layout.md).)
 - **`MoveMealDialog.vue`**: radios for the slot, buttons for today, tomorrow and the six days after, and "Another day" with the app's `vacation-date-field`. The spec asked for a native date input; the app's field is used for the reason the vacation form uses it.
 - **`MealTripView.vue`**: the heading "Trip to `<title>`, `<dates>`" and "Show all weeks". An unknown trip and one of another household give the same not-found.
 - **`MealWeekView.vue`** is only the heading ("Meals, week of …") and the navigation now.

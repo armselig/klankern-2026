@@ -619,10 +619,25 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
       // Named "Tomorrow" from 17:00 on.
       await page.getByRole("link", { name: /^(Tonight|Tomorrow)$/ }).click();
       await expect(page).toHaveTitle("Meals · Klankern");
+      // The days are drawn: each has its date's add button, and the days
+      // before yesterday are folded.
       await expect(
-        page.getByRole("button", { name: /^Add dinner on / }),
-      ).toHaveCount(7);
+        page.getByRole("button", { name: /^Add to / }).first(),
+      ).toBeVisible();
       await expectNoBlockingViolations(page, "the meal plan");
+
+      await page
+        .getByRole("button", { name: /^Add to / })
+        .first()
+        .click();
+      await expect(page.getByLabel("What will you eat?")).toBeFocused();
+      await untilFadesEnd(page);
+      await expectNoBlockingViolations(
+        page,
+        "the dialog that adds a meal of any slot",
+      );
+      await page.getByRole("button", { name: "Cancel" }).click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
 
       await page
         .getByRole("button", { name: /^Add dinner on / })

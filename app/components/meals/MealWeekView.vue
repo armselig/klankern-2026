@@ -5,8 +5,9 @@ import { Notify } from "quasar";
 /**
  * A week of the household's meals, Monday to Sunday. The week is in the
  * address (`?week=`), so a week can be linked to and the browser's back
- * button goes to the week before. The days themselves are MealDays.vue's;
- * "Fill my week" is useWeekFill's. `?fill=1`, which the Tonight tile links
+ * button goes to the week before. The days themselves are MealDays.vue's,
+ * which folds the days before yesterday in this week; "Fill my week" is
+ * useWeekFill's and stands in the days' row of actions. `?fill=1`, which the Tonight tile links
  * to, starts a fill once everything it needs is loaded.
  */
 const props = defineProps<{ householdId: string }>();
@@ -57,59 +58,44 @@ async function planDraft() {
 
 <template>
   <section aria-labelledby="meals-heading">
-    <h2
-      id="meals-heading"
-      class="text-h6 q-my-none"
-      :data-testid="TEST_IDS.meals.heading"
-    >
-      Meals, week of {{ formatDay(monday, true) }}
-    </h2>
-    <nav aria-label="Weeks" class="meal-week__nav">
-      <q-btn
-        flat
-        no-caps
-        :icon="mdiChevronLeft"
-        label="Previous"
-        aria-label="Previous week"
-        :to="{ query: { week: addDays(monday, -7) } }"
-        class="touch-target"
-        :data-testid="TEST_IDS.meals.previousWeek"
-      />
-      <q-btn
-        v-if="!isThisWeek"
-        flat
-        no-caps
-        label="Today"
-        aria-label="This week"
-        :to="{ query: {} }"
-        class="touch-target"
-        :data-testid="TEST_IDS.meals.thisWeek"
-      />
-      <q-btn
-        flat
-        no-caps
-        :icon-right="mdiChevronRight"
-        label="Next"
-        aria-label="Next week"
-        :to="{ query: { week: addDays(monday, 7) } }"
-        class="touch-target"
-        :data-testid="TEST_IDS.meals.nextWeek"
-      />
-    </nav>
-
-    <meal-fill-bar
-      :drafting="fill.draft !== null"
-      :can-fill="fill.canFill"
-      :draft-count="draftCount"
-      :choice-line="fill.choiceLine"
-      :can-reroll-rest="canRerollRest"
-      :saving="fill.saving"
-      @fill="fill.start"
-      @save="planDraft"
-      @reroll-rest="fill.rerollRest"
-      @cancel="fill.cancel"
-      @dismiss-note="fill.dismissSmallNote"
-    />
+    <div class="meal-week__head">
+      <h2
+        id="meals-heading"
+        class="meal-week__heading"
+        :data-testid="TEST_IDS.meals.heading"
+      >
+        {{ weekHeading(monday, today) }}
+      </h2>
+      <nav aria-label="Weeks" class="meal-week__nav">
+        <q-btn
+          v-if="!isThisWeek"
+          flat
+          no-caps
+          label="This week"
+          :to="{ query: {} }"
+          class="touch-target"
+          :data-testid="TEST_IDS.meals.thisWeek"
+        />
+        <q-btn
+          flat
+          round
+          :icon="mdiChevronLeft"
+          aria-label="Previous week"
+          :to="{ query: { week: addDays(monday, -7) } }"
+          class="touch-target"
+          :data-testid="TEST_IDS.meals.previousWeek"
+        />
+        <q-btn
+          flat
+          round
+          :icon="mdiChevronRight"
+          aria-label="Next week"
+          :to="{ query: { week: addDays(monday, 7) } }"
+          class="touch-target"
+          :data-testid="TEST_IDS.meals.nextWeek"
+        />
+      </nav>
+    </div>
 
     <meal-days
       :household-id="householdId"
@@ -117,16 +103,50 @@ async function planDraft() {
       :today="today"
       :drafts="fill.draftRows"
       :can-reroll="fill.canReroll"
+      :fold-earlier="isThisWeek"
       @toggle-draft-lock="fill.toggleLock"
       @reroll-draft="fill.reroll"
-    />
+    >
+      <template #actions>
+        <meal-fill-bar
+          :drafting="fill.draft !== null"
+          :can-fill="fill.canFill"
+          :draft-count="draftCount"
+          :choice-line="fill.choiceLine"
+          :can-reroll-rest="canRerollRest"
+          :saving="fill.saving"
+          @fill="fill.start"
+          @save="planDraft"
+          @reroll-rest="fill.rerollRest"
+          @cancel="fill.cancel"
+          @dismiss-note="fill.dismissSmallNote"
+        />
+      </template>
+    </meal-days>
   </section>
 </template>
 
 <style scoped>
+/* The heading and the weeks' buttons on one line. */
+.meal-week__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 4px;
+  margin-bottom: 8px;
+}
+
+.meal-week__heading {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 2rem;
+  letter-spacing: normal;
+}
+
 .meal-week__nav {
   display: flex;
-  justify-content: space-between;
-  margin: 8px 0;
+  align-items: center;
 }
 </style>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { mdiPlus } from "@quasar/extras/mdi-v7";
+import { mdiChevronDown, mdiPlus } from "@quasar/extras/mdi-v7";
 import { Dialog, Notify } from "quasar";
 import { putMealsOnShoppingList } from "~/composables/meals-on-shopping-list";
 import type { MealReactionChoice } from "~/types/kids";
@@ -8,14 +8,17 @@ import type { LocalDate } from "~/utils/local-date";
 import { HELD_REMOVAL_MS } from "~/stores/meal-plan";
 
 /**
- * The days of the plan a page shows, a week or a trip: each day's meals,
- * dinner first, with a way to add one, and each entry's menu (move, remove,
- * make a recipe of it, mark it as cooked, record what the kids made of it).
- * A day "Fill my week" proposes a dinner for shows it in place of "Add
- * dinner"; the week holds the proposal. Under the days, the button that
- * puts the ingredients of what is planned from today on on the shopping
- * list. It renders and wires; the order, the days and the run are worked
- * out in utils/ and composables/.
+ * The days of the plan a page shows, a week or a trip, laid out for "the
+ * week at a glance" (docs/features/meal-planner/week-layout.md): a row per
+ * day with its date, which is the day's add button, and its meals, dinner
+ * first, then the others with their slot's name. An open dinner is a dashed
+ * "Add dinner" in the dinner's place, and a dinner "Fill my week" proposes
+ * stands there instead; the week holds the proposal. Each entry has its
+ * menu (move, remove, make a recipe of it, mark it as cooked, record what
+ * the kids made of it). Above the days, the page's actions (the `actions`
+ * slot) and the button that puts the ingredients of what is planned from
+ * today on on the shopping list. It renders and wires; the order, the days
+ * and the run are worked out in utils/ and composables/.
  */
 const props = defineProps<{
   householdId: string;
@@ -26,6 +29,8 @@ const props = defineProps<{
   drafts?: Readonly<Record<LocalDate, { name: string; locked: boolean }>>;
   /** A proposed dinner can be swapped for another recipe. */
   canReroll?: boolean;
+  /** Whether the days before yesterday fold away (the week of today). */
+  foldEarlier?: boolean;
 }>();
 const emit = defineEmits<{
   toggleDraftLock: [day: LocalDate];
@@ -73,25 +78,36 @@ const shownEntries = computed(() =>
   ),
 );
 
-const OTHER_SLOTS = SLOTS_IN_ORDER.filter((slot) => slot !== "dinner");
+/** The days folded under "Earlier this week", and whether they are shown. */
+const folded = computed(() =>
+  props.foldEarlier ? daysToFold(props.days, props.today) : [],
+);
+const earlierOpen = ref(false);
 
 const dayRows = computed(() =>
   props.days.map((day) => {
     const ofDay = shownEntries.value.filter((entry) => entry.date === day);
+    const label = formatWeekday(day);
+    const [weekday, dayOfMonth] = label.split(" ");
     return {
       day,
-      label: formatWeekday(day),
+      label,
+      weekday,
+      dayOfMonth,
       isToday: day === props.today,
-      // Dinner always, since its row is where one is added; the others
-      // only when something is planned in them.
-      slots: SLOTS_IN_ORDER.map((slot) => ({
-        slot,
-        label: slotLabel(slot),
-        entries: ofDay.filter((entry) => entry.slot === slot),
-      })).filter((row) => row.slot === "dinner" || row.entries.length > 0),
+      isPast: day < props.today,
+      isFolded: folded.value.includes(day),
+      dinners: ofDay.filter((entry) => entry.slot === "dinner"),
+      // The others after the dinner, as the day runs, each with its name.
+      others: SLOTS_IN_ORDER.filter((slot) => slot !== "dinner").flatMap(
+        (slot) => ofDay.filter((entry) => entry.slot === slot),
+      ),
     };
   }),
 );
+
+/** A proposal is on the days; the shopping run waits until it is planned. */
+const drafting = computed(() => Object.keys(props.drafts ?? {}).length > 0);
 
 /** What an entry is called; null when its recipe was removed. */
 function nameOf(entry: MealPlanEntry): string | null {
@@ -115,6 +131,13 @@ const addOpen = computed({
   get: () => addTarget.value !== null,
   set: (open) => {
     if (!open) addTarget.value = null;
+  },
+});
+/** The slot the dialog's radios hold, for the day it was opened for. */
+const addSlot = computed({
+  get: () => addTarget.value?.slot ?? "dinner",
+  set: (slot: MealSlot) => {
+    if (addTarget.value) addTarget.value = { ...addTarget.value, slot };
   },
 });
 
@@ -338,121 +361,138 @@ async function putOnShoppingList() {
       Couldn't load the plan. Reload the page to try again.
     </p>
     <template v-else>
-      <p
-        v-if="shownEntries.length === 0"
-        class="text-muted"
-        :data-testid="TEST_IDS.meals.empty"
-      >
-        Planned meals appear here.
-      </p>
-      <!-- role="list" because Safari stops announcing a list once its
-           bullets are styled away. -->
-      <ul role="list" class="meal-days">
-        <li
-          v-for="day in dayRows"
-          :key="day.day"
-          class="meal-days__day"
-          :data-testid="TEST_IDS.meals.day"
-        >
-          <h3 class="meal-days__day-heading">
-            {{ day.label
-            }}<span v-if="day.isToday" class="text-primary"> · Today</span>
-          </h3>
-          <section
-            v-for="row in day.slots"
-            :key="row.slot"
-            :aria-label="`${row.label}, ${day.label}`"
-            :data-testid="TEST_IDS.meals.slot"
-          >
-            <!-- Dinner is the day's main row and goes without a label. -->
-            <h4
-              v-if="row.slot !== 'dinner'"
-              class="meal-days__slot-heading"
-              :data-testid="TEST_IDS.meals.slotHeading"
-            >
-              {{ row.label }}
-            </h4>
-            <ul role="list" class="meal-days__entries">
-              <meal-entry
-                v-for="entry in row.entries"
-                :key="entry.id"
-                :ref="(row) => rememberRow(entry.id, row)"
-                :entry="entry"
-                :name="nameOf(entry)"
-                :can-record-reactions="canRecord(entry)"
-                :reaction-note="noteOf(entry)"
-                @move="openMove"
-                @reactions="openReactions"
-                @remove="removeEntry"
-                @make-recipe="makeRecipeOf"
-                @mark-cooked="markCooked"
-              />
-              <meal-draft-row
-                v-if="row.slot === 'dinner' && drafts?.[day.day]"
-                :name="drafts[day.day]!.name"
-                :day-label="day.label"
-                :locked="drafts[day.day]!.locked"
-                :can-reroll="canReroll"
-                @toggle-lock="emit('toggleDraftLock', day.day)"
-                @reroll="emit('rerollDraft', day.day)"
-              />
-            </ul>
-            <q-btn
-              v-if="row.slot === 'dinner' && !drafts?.[day.day]"
-              flat
-              no-caps
-              align="left"
-              :icon="mdiPlus"
-              label="Add dinner"
-              :aria-label="`Add dinner on ${day.label}`"
-              class="touch-target full-width"
-              :data-testid="TEST_IDS.meals.add"
-              @click="addTarget = { day: day.day, slot: 'dinner' }"
-            />
-          </section>
-          <div class="meal-days__other-slots">
-            <q-btn
-              v-for="slot in OTHER_SLOTS"
-              :key="slot"
-              flat
-              dense
-              no-caps
-              :icon="mdiPlus"
-              :label="slotLabel(slot)"
-              :aria-label="`Add ${slot} on ${day.label}`"
-              class="touch-target"
-              :data-testid="TEST_IDS.meals.addOtherSlot"
-              @click="addTarget = { day: day.day, slot }"
-            />
-          </div>
-        </li>
-      </ul>
-
-      <div class="q-mt-md">
+      <div class="meal-days__actions">
+        <slot name="actions" />
         <q-btn
-          v-if="run.pending.length > 0"
-          unelevated
+          v-if="run.pending.length > 0 && !drafting"
+          outline
           no-caps
-          color="primary"
           class="touch-target"
           :loading="putting"
           :label="putOnListLabel(ingredientCount(run.pending))"
           :data-testid="TEST_IDS.meals.putOnList"
           @click="putOnShoppingList"
         />
-        <p
-          v-if="runFailure"
-          class="text-negative q-mt-sm"
-          role="alert"
-          :data-testid="TEST_IDS.meals.putOnListFailure"
-        >
-          {{ runFailure }}
-        </p>
       </div>
+      <p
+        v-if="runFailure"
+        class="text-negative"
+        role="alert"
+        :data-testid="TEST_IDS.meals.putOnListFailure"
+      >
+        {{ runFailure }}
+      </p>
+      <!-- role="list" because Safari stops announcing a list once its
+           bullets are styled away. -->
+      <ul role="list" class="meal-days">
+        <li v-if="folded.length > 0">
+          <q-btn
+            flat
+            no-caps
+            align="left"
+            :icon-right="mdiChevronDown"
+            :label="foldedDaysLine(folded)"
+            :aria-expanded="earlierOpen"
+            class="touch-target full-width meal-days__earlier"
+            :class="{ 'meal-days__earlier--open': earlierOpen }"
+            :data-testid="TEST_IDS.meals.earlier"
+            @click="earlierOpen = !earlierOpen"
+          />
+        </li>
+        <li
+          v-for="day in dayRows"
+          v-show="!day.isFolded || earlierOpen"
+          :key="day.day"
+          class="meal-days__day"
+          :class="{
+            'meal-days__day--today': day.isToday,
+            'meal-days__day--past': day.isPast,
+          }"
+          :data-testid="TEST_IDS.meals.day"
+        >
+          <div class="meal-days__date">
+            <h3 class="meal-days__day-heading">
+              <span class="meal-days__weekday">{{ day.weekday }}</span>
+              {{ " " }}
+              <span class="meal-days__day-of-month">{{ day.dayOfMonth }}</span>
+              <template v-if="day.isToday">
+                {{ " " }}
+                <span class="meal-days__today">Today</span>
+              </template>
+            </h3>
+            <!-- Laid over the whole date, so the date is the day's add
+                 button; its sign is the + under the date. -->
+            <button
+              type="button"
+              class="meal-days__add-to-day"
+              :aria-label="`Add to ${day.label}`"
+              :data-testid="TEST_IDS.meals.addToDay"
+              @click="addTarget = { day: day.day, slot: 'dinner' }"
+            >
+              <q-icon :name="mdiPlus" size="16px" />
+            </button>
+          </div>
+          <ul role="list" class="meal-days__entries">
+            <meal-entry
+              v-for="entry in day.dinners"
+              :key="entry.id"
+              :ref="(row) => rememberRow(entry.id, row)"
+              :entry="entry"
+              :name="nameOf(entry)"
+              :can-record-reactions="canRecord(entry)"
+              :reaction-note="noteOf(entry)"
+              @move="openMove"
+              @reactions="openReactions"
+              @remove="removeEntry"
+              @make-recipe="makeRecipeOf"
+              @mark-cooked="markCooked"
+            />
+            <meal-draft-row
+              v-if="drafts?.[day.day]"
+              :name="drafts[day.day]!.name"
+              :day-label="day.label"
+              :locked="drafts[day.day]!.locked"
+              :can-reroll="canReroll"
+              @toggle-lock="emit('toggleDraftLock', day.day)"
+              @reroll="emit('rerollDraft', day.day)"
+            />
+            <li v-else-if="day.dinners.length === 0">
+              <q-btn
+                flat
+                no-caps
+                align="left"
+                :icon="mdiPlus"
+                label="Add dinner"
+                :aria-label="`Add dinner on ${day.label}`"
+                class="touch-target full-width meal-days__open"
+                :data-testid="TEST_IDS.meals.add"
+                @click="addTarget = { day: day.day, slot: 'dinner' }"
+              />
+            </li>
+            <meal-entry
+              v-for="entry in day.others"
+              :key="entry.id"
+              :ref="(row) => rememberRow(entry.id, row)"
+              :entry="entry"
+              :name="nameOf(entry)"
+              :slot-label="slotLabel(entry.slot as MealSlot)"
+              :can-record-reactions="canRecord(entry)"
+              :reaction-note="noteOf(entry)"
+              @move="openMove"
+              @reactions="openReactions"
+              @remove="removeEntry"
+              @make-recipe="makeRecipeOf"
+              @mark-cooked="markCooked"
+            />
+          </ul>
+        </li>
+      </ul>
     </template>
 
     <add-meal-dialog
       v-model="addOpen"
+      v-model:meal-slot="addSlot"
+      choose-slot
       :day-label="addTarget ? formatWeekday(addTarget.day) : ''"
       :slot-label="addTarget ? slotLabel(addTarget.slot) : ''"
       :recipes="recipeStore.visible"
@@ -487,6 +527,18 @@ async function putOnShoppingList() {
 </template>
 
 <style scoped>
+/* The page's actions above the days, side by side where they fit. */
+.meal-days__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.meal-days__actions:empty {
+  display: none;
+}
+
 /* One bordered list of days, no card per day. */
 .meal-days {
   margin: 0;
@@ -496,40 +548,106 @@ async function putOnShoppingList() {
   border-radius: 4px;
 }
 
+.meal-days > li + li {
+  border-top: 1px solid var(--theme-separator);
+}
+
+/* The date in a narrow column, the meals beside it. */
 .meal-days__day {
-  padding: 8px 12px;
+  display: grid;
+  grid-template-columns: 3.5rem 1fr;
+  column-gap: 8px;
+  padding: 4px 4px 4px 0;
 }
 
-.meal-days__day + .meal-days__day {
-  border-top: 1px solid var(--theme-outline);
+/* A tint, never a colored edge: see --theme-tint. */
+.meal-days__day--today {
+  background: var(--theme-tint);
 }
 
-/* Quasar styles bare h3 and h4 as display lines. */
-.meal-days__day-heading,
-.meal-days__slot-heading {
+.meal-days__date {
+  position: relative;
+  min-height: 64px;
+}
+
+/* Quasar styles a bare h3 as a display line. */
+.meal-days__day-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   margin: 0;
-  font-size: 0.875rem;
+  padding: 6px 0 22px;
+  font-size: 0.8125rem;
   font-weight: 500;
-  line-height: 1.5rem;
+  line-height: 1rem;
   letter-spacing: normal;
 }
 
-.meal-days__slot-heading {
-  margin-top: 4px;
+.meal-days__day-of-month {
+  font-size: 1.125rem;
+  line-height: 1.5rem;
+}
+
+/* The text's color in bold, not the primary color, which is below 4.5:1
+   on the tint. */
+.meal-days__today {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.meal-days__day--past .meal-days__weekday,
+.meal-days__day--past .meal-days__day-of-month {
   font-weight: 400;
   color: var(--theme-text-muted);
 }
 
+.meal-days__add-to-day {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 0 6px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--theme-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.meal-days__add-to-day:hover {
+  background: var(--theme-veil-on-surface);
+}
+
+.meal-days__add-to-day:focus-visible {
+  outline: 2px solid var(--theme-text);
+  outline-offset: -2px;
+}
+
 .meal-days__entries {
+  min-width: 0;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-/* The other slots' add buttons share one line, so a day stays short. */
-.meal-days__other-slots {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+/* Not planned yet: a dashed edge, as a proposed dinner has. */
+.meal-days__open {
+  border: 1px dashed var(--theme-outline);
+}
+
+.meal-days__earlier :deep(.q-icon) {
+  transition: transform 150ms ease;
+}
+
+.meal-days__earlier--open :deep(.q-icon) {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meal-days__earlier :deep(.q-icon) {
+    transition: none;
+  }
 }
 </style>
