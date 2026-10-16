@@ -3,15 +3,20 @@ import { mdiDeleteOutline } from "@quasar/extras/mdi-v7";
 import type { TodoItem } from "~/types/todo";
 
 const props = defineProps<{ item: TodoItem }>();
-const emit = defineEmits<{ toggle: [id: string]; remove: [id: string] }>();
+const emit = defineEmits<{
+  /** With the tick box's place, for a celebration to start from. */
+  toggle: [id: string, box: DOMRect];
+  remove: [id: string];
+}>();
 
 const { drawing, startFromTap, endDrawing } = useTickDrawing();
+const checkbox = useTemplateRef<{ $el: HTMLElement }>("checkbox");
 
 /** The person's own tap: draws the tick here, where a Realtime change can't
- * reach, then lets the list toggle the item. */
+ * reach, then lets the list toggle the item, telling it where the box is. */
 function toggleFromTap(checked: boolean) {
   startFromTap(checked);
-  emit("toggle", props.item.id);
+  emit("toggle", props.item.id, tickBoxRect(checkbox.value?.$el));
 }
 </script>
 
@@ -20,6 +25,7 @@ function toggleFromTap(checked: boolean) {
     <q-item-section>
       <!-- The title is the checkbox's label, so screen readers announce the item, not "on". -->
       <q-checkbox
+        ref="checkbox"
         :model-value="item.done"
         :data-testid="TEST_IDS.list.checkbox"
         :class="{

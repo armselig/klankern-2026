@@ -184,6 +184,46 @@ test.describe("lists for a single member", () => {
         await expect(item).toHaveAccessibleName(ticked);
       });
     });
+
+    test("ticking the last open to-do celebrates, once a minute", async ({
+      page,
+    }) => {
+      const last = `Last ${runId}`;
+      const burst = page.getByTestId(TEST_IDS.celebration);
+      await openSignedIn(page, user);
+      await openList(page, "todos");
+      await untilAdded(page, () => addTodo(page, last));
+
+      await test.step("a tick that leaves something open plays nothing", async () => {
+        // The other tests' open to-dos first; a ticked to-do stays in place.
+        for (const box of await listItems(page).all()) {
+          if ((await box.textContent()) === last || (await box.isChecked()))
+            continue;
+          await box.click();
+          await expect(box).toBeChecked();
+          // Counted once: a burst is in the page from the tap on.
+          expect(await burst.count()).toBe(0);
+        }
+      });
+
+      await test.step("the last tick bursts from its box and is gone within a second", async () => {
+        const item = listItem(page, last);
+        await item.click();
+        await expect(burst).toBeVisible();
+        await expect(burst).toHaveCount(0, { timeout: 1_000 });
+        await expect(item).toBeChecked();
+        await expect(item).toHaveAccessibleName(last);
+      });
+
+      await test.step("unticked and ticked again within the minute, it plays nothing", async () => {
+        const item = listItem(page, last);
+        await item.click();
+        await expect(item).not.toBeChecked();
+        await item.click();
+        await expect(item).toBeChecked();
+        expect(await burst.count()).toBe(0);
+      });
+    });
   });
 
   /** The saved state of an item, read past RLS, to see what reached the database. */

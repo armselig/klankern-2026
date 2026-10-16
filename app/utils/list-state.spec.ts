@@ -6,6 +6,7 @@ import {
   confirmListItem,
   mergeListResync,
   softDeleteListItem,
+  ticksLastOpen,
   upsertListItem,
   visibleListItems,
 } from "./list-state";
@@ -244,5 +245,25 @@ describe("mergeListResync", () => {
     const state = { "item-1": item(), "item-2": item({ id: "item-2" }) };
     const result = mergeListResync(state, [item()], []);
     expect(Object.keys(result)).toEqual(["item-1"]);
+  });
+});
+
+describe("ticksLastOpen", () => {
+  it("is true for the last open item", () => {
+    expect(ticksLastOpen([item()], "item-1")).toBe(true);
+  });
+
+  it("is false while another item is still open", () => {
+    expect(ticksLastOpen([item(), item({ id: "item-2" })], "item-1")).toBe(
+      false,
+    );
+  });
+
+  it("is false for an item that is not open (an untick)", () => {
+    expect(ticksLastOpen([item({ id: "item-2" })], "item-1")).toBe(false);
+  });
+
+  it("is false when nothing is open", () => {
+    expect(ticksLastOpen([], "item-1")).toBe(false);
   });
 });

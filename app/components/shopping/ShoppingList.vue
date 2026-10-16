@@ -21,6 +21,19 @@ async function add() {
   titleInput.value?.focus();
   await shoppingStore.add(title, quantity);
 }
+
+const { burst, playFrom: celebrateFrom } = useCelebration("shopping");
+
+/**
+ * The person's own tap on an item's box. When it ticks off the last open
+ * item, a burst plays from the box, at most once a minute; the check looks
+ * at the list before the tick, which the store makes at once. A tick that
+ * arrives by Realtime comes through the store only and never plays one.
+ */
+function toggleFromTap(id: string, box: DOMRect) {
+  if (ticksLastOpen(shoppingStore.toBuy, id)) celebrateFrom(box);
+  void shoppingStore.toggle(id);
+}
 </script>
 
 <template>
@@ -65,7 +78,7 @@ async function add() {
           v-for="item in shoppingStore.visible"
           :key="item.id"
           :item="item"
-          @toggle="shoppingStore.toggle"
+          @toggle="toggleFromTap"
           @remove="shoppingStore.remove"
         />
       </transition-group>
@@ -79,6 +92,13 @@ async function add() {
         </q-item-section>
       </q-item>
     </q-list>
+
+    <celebration-burst
+      v-if="burst"
+      :key="burst.id"
+      :origin="burst"
+      feature="shopping"
+    />
 
     <p
       v-if="shoppingStore.error"

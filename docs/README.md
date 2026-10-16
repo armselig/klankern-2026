@@ -29,7 +29,7 @@ Start with `progress.md`, then read the topic files for what you are about to to
 
 - [`theme-and-contrast.md`](./ui/theme-and-contrast.md): the Catppuccin theme with light and dark mode, the contrast of hover and focus, the success notices.
 - [`icons-fonts-and-markup.md`](./ui/icons-fonts-and-markup.md): the icon strategy, the fonts that were tried and dropped, the rules for markup and formatting and the mobile viewport.
-- [`playful-look/`](./ui/playful-look/README.md): issue #9, a more colorful and playful look, in a folder of its own with nine files: the plan (what the palette allows by contrast, an accent per feature with a darker shade for light mode, four slices), the design (tokens, shapes, states, motion and small celebrations) its design review and its eng review of 2026-10-16 (with the eng review's ledger in two files), and how slices 1 to 3 were built. Its `README.md` lists them. Slices 1 (tokens and shape), 2 (color on the screens) and 3 (motion) are released (1.13.2).
+- [`playful-look/`](./ui/playful-look/README.md): issue #9, a more colorful and playful look, in a folder of its own with ten files: the plan (what the palette allows by contrast, an accent per feature with a darker shade for light mode, four slices), the design (tokens, shapes, states, motion and small celebrations) its design review and its eng review of 2026-10-16 (with the eng review's ledger in two files), and how slices 1 to 4 were built. Its `README.md` lists them. Slices 1 (tokens and shape), 2 (color on the screens) and 3 (motion) are released (1.13.2); slice 4 (celebrations) is built.
 
 **Tests, build and delivery** (`infra/`)
 

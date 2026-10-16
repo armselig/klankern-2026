@@ -34,7 +34,8 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
   add: [phase: VacationPhase, title: string];
-  toggle: [id: string];
+  /** With the tick box's place, for a celebration to start from. */
+  toggle: [id: string, box: DOMRect];
   rename: [id: string, title: string];
   remove: [id: string];
   give: [id: string, personId: string | null];
@@ -73,8 +74,8 @@ function add() {
 /** Ticks a task and keeps the focus on its tick box. The row moves to the
  * end of the open or of the done tasks, and a browser drops the focus of an
  * element that is moved, so it is set again once the list is redrawn. */
-async function toggle(id: string) {
-  emit("toggle", id);
+async function toggle(id: string, box: DOMRect) {
+  emit("toggle", id, box);
   await nextTick();
   rows.get(id)?.focusTickBox();
 }

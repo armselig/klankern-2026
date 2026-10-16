@@ -11,3 +11,14 @@
 export function makeLeavingRowInert(el: Element) {
   (el as HTMLElement).inert = true;
 }
+
+/**
+ * Where a checkbox's box is on the screen, for a celebration to burst from:
+ * the box itself (Quasar's `.q-checkbox__inner`), not the whole checkbox
+ * with its title. Read at the tap, before the row moves (a ticked shopping
+ * item slides to the end of the list).
+ */
+export function tickBoxRect(checkbox: Element | undefined | null): DOMRect {
+  const box = checkbox?.querySelector(".q-checkbox__inner") ?? checkbox;
+  return box?.getBoundingClientRect() ?? new DOMRect();
+}

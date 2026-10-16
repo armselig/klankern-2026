@@ -298,6 +298,30 @@ test.describe("a vacation's checklist, for two members", () => {
       await expect(phaseSummary(pageA, "before")).toHaveText("22 open");
     });
 
+    await test.step("A's tick of a phase's last open task celebrates on A, not on B", async () => {
+      for (const page of [pageA, pageB]) {
+        await page.emulateMedia({ reducedMotion: "no-preference" });
+        const fold = phaseButton(page, "after");
+        if ((await fold.getAttribute("aria-expanded")) !== "true")
+          await fold.click();
+      }
+      const burstA = pageA.getByTestId(TEST_IDS.celebration);
+      // A ticked task moves to the end, so the first is always open.
+      const firstOpen = phaseTasks(pageA, "after").first();
+      for (const open of ["3 open", "2 open", "1 open"]) {
+        await firstOpen.click();
+        await expect(phaseSummary(pageA, "after")).toHaveText(open);
+        expect(await burstA.count()).toBe(0);
+      }
+
+      const last = (await firstOpen.textContent())!;
+      await firstOpen.click();
+      await expect(burstA).toBeVisible();
+      await expect(vacationTask(pageB, last)).toBeChecked();
+      expect(await pageB.getByTestId(TEST_IDS.celebration).count()).toBe(0);
+      await expect(burstA).toHaveCount(0);
+    });
+
     await test.step("A removes the vacation after a confirmation, and B's page says it is gone", async () => {
       await pageA.getByTestId(TEST_IDS.vacation.header.edit).click();
       await pageA.getByTestId(TEST_IDS.vacation.header.remove).click();

@@ -135,11 +135,15 @@ test.describe("Fill my week", () => {
       await expect(draftNames.nth(2)).not.toHaveText(before!);
     });
 
-    await test.step("Plan these plans every proposed dinner", async () => {
+    await test.step("Plan these plans every proposed dinner, and celebrates", async () => {
+      // With motion, so that the burst is shown.
+      await page.emulateMedia({ reducedMotion: "no-preference" });
       await page.getByTestId(TEST_IDS.meals.fill.save).click();
       await expect(page.getByTestId(TEST_IDS.meals.fill.notice)).toHaveText(
         "Planned 6 dinners",
       );
+      await expect(page.getByTestId(TEST_IDS.celebration)).toHaveCount(1);
+      await expect(page.getByTestId(TEST_IDS.celebration)).toHaveCount(0);
       await expect(drafts).toHaveCount(0);
       await expect(page.getByTestId(TEST_IDS.meals.entry)).toHaveCount(7);
       // Nothing is open any more.

@@ -20,11 +20,19 @@ defineProps<{
 }>();
 const emit = defineEmits<{
   fill: [];
-  save: [];
+  /** With the button's place, for a celebration to start from. */
+  save: [button: DOMRect];
   rerollRest: [];
   cancel: [];
   dismissNote: [];
 }>();
+
+const saveButton = useTemplateRef<{ $el: HTMLElement }>("saveButton");
+
+/** Read at the press: the button is gone once the dinners are planned. */
+function saveFromPress() {
+  emit("save", saveButton.value?.$el.getBoundingClientRect() ?? new DOMRect());
+}
 </script>
 
 <template>
@@ -49,6 +57,7 @@ const emit = defineEmits<{
       </p>
       <div class="meal-fill__actions">
         <q-btn
+          ref="saveButton"
           unelevated
           no-caps
           color="primary"
@@ -56,7 +65,7 @@ const emit = defineEmits<{
           :loading="saving"
           class="touch-target"
           :data-testid="TEST_IDS.meals.fill.save"
-          @click="emit('save')"
+          @click="saveFromPress"
         />
         <q-btn
           flat

@@ -307,6 +307,25 @@ function confirmRemove() {
     await router.replace(ROUTES.vacations);
   });
 }
+
+/** Once a minute per trip, over its three phases. */
+const { burst, playFrom: celebrateFrom } = useCelebration(props.vacationId);
+
+/**
+ * The person's own tap on a task's box. When it ticks off the last open
+ * task of its phase, a burst plays from the box: finishing what comes
+ * before the trip is a moment of its own. The phase's open tasks are all of
+ * them, also while "Who has what" shows one person's alone, and as they
+ * are before the tick, which the store makes at once.
+ */
+function toggleTaskFromTap(id: string, box: DOMRect) {
+  const task = tasks.value.find((candidate) => candidate.id === id);
+  const open = task
+    ? tasksInPhase(tasks.value, task.phase).filter((other) => !other.done)
+    : [];
+  if (ticksLastOpen(open, id)) celebrateFrom(box);
+  void vacationStore.toggleTask(id);
+}
 </script>
 
 <template>
@@ -388,7 +407,7 @@ function confirmRemove() {
         :add-error="addErrors[entry.phase]"
         @update:open="(open) => setPhaseOpen(entry.phase, open)"
         @add="addTask"
-        @toggle="vacationStore.toggleTask"
+        @toggle="toggleTaskFromTap"
         @rename="vacationStore.renameTask"
         @remove="vacationStore.removeTask"
         @give="vacationStore.assignTask"
@@ -401,6 +420,13 @@ function confirmRemove() {
         :saving="rejectSaving"
         :error="rejectError"
         @reject="rejectTask"
+      />
+
+      <celebration-burst
+        v-if="burst"
+        :key="burst.id"
+        :origin="burst"
+        feature="vacations"
       />
     </article>
 

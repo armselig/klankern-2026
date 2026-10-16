@@ -104,3 +104,14 @@ export function visibleListItems<T extends ListItem>(
     .filter((item) => !item.deleted_at)
     .sort((a, b) => a.position - b.position);
 }
+
+/**
+ * Whether ticking `id` ticks off the last open item of a list, which is
+ * when the person's own tap celebrates. `open` is the list's open items as
+ * they are before the tick: the stores tick optimistically, so after it the
+ * item would no longer be open. An untick never counts, since a ticked item
+ * is not among the open ones.
+ */
+export function ticksLastOpen(open: readonly { id: string }[], id: string) {
+  return open.length === 1 && open[0]!.id === id;
+}

@@ -43,9 +43,14 @@ watch(
   { immediate: true },
 );
 
-async function planDraft() {
+const { burst, playFrom: celebrateFrom } = useCelebration("week");
+
+/** Plans the proposal. Only a week saved in full celebrates, from the
+ * button that was pressed; one that was saved in part says so and no more. */
+async function planDraft(button: DOMRect) {
   const notice = await fill.save();
   if (!notice) return;
+  if (!notice.failed) celebrateFrom(button);
   Notify.create({
     message: notice.message,
     // Not "positive": see RecipeView.vue.
@@ -124,6 +129,13 @@ async function planDraft() {
         />
       </template>
     </meal-days>
+
+    <celebration-burst
+      v-if="burst"
+      :key="burst.id"
+      :origin="burst"
+      feature="meals"
+    />
   </section>
 </template>
 

@@ -24,7 +24,8 @@ const props = defineProps<{
   emails: Record<string, string>;
 }>();
 const emit = defineEmits<{
-  toggle: [id: string];
+  /** With the tick box's place, for a celebration to start from. */
+  toggle: [id: string, box: DOMRect];
   rename: [id: string, title: string];
   remove: [id: string];
   /** Give the task to a person, or to nobody (null). */
@@ -40,10 +41,10 @@ const tickBox = useTemplateRef<HasElement>("tickBox");
 const { drawing, startFromTap, endDrawing } = useTickDrawing();
 
 /** The person's own tap: draws the tick here, where a Realtime change can't
- * reach, then lets the phase toggle the task. */
+ * reach, then lets the phase toggle the task, telling it where the box is. */
 function toggleFromTap(checked: boolean) {
   startFromTap(checked);
-  emit("toggle", props.task.id);
+  emit("toggle", props.task.id, tickBoxRect(tickBox.value?.$el));
 }
 const moreButton = useTemplateRef<HasElement>("moreButton");
 const whoButton = useTemplateRef<HasElement>("whoButton");

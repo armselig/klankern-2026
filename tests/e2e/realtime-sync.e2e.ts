@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { TEST_IDS } from "../../app/utils/test-ids";
 import { controlRealtimeSocket } from "../support/realtime-socket";
 import {
   addShoppingItem,
@@ -61,8 +62,14 @@ test.describe("realtime sync between two members", () => {
   test("to-do changes appear live on the other member, including after a reconnect", async ({
     browser,
   }) => {
-    const contextA = await browser.newContext();
-    const contextB = await browser.newContext();
+    // With motion, so that a burst could be seen on either page: the one
+    // that ends a list on B must not play on A.
+    const contextA = await browser.newContext({
+      reducedMotion: "no-preference",
+    });
+    const contextB = await browser.newContext({
+      reducedMotion: "no-preference",
+    });
     const socketA = await controlRealtimeSocket(contextA);
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
@@ -83,6 +90,15 @@ test.describe("realtime sync between two members", () => {
     await test.step("a toggle by B shows on A", async () => {
       await listItem(pageB, "Milk from B").click();
       await expect(listItem(pageA, "Milk from B")).toBeChecked();
+    });
+
+    await test.step("B's tick of the last open item celebrates on B, not on A", async () => {
+      await listItem(pageB, "Bread from A").click();
+      await expect(pageB.getByTestId(TEST_IDS.celebration)).toBeVisible();
+      await expect(listItem(pageA, "Bread from A")).toBeChecked();
+      // Counted once, as the tick arrives: a burst started from the store's
+      // state would be in the page by now.
+      expect(await pageA.getByTestId(TEST_IDS.celebration).count()).toBe(0);
     });
 
     await test.step("a delete by B removes the item on A", async () => {

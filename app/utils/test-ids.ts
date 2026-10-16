@@ -12,6 +12,8 @@
 export const TEST_IDS = {
   /** Every place that shows an error's message, whatever the error. */
   errorMessage: "error-message",
+  /** The burst of pen strokes when the person's own tap finishes a list. */
+  celebration: "celebration-burst",
   /** The buttons of the dialogs Quasar's plugin builds (see `withTestId`). */
   confirmDialog: {
     ok: "confirm-dialog-ok",
