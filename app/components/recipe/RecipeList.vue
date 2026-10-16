@@ -40,13 +40,11 @@ onMounted(() => recipeStore.load(props.householdId));
       </li>
     </ul>
 
-    <p
-      v-else-if="recipeStore.householdId"
-      class="text-muted"
-      :data-testid="TEST_IDS.recipe.list.empty"
-    >
-      No recipes yet.
-    </p>
+    <empty-state v-else-if="recipeStore.householdId" feature="recipes">
+      <p class="text-muted q-my-none" :data-testid="TEST_IDS.recipe.list.empty">
+        No recipes yet.
+      </p>
+    </empty-state>
 
     <p
       v-if="recipeStore.error"

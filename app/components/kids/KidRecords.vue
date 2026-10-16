@@ -75,13 +75,14 @@ function lines(counts: RecipeReactionCount[]) {
 
 <template>
   <section aria-labelledby="kids-heading">
-    <h2
+    <page-heading
       id="kids-heading"
+      feature="household"
       class="text-h6 q-my-none"
       :data-testid="TEST_IDS.kids.page.heading"
     >
       What the kids refused
-    </h2>
+    </page-heading>
     <p class="text-muted">
       In the last {{ COOKED_LOOKBACK_WEEKS }} weeks. Record it from a dinner's
       menu in the plan.
@@ -100,10 +101,12 @@ function lines(counts: RecipeReactionCount[]) {
     >
       Couldn't load the records. Reload the page to try again.
     </p>
-    <p v-else-if="records.length === 0" :data-testid="TEST_IDS.kids.page.none">
-      No kids added yet. Add them on
-      <nuxt-link :to="ROUTES.home">the dashboard</nuxt-link>.
-    </p>
+    <empty-state v-else-if="records.length === 0" feature="household">
+      <p class="q-my-none" :data-testid="TEST_IDS.kids.page.none">
+        No kids added yet. Add them on
+        <nuxt-link :to="ROUTES.home">the dashboard</nuxt-link>.
+      </p>
+    </empty-state>
     <ul v-else role="list" class="kid-records">
       <li
         v-for="record in records"

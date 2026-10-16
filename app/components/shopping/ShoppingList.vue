@@ -60,9 +60,13 @@ async function add() {
         @remove="shoppingStore.remove"
       />
       <q-item v-if="shoppingStore.visible.length === 0">
-        <q-item-section class="text-muted" :data-testid="TEST_IDS.list.empty"
-          >Nothing on the list yet.</q-item-section
-        >
+        <q-item-section>
+          <empty-state feature="shopping">
+            <span class="text-muted" :data-testid="TEST_IDS.list.empty"
+              >Nothing on the list yet.</span
+            >
+          </empty-state>
+        </q-item-section>
       </q-item>
     </q-list>
 

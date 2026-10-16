@@ -52,4 +52,4 @@ Each slice is released on its own; each is a `refactor` (a restyling of what exi
 
 ### Not decided yet
 
-- The line drawings of the empty states: what each of the five shows. Sketched at the start of slice 2, in both modes, and shown to the user before they are built (decided in the design review).
+- The line drawings of the empty states: what each of the five shows. Sketched at the start of slice 2, in both modes, and shown to the user before they are built (decided in the design review). Decided 2026-10-16 at the start of slice 2: see "Color on the screens" in [`slice-2.md`](./slice-2.md).

@@ -12,7 +12,9 @@ onMounted(async () => {
   <q-page padding>
     <q-spinner v-if="householdStore.loading" color="primary" size="2em" />
     <div v-else-if="householdStore.household" style="max-width: 960px">
-      <h2 class="text-h6">Whiteboard</h2>
+      <page-heading feature="whiteboard" class="text-h6"
+        >Whiteboard</page-heading
+      >
       <shared-whiteboard :household-id="householdStore.household.id" />
     </div>
     <p v-else :data-testid="TEST_IDS.household.requiredNotice">

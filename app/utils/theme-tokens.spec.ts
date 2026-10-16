@@ -126,6 +126,21 @@ const text = opaqueToken("--theme-text");
 const muted = opaqueToken("--theme-text-muted");
 const red = opaqueToken("--q-negative");
 const veil = translucentToken("--theme-veil-on-surface");
+/** --theme-separator, black or white at a percentage. */
+const separator = (() => {
+  const match =
+    /^light-dark\(\s*rgb\(0 0 0 \/ (\d+)%\),\s*rgb\(255 255 255 \/ (\d+)%\)\s*\)$/.exec(
+      declaration("--theme-separator"),
+    );
+  if (!match) throw new Error("--theme-separator is not black and white");
+  return {
+    latte: { color: { r: 0, g: 0, b: 0 }, alpha: Number(match[1]) / 100 },
+    mocha: { color: { r: 255, g: 255, b: 255 }, alpha: Number(match[2]) / 100 },
+  };
+})();
+/** How far a translucent edge stands out from what it is drawn on. */
+const edgeContrast = (edge: { color: Rgb; alpha: number }, ground: Rgb) =>
+  contrast(over(edge.color, edge.alpha, ground), ground);
 /** What a feature's color is laid on: the page and a surface. */
 const grounds = (mode: Mode) => [page[mode], surface[mode]];
 
@@ -151,6 +166,11 @@ describe("the theme's feature tokens", () => {
       const strong = strongShade(feature);
       for (const mode of MODES)
         expect(tint[mode].color, `${feature} tint, ${mode}`).toEqual(
+          color[mode],
+        );
+      const edge = translucentToken(`--feature-${feature}-edge`);
+      for (const mode of MODES)
+        expect(edge[mode].color, `${feature} edge, ${mode}`).toEqual(
           color[mode],
         );
       expect(paletteColor("latte", strong.hue), feature).toEqual(color.latte);
@@ -202,6 +222,34 @@ describe("the contrast of the feature tokens", () => {
               `${pair} on ${feature}, ${mode}`,
             ).toBeGreaterThanOrEqual(4.5);
         }
+    }
+  });
+
+  // A card in a feature's color is as clearly a card as a plain one, and
+  // its edge only says which feature: no stronger than it has to be, and
+  // below the 3:1 of something that means "look here".
+  it("keeps every feature's edge as visible as the separator, no more than needed, and below 3:1", () => {
+    for (const feature of FEATURES) {
+      const edge = translucentToken(`--feature-${feature}-edge`);
+      for (const mode of MODES) {
+        const ratios = grounds(mode).map((ground) => ({
+          edge: edgeContrast(edge[mode], ground),
+          weaker: edgeContrast(
+            { ...edge[mode], alpha: edge[mode].alpha - 0.05 },
+            ground,
+          ),
+          separator: edgeContrast(separator[mode], ground),
+        }));
+        const label = `${feature} edge, ${mode}`;
+        for (const ratio of ratios) {
+          expect(ratio.edge, label).toBeGreaterThanOrEqual(ratio.separator);
+          expect(ratio.edge, label).toBeLessThan(3);
+        }
+        expect(
+          ratios.some((ratio) => ratio.weaker < ratio.separator),
+          label,
+        ).toBe(true);
+      }
     }
   });
 

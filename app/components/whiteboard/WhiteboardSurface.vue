@@ -166,9 +166,11 @@ function cancelGesture(event: PointerEvent) {
 }
 
 /* Light in light mode and dark in dark mode, like every other surface; the
-   pens follow (utils/ink.ts). */
+   pens follow (utils/ink.ts). The edge is a card's, neutral: the color on
+   the board is what is drawn on it, and the page's pink is on the
+   heading's icon. */
 .whiteboard-surface__board {
   fill: var(--theme-surface);
-  stroke: var(--theme-outline);
+  stroke: var(--theme-separator);
 }
 </style>

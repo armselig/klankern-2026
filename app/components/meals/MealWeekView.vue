@@ -59,13 +59,14 @@ async function planDraft() {
 <template>
   <section aria-labelledby="meals-heading">
     <div class="meal-week__head">
-      <h2
+      <page-heading
         id="meals-heading"
+        feature="meals"
         class="meal-week__heading"
         :data-testid="TEST_IDS.meals.heading"
       >
         {{ weekHeading(monday, today) }}
-      </h2>
+      </page-heading>
       <nav aria-label="Weeks" class="meal-week__nav">
         <q-btn
           v-if="!isThisWeek"

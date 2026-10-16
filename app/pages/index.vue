@@ -1,14 +1,6 @@
 <script setup lang="ts">
 import { Dialog, Notify } from "quasar";
 import type { HouseholdChild } from "~/types/kids";
-import {
-  mdiBagSuitcaseOutline,
-  mdiCartOutline,
-  mdiChefHat,
-  mdiDraw,
-  mdiFormatListChecks,
-  mdiSilverwareForkKnife,
-} from "@quasar/extras/mdi-v7";
 
 const householdStore = useHouseholdStore();
 const todoStore = useTodoStore();
@@ -154,6 +146,14 @@ const tonightFailed = computed(
     (!mealPlanStore.householdId && !!mealPlanStore.error) ||
     recipesFailed.value,
 );
+const tonightLoading = computed(
+  () => mealPlanStore.loading || recipeStore.loading,
+);
+/** The Tonight tile has its color over its whole surface only while it
+ * shows what to eat. */
+const tonightLeads = computed(
+  () => !tonightLoading.value && !tonightFailed.value,
+);
 const addTextOpen = ref(false);
 
 /** The dinners of the tile's day that are not removed. */
@@ -296,15 +296,19 @@ const vacationsFailed = computed(
            other four are what a household looks up, and they come first. -->
       <nav aria-label="Lists, recipes, vacations and whiteboard">
         <ul role="list" class="dashboard__tiles">
+          <!-- Tonight leads, once it offers a decision: a tile that is
+               loading or failed has none, and the shared red line would
+               be too close to 4.5:1 on its tint. -->
           <li
             class="dashboard__tile--wide"
+            :class="{ 'dashboard__tile--lead': tonightLeads }"
             :data-testid="TEST_IDS.dashboard.tile.tonight"
           >
             <dashboard-tile
               :title="tonightIsToday ? 'Tonight' : 'Tomorrow'"
               :to="ROUTES.meals"
-              :icon="mdiSilverwareForkKnife"
-              :loading="mealPlanStore.loading || recipeStore.loading"
+              feature="meals"
+              :loading="tonightLoading"
               :failed="tonightFailed"
             >
               <tonight-tile
@@ -329,7 +333,7 @@ const vacationsFailed = computed(
             <dashboard-tile
               title="To-dos"
               :to="ROUTES.todos"
-              :icon="mdiFormatListChecks"
+              feature="todos"
               :loading="todoStore.loading"
               :failed="todosFailed"
             >
@@ -344,7 +348,7 @@ const vacationsFailed = computed(
             <dashboard-tile
               title="Shopping"
               :to="ROUTES.shopping"
-              :icon="mdiCartOutline"
+              feature="shopping"
               :loading="shoppingStore.loading"
               :failed="shoppingFailed"
             >
@@ -359,7 +363,7 @@ const vacationsFailed = computed(
             <dashboard-tile
               title="Recipes"
               :to="ROUTES.recipes"
-              :icon="mdiChefHat"
+              feature="recipes"
               :loading="recipeStore.loading"
               :failed="recipesFailed"
             >
@@ -374,7 +378,7 @@ const vacationsFailed = computed(
             <dashboard-tile
               title="Vacations"
               :to="ROUTES.vacations"
-              :icon="mdiBagSuitcaseOutline"
+              feature="vacations"
               :loading="vacationStore.loading"
               :failed="vacationsFailed"
             >
@@ -396,7 +400,7 @@ const vacationsFailed = computed(
             <dashboard-tile
               title="Whiteboard"
               :to="ROUTES.whiteboard"
-              :icon="mdiDraw"
+              feature="whiteboard"
               :loading="whiteboardStore.loading"
               :failed="whiteboardFailed"
             >
@@ -456,6 +460,20 @@ const vacationsFailed = computed(
 /* The Tonight tile spans the row: it holds a line of buttons. */
 .dashboard__tile--wide {
   grid-column: 1 / -1;
+}
+
+/* The one tile that asks for a decision today: peach over the surface
+   (6% light, 8% dark; utils/theme-tokens.spec.ts calculates the pairs on
+   it) and an edge in the strong shade. The edge is 2px, so that it still
+   leads in forced colors, where the tint is dropped and every edge takes
+   the system's color. */
+.dashboard__tile--lead > :deep(.dashboard-tile) {
+  background-image: linear-gradient(var(--feature-tint), var(--feature-tint));
+  --card-edge: var(--feature-outline);
+  --card-edge-width: 2px;
+  /* The wider edge takes its pixel from the padding: the content stays
+     where it is on the other tiles. */
+  padding: 13px;
 }
 
 /* A tile fills its cell, so the two of a row are equally high. */

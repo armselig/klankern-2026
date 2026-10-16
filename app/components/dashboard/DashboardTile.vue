@@ -1,29 +1,48 @@
 <script setup lang="ts">
-defineProps<{
+import type { FeatureKey } from "~/utils/features";
+
+const props = defineProps<{
   title: string;
   /** The page the tile leads to. */
   to: string;
-  /** An icon's SVG path, from Material Design Icons. */
-  icon: string;
+  /** Whose icon and color the tile has. */
+  feature: FeatureKey;
   loading: boolean;
   /** The tile's content couldn't be fetched; the link still works. */
   failed: boolean;
 }>();
+
+/** Each feature its own stroke under the heading, so that the tiles don't
+ * show one squiggle six times over. */
+const strokeVariant = computed(() =>
+  Object.keys(FEATURE_ICONS).indexOf(props.feature),
+);
 </script>
 
 <template>
-  <q-card class="dashboard-tile">
+  <q-card class="dashboard-tile" :style="featureColors(feature)">
     <!-- The link is the heading's text alone and is stretched over the card
          (see the style): the whole tile can be pressed, yet the link is
          named "To-dos", not by everything the tile shows. -->
     <h3 class="dashboard-tile__heading">
-      <q-icon :name="icon" size="24px" color="primary" aria-hidden="true" />
+      <q-icon
+        :name="FEATURE_ICONS[feature]"
+        size="24px"
+        class="dashboard-tile__icon"
+        aria-hidden="true"
+      />
       <nuxt-link
         :to="to"
         class="dashboard-tile__link"
         :data-testid="TEST_IDS.dashboard.tileLink"
-        >{{ title }}</nuxt-link
-      >
+        ><!-- The stroke lies in a span of its own: positioned on the link,
+             it would shrink the link's stretched area to the heading's
+             text. --><span class="dashboard-tile__title"
+          >{{ title
+          }}<pen-stroke
+            :variant="strokeVariant"
+            class="dashboard-tile__stroke" /></span
+      ></nuxt-link>
     </h3>
     <q-spinner v-if="loading" color="primary" />
     <p
@@ -48,6 +67,14 @@ defineProps<{
   min-width: 0;
   min-height: 11.75rem;
   padding: 14px;
+  /* See .q-card in assets/css/theme.css. */
+  --card-edge: var(--feature-edge);
+}
+
+/* In the strong shade, at 3:1 or more, so it would hold even if it meant
+   something. */
+.dashboard-tile__icon {
+  color: var(--feature-icon);
 }
 
 /* Quasar styles a bare h3 as a 3rem display line. */
@@ -67,6 +94,31 @@ defineProps<{
   text-decoration: none;
 }
 
+.dashboard-tile__title {
+  position: relative;
+}
+
+/* Under the heading's text, never through it. A pen stroke, not a link's
+   underline: the accent says which feature, and the heading is no less a
+   link without it. */
+.dashboard-tile__stroke {
+  position: absolute;
+  left: 0;
+  bottom: -5px;
+  width: 100%;
+  height: 6px;
+  color: var(--feature-accent);
+  stroke-width: 2px;
+}
+
+/* Forced colors leave an SVG's colors as they are; under a link the
+   stroke takes the links' color, as the wordmark's does. */
+@media (forced-colors: active) {
+  .dashboard-tile__stroke {
+    color: LinkText;
+  }
+}
+
 /* The link's area is the card's (a q-card is positioned). */
 .dashboard-tile__link::after {
   content: "";
@@ -81,7 +133,7 @@ defineProps<{
    would stick after the tap. */
 @media (any-hover: hover) {
   .dashboard-tile__link:hover::after {
-    outline: 2px solid var(--theme-outline);
+    outline: 2px solid var(--feature-outline);
   }
 }
 

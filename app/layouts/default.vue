@@ -44,23 +44,9 @@ async function signOut() {
             :data-testid="TEST_IDS.layout.homeLink"
           >
             Klankern
-            <!-- A pen stroke, as on the whiteboard and in the avatars.
-                 Stretched to the word's width; the line keeps its
-                 thickness (non-scaling-stroke). -->
-            <svg
-              class="wordmark__stroke"
-              viewBox="0 0 100 8"
-              preserveAspectRatio="none"
-              aria-hidden="true"
-            >
-              <path
-                d="M2 5.5C20 2 38 7 58 4S88 3 98 5"
-                fill="none"
-                stroke="currentColor"
-                stroke-linecap="round"
-                vector-effect="non-scaling-stroke"
-              />
-            </svg>
+            <!-- A pen stroke, as on the whiteboard and in the avatars,
+                 stretched to the word's width. -->
+            <pen-stroke class="wordmark__stroke" />
           </nuxt-link>
         </h1>
         <q-space />
@@ -139,7 +125,6 @@ async function signOut() {
   bottom: 4px;
   width: calc(100% - 16px);
   height: 8px;
-  overflow: visible;
   stroke-width: 2px;
 }
 

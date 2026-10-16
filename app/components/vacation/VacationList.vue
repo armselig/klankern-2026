@@ -32,14 +32,15 @@ function currentLine(vacation: Vacation): string {
     <q-spinner v-if="vacationStore.loading" color="primary" />
 
     <template v-else-if="vacationStore.householdId">
-      <p
-        v-if="isEmpty"
-        class="text-muted"
-        :data-testid="TEST_IDS.vacation.list.empty"
-      >
-        No vacations yet. Add your next trip, then what has to be done before,
-        during and after it.
-      </p>
+      <empty-state v-if="isEmpty" feature="vacations" class="q-mb-md">
+        <p
+          class="text-muted q-my-none"
+          :data-testid="TEST_IDS.vacation.list.empty"
+        >
+          No vacations yet. Add your next trip, then what has to be done before,
+          during and after it.
+        </p>
+      </empty-state>
 
       <q-btn
         :to="ROUTES.vacationNew"

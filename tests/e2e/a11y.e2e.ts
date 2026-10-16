@@ -260,6 +260,32 @@ for (const { colorScheme, bodyClass, veil } of COLOR_SCHEMES) {
           );
       });
 
+      // The pen strokes under the wordmark and the tiles' headings are
+      // drawn by one component; a stroke placed on a tile's link would make
+      // the link's stretched area its heading's alone.
+      await test.step("the pen strokes leave the links as they were", async () => {
+        const wordmark = await homeLink(page).boundingBox();
+        const stroke = await homeLink(page).locator("svg").boundingBox();
+        expect
+          .soft(stroke?.width, "the wordmark's stroke spans the word")
+          .toBeCloseTo((wordmark?.width ?? 0) - 16, 0);
+        const todosCard = dashboardTile(page, "todos").locator(".q-card");
+        // elementFromPoint() sees only what is in the viewport.
+        await todosCard.scrollIntoViewIfNeeded();
+        const card = await todosCard.boundingBox();
+        const atCorner = await page.evaluate(
+          ([x, y]) =>
+            document
+              .elementFromPoint(x!, y!)
+              ?.closest("a")
+              ?.textContent?.trim() ?? null,
+          [card!.x + card!.width - 8, card!.y + card!.height - 8],
+        );
+        expect
+          .soft(atCorner, "a press in a tile's corner is its link's")
+          .toBe("To-dos");
+      });
+
       await test.step("a highlighted header button shows the theme's veil", async () => {
         // axe can't judge anything in the header: the header's shadow layer
         // lies over it, so axe reports the background as undetermined. A

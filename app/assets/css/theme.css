@@ -143,6 +143,40 @@
     rgb(var(--ctp-mocha-mauve-rgb) / 0.08)
   );
 
+  /* --feature-<name>-edge: a card's edge in its feature's color, the
+     accent at the least strength (in steps of 5%) that stands out from the
+     page and a surface as much as --theme-separator does, so a colored
+     card is as clearly a card as a plain one. It says which feature, not
+     "look here", and stays below 3:1. */
+  --feature-todos-edge: light-dark(
+    rgb(var(--ctp-latte-blue-rgb) / 0.25),
+    rgb(var(--ctp-mocha-blue-rgb) / 0.45)
+  );
+  --feature-shopping-edge: light-dark(
+    rgb(var(--ctp-latte-green-rgb) / 0.3),
+    rgb(var(--ctp-mocha-green-rgb) / 0.4)
+  );
+  --feature-meals-edge: light-dark(
+    rgb(var(--ctp-latte-peach-rgb) / 0.3),
+    rgb(var(--ctp-mocha-peach-rgb) / 0.45)
+  );
+  --feature-recipes-edge: light-dark(
+    rgb(var(--ctp-latte-yellow-rgb) / 0.35),
+    rgb(var(--ctp-mocha-yellow-rgb) / 0.35)
+  );
+  --feature-vacations-edge: light-dark(
+    rgb(var(--ctp-latte-teal-rgb) / 0.25),
+    rgb(var(--ctp-mocha-teal-rgb) / 0.4)
+  );
+  --feature-whiteboard-edge: light-dark(
+    rgb(var(--ctp-latte-pink-rgb) / 0.35),
+    rgb(var(--ctp-mocha-pink-rgb) / 0.4)
+  );
+  --feature-household-edge: light-dark(
+    rgb(var(--ctp-latte-mauve-rgb) / 0.2),
+    rgb(var(--ctp-mocha-mauve-rgb) / 0.45)
+  );
+
   /* Corners by size, in rem so that they grow with the reader's text size:
      the bigger a thing, the rounder. Round things (avatars, round buttons,
      the tick) stay round. */
@@ -277,7 +311,9 @@ body.body--dark,
  * and notices. So a shadow means "above the page", an edge "a card".
  */
 .q-card:not(.q-dialog .q-card) {
-  border: 1px solid var(--theme-separator);
+  /* A card of a feature sets its own edge here (DashboardTile.vue). */
+  border: var(--card-edge-width, 1px) solid
+    var(--card-edge, var(--theme-separator));
   box-shadow: none;
 }
 

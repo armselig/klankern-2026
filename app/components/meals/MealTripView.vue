@@ -30,7 +30,9 @@ const days = computed(() =>
 <template>
   <section aria-labelledby="meals-heading">
     <template v-if="failed">
-      <h2 id="meals-heading" class="text-h6 q-my-none">Meals</h2>
+      <page-heading id="meals-heading" feature="meals" class="text-h6 q-my-none"
+        >Meals</page-heading
+      >
       <p class="text-negative" :data-testid="TEST_IDS.meals.failure">
         Couldn't load the trip. Reload the page to try again.
       </p>
@@ -42,13 +44,14 @@ const days = computed(() =>
       :data-testid="TEST_IDS.meals.loading"
     />
     <template v-else-if="vacation">
-      <h2
+      <page-heading
         id="meals-heading"
+        feature="meals"
         class="text-h6 q-my-none"
         :data-testid="TEST_IDS.meals.trip.heading"
       >
         Trip to {{ vacation.title }}, {{ vacationDates(vacation, today) }}
-      </h2>
+      </page-heading>
       <nuxt-link
         :to="ROUTES.meals"
         class="meal-trip__all-weeks"
@@ -58,7 +61,9 @@ const days = computed(() =>
       <meal-days :household-id="householdId" :days="days" :today="today" />
     </template>
     <template v-else>
-      <h2 id="meals-heading" class="text-h6 q-my-none">Meals</h2>
+      <page-heading id="meals-heading" feature="meals" class="text-h6 q-my-none"
+        >Meals</page-heading
+      >
       <p :data-testid="TEST_IDS.meals.trip.notFound">
         This trip doesn't exist, or it was removed.
         <nuxt-link :to="ROUTES.meals">Show all weeks</nuxt-link>
