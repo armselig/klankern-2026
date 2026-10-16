@@ -272,6 +272,7 @@ export const useVacationStore = defineStore("vacations", {
             people.map((person) => ({
               name: person.name.trim(),
               user_id: person.user_id,
+              child_id: person.child_id,
               id: crypto.randomUUID(),
             })),
           );
@@ -519,6 +520,7 @@ export const useVacationStore = defineStore("vacations", {
         household_id: householdId,
         name: person.name,
         user_id: person.user_id,
+        child_id: person.child_id,
         created_by: userId,
         created_at: new Date().toISOString(),
         deleted_at: null,

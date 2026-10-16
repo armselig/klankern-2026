@@ -16,13 +16,21 @@ const props = defineProps<{
   /** The person on the trip. Left out for a household member who is not on
    * it: they have an account, and one generic icon until their address is
    * known. */
-  person?: Pick<VacationPerson, "id" | "name" | "user_id">;
+  person?: Pick<VacationPerson, "id" | "name" | "user_id"> &
+    Partial<Pick<VacationPerson, "child_id">>;
 }>();
 
 /** Only for a person without an account: a member whose address is still
- * on its way would otherwise show a letter first and the avatar after. */
+ * on its way would otherwise show a letter first and the avatar after. A
+ * child's ink follows the child, not the person on the trip, so the child
+ * looks the same on every trip and on the kids' page. */
 const badge = computed(() =>
-  props.person && !props.person.user_id ? personBadge(props.person) : null,
+  props.person && !props.person.user_id
+    ? personBadge({
+        id: props.person.child_id ?? props.person.id,
+        name: props.person.name,
+      })
+    : null,
 );
 </script>
 

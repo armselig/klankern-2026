@@ -13,6 +13,7 @@ import type {
 const props = defineProps<{ householdId: string }>();
 const vacationStore = useVacationStore();
 const householdStore = useHouseholdStore();
+const kidsStore = useKidsStore();
 const user = useSupabaseUser();
 const router = useRouter();
 
@@ -23,14 +24,27 @@ onMounted(() => {
   if (householdStore.members.length === 0) void householdStore.fetchMembers();
 });
 
+// The children come too, to start with. Asked for here and not when
+// mounted: a load sets `loading` at once, so the people below wait for it
+// rather than being taken from an error a load before left behind.
+void kidsStore.load(props.householdId);
+
+/** The children have been loaded for this household, or could not be: the
+ * form then offers the members and typed names alone. */
+const childrenSettled = computed(
+  () =>
+    kidsStore.householdId === props.householdId ||
+    (!kidsStore.loading && !!kidsStore.error),
+);
+
 /** A person the form offers, and whether they are coming. */
 interface Candidate extends NewVacationPerson {
   coming: boolean;
 }
 
 /**
- * Who is coming: every member, and the people without an account of the
- * vacation that was created last, all ticked. Null until both are known;
+ * Who is coming: every member, every child, and the names typed on the
+ * vacation that was created last, all ticked. Null until all are known;
  * taken once then, so a change that arrives while the form is open doesn't
  * undo what was unticked or typed.
  */
@@ -38,7 +52,9 @@ const candidates = ref<Candidate[] | null>(null);
 
 watch(
   () =>
-    vacationStore.householdId && householdStore.members.length > 0
+    vacationStore.householdId &&
+    householdStore.members.length > 0 &&
+    childrenSettled.value
       ? householdStore.members
       : null,
   (members) => {
@@ -47,10 +63,11 @@ watch(
       Object.values(vacationStore.vacationsById),
     );
     const lastPeople = lastId ? vacationStore.peopleOf(lastId) : [];
-    candidates.value = peopleToStartWith(members, lastPeople).map((person) => ({
-      ...person,
-      coming: true,
-    }));
+    const children =
+      kidsStore.householdId === props.householdId ? kidsStore.children : [];
+    candidates.value = peopleToStartWith(members, children, lastPeople).map(
+      (person) => ({ ...person, coming: true }),
+    );
   },
   { immediate: true },
 );
@@ -92,12 +109,13 @@ watch(
 const newName = ref("");
 const nameInput = useTemplateRef<{ focus: () => void }>("nameInput");
 
-/** Adds the typed name as a person without an account. Not the form's
- * submit: Enter in this field adds the name, it doesn't save the vacation. */
+/** Adds the typed name as a person without an account, such as a guest.
+ * Not the form's submit: Enter in this field adds the name, it doesn't
+ * save the vacation. */
 function addName() {
   const name = newName.value.trim();
   if (!name || !candidates.value) return;
-  candidates.value.push({ name, user_id: null, coming: true });
+  candidates.value.push({ name, user_id: null, child_id: null, coming: true });
   newName.value = "";
   nameInput.value?.focus();
 }
@@ -127,7 +145,7 @@ async function submit() {
   try {
     const people = (candidates.value ?? [])
       .filter((person) => person.coming)
-      .map(({ name, user_id }) => ({ name, user_id }));
+      .map(({ name, user_id, child_id }) => ({ name, user_id, child_id }));
     // A trip that was removed while the form was open has nothing to copy.
     const source = copySources.value.find(
       (vacation) => vacation.id === copyTasksFrom.value,
@@ -224,7 +242,10 @@ async function submit() {
               "
               class="touch-target"
             />
-            <span v-if="!person.user_id" class="text-muted">no account</span>
+            <span v-if="person.child_id" class="text-muted">child</span>
+            <span v-else-if="!person.user_id" class="text-muted"
+              >no account</span
+            >
           </li>
         </ul>
         <div class="vacation-form__add-name">
@@ -248,7 +269,8 @@ async function submit() {
         <!-- Not the field's own hint: Quasar sets that in a grey that is
              below 4.5:1 on the theme's background in light mode. -->
         <p class="vacation-form__hint text-muted">
-          For someone without an account, such as a child.
+          For someone without an account, such as a guest. The household's kids
+          are added under "Kids" on the home page.
         </p>
       </fieldset>
 

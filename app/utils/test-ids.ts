@@ -316,6 +316,7 @@ export const TEST_IDS = {
       row: "vacation-people-row",
       coming: "vacation-people-coming",
       nameInput: "vacation-people-name-input",
+      absentRow: "vacation-people-absent-row",
       done: "vacation-people-done",
     },
     phase: {

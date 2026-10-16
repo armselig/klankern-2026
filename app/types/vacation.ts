@@ -62,9 +62,10 @@ export interface VacationGroups {
 
 type VacationPersonRow = Database["public"]["Tables"]["vacation_people"]["Row"];
 
-/** A person on a trip: a member of the household (`user_id`) or just a
- * name, such as a small child or a guest. A person taken off the trip stays
- * as a row with `deleted_at`, so a rejection keeps its name. */
+/** A person on a trip: a member of the household (`user_id`), one of the
+ * household's children (`child_id`), or just a name, such as a guest. A
+ * person taken off the trip stays as a row with `deleted_at`, so a
+ * rejection keeps its name. */
 export type VacationPerson = VacationPersonRow;
 
 export type VacationPersonRealtimeEvent = RowRealtimeEvent<VacationPerson>;
@@ -75,6 +76,8 @@ export type NewVacationPerson = {
   name: string;
   /** The member's account, or null for a person without one. */
   user_id: string | null;
+  /** The household's child this person is, or null. */
+  child_id: string | null;
 };
 
 /** One line of "Who has what": a person and their open tasks, or the tasks

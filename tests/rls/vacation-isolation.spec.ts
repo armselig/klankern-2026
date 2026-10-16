@@ -13,6 +13,7 @@ import {
   signedOut,
   type TestUser,
 } from "../support/supabase-fixtures";
+import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   personJson,
@@ -716,5 +717,107 @@ describe("vacation RLS isolation", () => {
       .update({ kind: "tent" })
       .eq("id", vacationAId);
     expect(unknown.error).not.toBeNull();
+  });
+  describe("the household's children on a trip", () => {
+    let childAId: string;
+    let childBId: string;
+
+    /** A child, without created_by: the column's default is the caller. */
+    async function addChild(user: TestUser, householdId: string, name: string) {
+      const id = randomUUID();
+      const { error } = await user.client
+        .from("household_children")
+        .insert({ id, household_id: householdId, name });
+      if (error) throw error;
+      return id;
+    }
+
+    beforeAll(async () => {
+      [childAId, childBId] = await Promise.all([
+        addChild(userA, householdAId, `Lea ${runId}`),
+        addChild(userB, householdBId, `Ben ${runId}`),
+      ]);
+    });
+
+    it("create_vacation writes a child of the household", async () => {
+      const vacation = vacationJson(householdAId);
+      const child = personJson("Lea", null, childAId);
+      const { data, error } = await userA.client.rpc("create_vacation", {
+        p_vacation: vacation,
+        p_tasks: [],
+        p_people: [child],
+      });
+      expect(error).toBeNull();
+      expect(data.people).toEqual([
+        expect.objectContaining({ id: child.id, child_id: childAId }),
+      ]);
+    });
+
+    it("create_vacation refuses another household's child and writes nothing", async () => {
+      const vacation = vacationJson(householdAId);
+      const { error } = await userA.client.rpc("create_vacation", {
+        p_vacation: vacation,
+        p_tasks: [],
+        p_people: [personJson("Ben", null, childBId)],
+      });
+      expect(error).not.toBeNull();
+
+      const { data: vacations } = await admin
+        .from("vacations")
+        .select("id")
+        .eq("id", vacation.id);
+      expect(vacations).toHaveLength(0);
+    });
+
+    it("blocks adding another household's child to a trip, or moving a person onto one", async () => {
+      const [insert, update] = await Promise.all([
+        userA.client.from("vacation_people").insert({
+          ...vacationPersonRow(userA, vacationAId, householdAId),
+          child_id: childBId,
+        }),
+        userA.client
+          .from("vacation_people")
+          .update({ child_id: childBId })
+          .eq("id", guestAId),
+      ]);
+      expect(insert.error).not.toBeNull();
+      expect(update.error).not.toBeNull();
+    });
+
+    it("puts a child on a vacation once, and again after they were taken off", async () => {
+      const id = randomUUID();
+      const first = await userA.client.from("vacation_people").insert({
+        ...vacationPersonRow(userA, vacationAId, householdAId),
+        id,
+        child_id: childAId,
+      });
+      expect(first.error).toBeNull();
+
+      const twice = await userA.client.from("vacation_people").insert({
+        ...vacationPersonRow(userA, vacationAId, householdAId),
+        child_id: childAId,
+      });
+      expect(twice.error).not.toBeNull();
+
+      const off = await userA.client
+        .from("vacation_people")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id);
+      expect(off.error).toBeNull();
+      const again = await userA.client.from("vacation_people").insert({
+        ...vacationPersonRow(userA, vacationAId, householdAId),
+        child_id: childAId,
+      });
+      expect(again.error).toBeNull();
+    });
+
+    it("rejects a person who is a member and a child at once", async () => {
+      const { error } = await userB.client.from("vacation_people").insert({
+        ...vacationPersonRow(userB, vacationBId, householdBId),
+        user_id: userB.userId,
+        child_id: childBId,
+      });
+      expect(error).not.toBeNull();
+    });
   });
 });

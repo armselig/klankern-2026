@@ -544,6 +544,7 @@ export type Database = {
       };
       vacation_people: {
         Row: {
+          child_id: string | null;
           created_at: string;
           created_by: string;
           deleted_at: string | null;
@@ -555,6 +556,7 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          child_id?: string | null;
           created_at?: string;
           created_by: string;
           deleted_at?: string | null;
@@ -565,6 +567,7 @@ export type Database = {
           vacation_id: string;
         };
         Update: {
+          child_id?: string | null;
           created_at?: string;
           created_by?: string;
           deleted_at?: string | null;
@@ -575,6 +578,13 @@ export type Database = {
           vacation_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "vacation_people_child_fkey";
+            columns: ["child_id", "household_id"];
+            isOneToOne: false;
+            referencedRelation: "household_children";
+            referencedColumns: ["id", "household_id"];
+          },
           {
             foreignKeyName: "vacation_people_member_fkey";
             columns: ["household_id", "user_id"];

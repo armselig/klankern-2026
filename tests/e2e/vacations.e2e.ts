@@ -616,3 +616,105 @@ test.describe("a vacation's tasks, shared between its people", () => {
     await contextB.close();
   });
 });
+
+test.describe("the household's children on a trip", () => {
+  let user: TestUser;
+  let householdId: string;
+
+  /** A child of the household, added as the kids' row on the home page
+   * adds one. */
+  async function addChild(name: string) {
+    const { data, error } = await user.client
+      .from("household_children")
+      .insert({ household_id: householdId, name, created_by: user.userId })
+      .select("id")
+      .single();
+    if (error) throw error;
+    return data.id;
+  }
+
+  test.beforeAll(async () => {
+    user = await createTestUser("e2e-vac-kids");
+    householdId = await createHousehold(user.client, `E2E vac kids ${runId}`);
+    await addEarlierTrip(user, householdId);
+  });
+
+  test.afterAll(async () => {
+    await deleteTestData([householdId], [user]);
+  });
+
+  test("a child is picked for a trip, given a task, and named as the household names them", async ({
+    page,
+  }) => {
+    const leaId = await addChild("Lea");
+    await openSignedIn(page, user);
+    const today = localDateOf(new Date());
+
+    await test.step("the form offers the household's child, ticked", async () => {
+      await openVacations(page);
+      await page.getByTestId(TEST_IDS.vacation.list.add).click();
+      await page.getByTestId(TEST_IDS.vacation.form.title).fill("Kids' week");
+      await page
+        .getByTestId(TEST_IDS.vacation.form.from)
+        .fill(addDays(today, 5));
+      await page
+        .getByTestId(TEST_IDS.vacation.form.until)
+        .fill(addDays(today, 9));
+
+      const lea = page
+        .getByTestId(TEST_IDS.vacation.form.person)
+        .filter({ hasText: "Lea" });
+      await expect(lea).toBeChecked();
+      await page.getByTestId(TEST_IDS.vacation.form.submit).click();
+
+      await expect(page).toHaveURL(/\/vacations\/[0-9a-f-]{36}$/);
+      await expect(shareLines(page).filter({ hasText: "Lea" })).toHaveText(
+        /Lea.*0$/,
+      );
+    });
+
+    await test.step("the child is given a task", async () => {
+      await untilTaskSaved(page, () =>
+        giveTaskTo(page, "Clothes", { name: "Lea" }),
+      );
+      await expect(taskWhoButton(page, "Clothes")).toHaveAccessibleName(
+        "Lea: Clothes",
+      );
+      await expect(shareLines(page).first()).toHaveText(/Lea.*1$/);
+    });
+
+    await test.step("a child renamed in the household is renamed on the trip", async () => {
+      const { error } = await user.client
+        .from("household_children")
+        .update({ name: "Leana" })
+        .eq("id", leaId);
+      if (error) throw error;
+      await expect(taskWhoButton(page, "Clothes")).toHaveAccessibleName(
+        "Leana: Clothes",
+      );
+    });
+
+    await test.step("a child who is not on the trip can be added to it", async () => {
+      await addChild("Tom");
+      await page.getByTestId(TEST_IDS.vacation.share.changePeople).click();
+      // A child's name is the household's, not a field of the trip.
+      await expect(
+        page.getByTestId(TEST_IDS.vacation.people.nameInput),
+      ).toHaveCount(0);
+      await page
+        .getByTestId(TEST_IDS.vacation.people.absentRow)
+        .filter({ hasText: "Tom" })
+        .getByRole("checkbox")
+        .click();
+      await expect(
+        page
+          .getByTestId(TEST_IDS.vacation.people.row)
+          .filter({ hasText: "Tom" }),
+      ).toHaveCount(1);
+      await page.getByTestId(TEST_IDS.vacation.people.done).click();
+      await expect(shareLines(page).filter({ hasText: "Tom" })).toHaveText(
+        /Tom.*0$/,
+      );
+    });
+  });
+});

@@ -1,3 +1,4 @@
+import type { HouseholdChild } from "~/types/kids";
 import type { ItemsById } from "~/types/list";
 import type {
   NewVacationPerson,
@@ -218,14 +219,22 @@ export function nameFromEmail(email: string): string {
   return (local || email).slice(0, VACATION_PERSON_NAME_LIMIT);
 }
 
+/** A name as two people's names are compared: without case and the spaces
+ * around it, as migration 0022 linked the typed names to the children. */
+function sameName(a: string, b: string): boolean {
+  return a.trim().toLocaleLowerCase() === b.trim().toLocaleLowerCase();
+}
+
 /**
  * The people the form for a new vacation starts with: every member of the
- * household, then the people without an account of the vacation that was
- * created last, so a child's name is typed once. A member keeps the name
- * they had there.
+ * household, every child of it, then the people typed as names on the
+ * vacation that was created last, so a guest's name is typed once. A member
+ * keeps the name they had there. A typed name that is a child's is left
+ * out: the child is in the list already.
  */
 export function peopleToStartWith(
   members: readonly { user_id: string; email: string }[],
+  children: readonly Pick<HouseholdChild, "id" | "name">[],
   lastPeople: readonly VacationPerson[],
 ): NewVacationPerson[] {
   const fromMembers = members.map((member) => ({
@@ -233,11 +242,67 @@ export function peopleToStartWith(
       lastPeople.find((person) => person.user_id === member.user_id)?.name ??
       nameFromEmail(member.email),
     user_id: member.user_id,
+    child_id: null,
+  }));
+  const fromChildren = children.map((child) => ({
+    name: child.name,
+    user_id: null,
+    child_id: child.id,
   }));
   const named = lastPeople
-    .filter((person) => !person.user_id)
-    .map((person) => ({ name: person.name, user_id: null }));
-  return [...fromMembers, ...named];
+    .filter(
+      (person) =>
+        !person.user_id &&
+        !person.child_id &&
+        !children.some((child) => sameName(child.name, person.name)),
+    )
+    .map((person) => ({ name: person.name, user_id: null, child_id: null }));
+  return [...fromMembers, ...fromChildren, ...named];
+}
+
+/**
+ * The members and children of the household who are not on a trip, as
+ * "Who is coming" offers them to be added. A member gets the name of their
+ * address (see nameFromEmail), a child their own.
+ */
+export function peopleNotComing(
+  members: readonly { user_id: string; email: string }[],
+  children: readonly Pick<HouseholdChild, "id" | "name">[],
+  people: readonly VacationPerson[],
+): NewVacationPerson[] {
+  const absentMembers = members
+    .filter((member) => !people.some((p) => p.user_id === member.user_id))
+    .map((member) => ({
+      name: nameFromEmail(member.email),
+      user_id: member.user_id,
+      child_id: null,
+    }));
+  const absentChildren = children
+    .filter((child) => !people.some((p) => p.child_id === child.id))
+    .map((child) => ({ name: child.name, user_id: null, child_id: child.id }));
+  return [...absentMembers, ...absentChildren];
+}
+
+/**
+ * The people of the household's trips, each child named as the household's
+ * list of children names them now: a person's own name is the one the child
+ * had when added (see migration 0022), and a child renamed on the kids'
+ * page is renamed on every trip. A child whose row is not loaded keeps the
+ * name on the trip. Unchanged rows stay the same objects.
+ */
+export function withChildNames(
+  peopleById: ItemsById<VacationPerson>,
+  childrenById: ItemsById<HouseholdChild>,
+): ItemsById<VacationPerson> {
+  const named: ItemsById<VacationPerson> = {};
+  for (const [id, person] of Object.entries(peopleById)) {
+    const child = person.child_id ? childrenById[person.child_id] : undefined;
+    named[id] =
+      child && child.name !== person.name
+        ? { ...person, name: child.name }
+        : person;
+  }
+  return named;
 }
 
 /** The vacation that was created last among the live ones, whose people a

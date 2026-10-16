@@ -4,17 +4,19 @@ import type { NewVacationPerson, VacationPerson } from "~/types/vacation";
 
 /**
  * "Who is coming", on a vacation that exists: "Who has what" turns into
- * the list of names. A tick takes a person off, and members who are not
- * on the trip and new names can be added. The name of a person without an
- * account can be changed: it was typed here. A member's name is text: it
- * comes from the member's address, and the app has nowhere a member sets
- * a name of their own.
+ * the list of names. A tick takes a person off, and members and children
+ * who are not on the trip and new names can be added. The name of a person
+ * without an account can be changed: it was typed here. A member's name is
+ * text: it comes from the member's address, and the app has nowhere a
+ * member sets a name of their own. A child's name is text too: it is the
+ * household's name for the child, changed under "Kids" on the home page.
  */
 const props = defineProps<{
   /** The people on the trip. */
   people: VacationPerson[];
-  /** The household's members who are not on the trip, to be added. */
-  absentMembers: NewVacationPerson[];
+  /** The household's members and children who are not on the trip, to be
+   * added. */
+  absentPeople: NewVacationPerson[];
   /** The person the signed-in member is on this trip, or null. */
   me: VacationPerson | null;
   /** The members' email addresses by user id, for their avatars. */
@@ -52,7 +54,7 @@ function addName() {
   if (!name) return;
   newName.value = "";
   addInput.value?.focus();
-  emit("add", { name, user_id: null });
+  emit("add", { name, user_id: null, child_id: null });
 }
 </script>
 
@@ -88,9 +90,11 @@ function addName() {
           :person="person"
           :size="24"
         />
-        <span v-if="person.user_id" class="col vacation-people__member">{{
-          person.name
-        }}</span>
+        <span
+          v-if="person.user_id || person.child_id"
+          class="col vacation-people__member"
+          >{{ person.name }}</span
+        >
         <q-input
           v-else
           :model-value="person.name"
@@ -103,19 +107,43 @@ function addName() {
         />
         <span class="vacation-people__note text-muted">
           {{
-            person.id === me?.id ? "(you)" : person.user_id ? "" : "no account"
+            person.id === me?.id
+              ? "(you)"
+              : person.user_id
+                ? ""
+                : person.child_id
+                  ? "child"
+                  : "no account"
           }}
         </span>
       </li>
-      <li v-for="member in absentMembers" :key="member.user_id ?? member.name">
+      <li
+        v-for="absent in absentPeople"
+        :key="absent.user_id ?? absent.child_id ?? absent.name"
+        :data-testid="TEST_IDS.vacation.people.absentRow"
+      >
         <q-checkbox
           :model-value="false"
-          :aria-label="`${member.name} is coming`"
+          :aria-label="`${absent.name} is coming`"
           class="touch-target"
-          @update:model-value="emit('add', member)"
+          @update:model-value="emit('add', absent)"
         />
-        <person-avatar :email="emailOf(member.user_id)" :size="24" />
-        <span class="col vacation-people__absent">{{ member.name }}</span>
+        <!-- A child gets its badge, as on the trip; a member waits for
+             the address. -->
+        <person-avatar
+          :email="emailOf(absent.user_id)"
+          :person="
+            absent.child_id
+              ? {
+                  id: absent.child_id,
+                  name: absent.name,
+                  user_id: null,
+                }
+              : undefined
+          "
+          :size="24"
+        />
+        <span class="col vacation-people__absent">{{ absent.name }}</span>
         <span class="vacation-people__note text-muted">not coming</span>
       </li>
     </ul>

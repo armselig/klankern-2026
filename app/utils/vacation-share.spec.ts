@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { HouseholdChild } from "~/types/kids";
 import type { VacationPerson, VacationTask } from "~/types/vacation";
 import {
   assigneeOf,
@@ -9,6 +10,7 @@ import {
   openTasksIn,
   peopleOfVacation,
   peopleToStartWith,
+  peopleNotComing,
   personOfUser,
   phaseSummaryIn,
   rejecterOf,
@@ -16,6 +18,7 @@ import {
   addTaskLabel,
   taskFilterHint,
   taskShares,
+  withChildNames,
 } from "./vacation-share";
 
 function person(overrides: Partial<VacationPerson> = {}): VacationPerson {
@@ -25,6 +28,7 @@ function person(overrides: Partial<VacationPerson> = {}): VacationPerson {
     household_id: "house-1",
     name: "alex",
     user_id: "user-alex",
+    child_id: null,
     created_by: "user-alex",
     created_at: "2026-10-01T00:00:00Z",
     deleted_at: null,
@@ -303,25 +307,71 @@ describe("the people a new vacation starts with", () => {
     { user_id: "user-sam", email: "sam.smith@example.org" },
   ];
 
+  const children = [
+    { id: "child-lena", name: "Lena" },
+    { id: "child-tom", name: "Tom" },
+  ];
+
   it("takes a member's name from the email address", () => {
     expect(nameFromEmail("sam.smith@example.org")).toBe("sam.smith");
     expect(nameFromEmail("@example.org")).toBe("@example.org");
   });
 
   it("starts with every member, on the first vacation", () => {
-    expect(peopleToStartWith(members, [])).toEqual([
-      { name: "alex", user_id: "user-alex" },
-      { name: "sam.smith", user_id: "user-sam" },
+    expect(peopleToStartWith(members, [], [])).toEqual([
+      { name: "alex", user_id: "user-alex", child_id: null },
+      { name: "sam.smith", user_id: "user-sam", child_id: null },
     ]);
   });
 
   it("carries over the last vacation's names: a member's, and the people without an account", () => {
     const last = [person({ name: "Alexandra" }), mia, gone];
-    expect(peopleToStartWith(members, last)).toEqual([
-      { name: "Alexandra", user_id: "user-alex" },
-      { name: "sam.smith", user_id: "user-sam" },
-      { name: "Mia", user_id: null },
+    expect(peopleToStartWith(members, [], last)).toEqual([
+      { name: "Alexandra", user_id: "user-alex", child_id: null },
+      { name: "sam.smith", user_id: "user-sam", child_id: null },
+      { name: "Mia", user_id: null, child_id: null },
     ]);
+  });
+
+  it("puts every child after the members, linked by child_id", () => {
+    expect(peopleToStartWith(members, children, [])).toEqual([
+      { name: "alex", user_id: "user-alex", child_id: null },
+      { name: "sam.smith", user_id: "user-sam", child_id: null },
+      { name: "Lena", user_id: null, child_id: "child-lena" },
+      { name: "Tom", user_id: null, child_id: "child-tom" },
+    ]);
+  });
+
+  it("leaves out a typed name that is a child's, ignoring case and spaces", () => {
+    const last = [
+      person({ id: "a", name: " lena ", user_id: null }),
+      person({ id: "b", name: "Guest", user_id: null }),
+    ];
+    expect(
+      peopleToStartWith([], children, last).map((p) => [p.name, p.child_id]),
+    ).toEqual([
+      ["Lena", "child-lena"],
+      ["Tom", "child-tom"],
+      ["Guest", null],
+    ]);
+  });
+
+  it("does not repeat a last-trip person already linked to a child as a typed name", () => {
+    const linked = person({
+      id: "c",
+      name: "Old name",
+      user_id: null,
+      child_id: "child-lena",
+    });
+    const result = peopleToStartWith([], children, [linked]);
+    expect(result).toEqual([
+      { name: "Lena", user_id: null, child_id: "child-lena" },
+      { name: "Tom", user_id: null, child_id: "child-tom" },
+    ]);
+  });
+
+  it("is empty without members, children and people", () => {
+    expect(peopleToStartWith([], [], [])).toEqual([]);
   });
 
   it("takes the vacation that was created last, not the one that starts last", () => {
@@ -333,5 +383,97 @@ describe("the people a new vacation starts with", () => {
       ]),
     ).toBe("b");
     expect(lastCreatedVacationId([])).toBeNull();
+  });
+});
+
+describe("peopleNotComing", () => {
+  const members = [
+    { user_id: "user-alex", email: "alex@example.org" },
+    { user_id: "user-sam", email: "sam.smith@example.org" },
+  ];
+  const children = [
+    { id: "child-lena", name: "Lena" },
+    { id: "child-tom", name: "Tom" },
+  ];
+  const lena = person({
+    id: "lena",
+    name: "Lena",
+    user_id: null,
+    child_id: "child-lena",
+  });
+
+  it("offers a member and a child who are not on the trip", () => {
+    expect(peopleNotComing(members, children, [alex, lena])).toEqual([
+      { name: "sam.smith", user_id: "user-sam", child_id: null },
+      { name: "Tom", user_id: null, child_id: "child-tom" },
+    ]);
+  });
+
+  it("offers everyone on a trip without people", () => {
+    expect(peopleNotComing(members, children, [])).toHaveLength(4);
+  });
+
+  it("offers nobody when everyone is on the trip", () => {
+    const tom = person({
+      id: "tom",
+      name: "Tom",
+      user_id: null,
+      child_id: "child-tom",
+    });
+    expect(peopleNotComing(members, children, [alex, sam, lena, tom])).toEqual(
+      [],
+    );
+    expect(peopleNotComing([], [], [])).toEqual([]);
+  });
+
+  it("names a child on the trip by the link, not by the typed name", () => {
+    const renamed = person({ ...lena, name: "Lenchen" });
+    expect(
+      peopleNotComing([], children, [renamed]).map((p) => p.child_id),
+    ).toEqual(["child-tom"]);
+  });
+});
+
+describe("withChildNames", () => {
+  const child = (overrides: Partial<HouseholdChild>): HouseholdChild => ({
+    id: "child-lena",
+    household_id: "house-1",
+    name: "Lena",
+    created_by: "user-alex",
+    created_at: "2026-10-01T00:00:00Z",
+    deleted_at: null,
+    ...overrides,
+  });
+  const lena = person({
+    id: "lena",
+    name: "Lenny",
+    user_id: null,
+    child_id: "child-lena",
+  });
+
+  it("names a linked child as the roster does now", () => {
+    const result = withChildNames({ lena }, { "child-lena": child({}) });
+    expect(result.lena).toEqual({ ...lena, name: "Lena" });
+    expect(lena.name).toBe("Lenny");
+  });
+
+  it("keeps the same objects for rows that need no change", () => {
+    const same = person({ ...lena, name: "Lena" });
+    const result = withChildNames(
+      { lena: same, alex, mia },
+      { "child-lena": child({}) },
+    );
+    expect(result.lena).toBe(same);
+    expect(result.alex).toBe(alex);
+    expect(result.mia).toBe(mia);
+  });
+
+  it("keeps the stored name of a child that is not loaded", () => {
+    const result = withChildNames({ lena }, {});
+    expect(result.lena).toBe(lena);
+  });
+
+  it("returns an empty map for no people", () => {
+    expect(withChildNames({}, { "child-lena": child({}) })).toEqual({});
   });
 });

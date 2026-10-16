@@ -128,9 +128,14 @@ export function vacationTaskRow(
 }
 
 /** A person as the app hands one to create_vacation; `userId` is null for a
- * person without an account. */
-export function personJson(name: string, userId: string | null = null) {
-  return { id: randomUUID(), name, user_id: userId };
+ * person without an account, `childId` names one of the household's
+ * children. */
+export function personJson(
+  name: string,
+  userId: string | null = null,
+  childId: string | null = null,
+) {
+  return { id: randomUUID(), name, user_id: userId, child_id: childId };
 }
 
 /** A person row for a direct insert, as the app adds one to a vacation. */

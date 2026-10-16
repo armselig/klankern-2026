@@ -138,7 +138,7 @@ export interface CreatedVacation {
 /**
  * Adds a vacation with the tasks it starts with and the people who are
  * coming in one transaction, through the function create_vacation
- * (migrations 0015 and 0016): with separate inserts a failure after the
+ * (migrations 0015, 0016 and 0022): with separate inserts a failure after the
  * first would leave a vacation without tasks, which every member would see. The ids are the client's, so the rows that come back
  * and the Realtime echoes of their inserts share one key each.
  */
@@ -167,6 +167,7 @@ export async function createVacation(
       id: person.id,
       name: person.name,
       user_id: person.user_id,
+      child_id: person.child_id,
     })),
   });
   if (error) throw error;
@@ -306,6 +307,7 @@ export async function insertVacationPerson(
       household_id: person.householdId,
       name: person.name,
       user_id: person.user_id,
+      child_id: person.child_id,
       created_by: userId,
     })
     .select()

@@ -31,6 +31,8 @@ Read the design first, then the file of the slice you are about to touch. The re
 - [`slice-3.md`](./slice-3.md): how slice 3 was built, the meals (removed by meal planner slice 1b on 2026-10-15, see the last section): migration 0017, the page of its own, the picker and the shopping button, what was decided and found during the build, its tests, "When it breaks" and "After a deploy".
 - [`copy-tasks.md`](./copy-tasks.md): the templates replaced (2026-10-14): a new vacation starts empty or with copies of an earlier trip's tasks, open and nobody's; what was decided, how it is built and how the tests get their tasks now; then Quasar's date picker and select in the form, and frames around the dates and the tasks.
 
+- [`kids-on-trips.md`](./kids-on-trips.md): the household's children as people of a trip (2026-10-16): picked from the list under "Kids" and not typed, migration 0022, the old typed names linked by name, a child's name following the household's list, and the tests.
+
 ## Writing here
 
 - **A slice gets a file of its own when it is built** (`slice-3.md` was the last of the three): the migration, what was decided and found during the build, its tests, "When it breaks" and "After a deploy".

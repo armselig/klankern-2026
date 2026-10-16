@@ -33,3 +33,7 @@ Only the list changed (`VacationPeople.vue`). The store's `renamePerson` and the
 Tests: journey 2 of `vacations.e2e.ts` checks that "Mia" has a field and the other member has none.
 
 Not verified: whether any member was renamed on a real trip before the change.
+
+## A child of the household is no longer a typed name (2026-10-16)
+
+The statements above that a child on a trip is a person without an account, with a name typed for them, are overtaken: the household's children can be picked for a trip and keep their name and badge from the list under "Kids". A typed name remains for someone without an account, such as a guest. See "Children as people of a trip" in [`features/vacations/kids-on-trips.md`](./kids-on-trips.md).

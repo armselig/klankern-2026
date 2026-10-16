@@ -14,6 +14,7 @@ const props = defineProps<{ householdId: string; vacationId: string }>();
 const vacationStore = useVacationStore();
 const mealPlanStore = useMealPlanStore();
 const householdStore = useHouseholdStore();
+const kidsStore = useKidsStore();
 const user = useSupabaseUser();
 const router = useRouter();
 
@@ -22,6 +23,9 @@ onMounted(() => {
   // For the avatars and for the members who can be added to the trip; the
   // dashboard has usually fetched them already.
   if (householdStore.members.length === 0) void householdStore.fetchMembers();
+  // For the children's names and the children who can be added. Without
+  // them the trip shows its people as they were added.
+  void kidsStore.load(props.householdId);
 });
 
 /** The day the page was opened on. It is not worked out again at midnight:
@@ -31,7 +35,15 @@ const today = localDateOf(new Date());
 
 const vacation = computed(() => vacationStore.find(props.vacationId));
 const tasks = computed(() => vacationStore.tasksOf(props.vacationId));
-const people = computed(() => vacationStore.peopleOf(props.vacationId));
+/** The household's trip people, each child under the name the household
+ * gives it now (see withChildNames). Everything on this page reads the
+ * people from here. */
+const peopleById = computed(() =>
+  withChildNames(vacationStore.peopleById, kidsStore.childrenById),
+);
+const people = computed(() =>
+  peopleOfVacation(peopleById.value, props.vacationId),
+);
 /** The person the signed-in member is on this trip, or null. */
 const me = computed(() => personOfUser(people.value, user.value?.sub));
 const emails = computed(() =>
@@ -71,7 +83,7 @@ const mealsLine = computed(() => {
   );
 });
 const shares = computed(() =>
-  taskShares(tasks.value, people.value, vacationStore.peopleById),
+  taskShares(tasks.value, people.value, peopleById.value),
 );
 
 /** The line of "Who has what" that was pressed. It lasts for the visit and
@@ -104,9 +116,9 @@ const phases = computed(() =>
     const filter = taskFilter.value;
     return {
       phase,
-      tasks: filter ? openTasksIn(all, filter, vacationStore.peopleById) : all,
+      tasks: filter ? openTasksIn(all, filter, peopleById.value) : all,
       summary: filter
-        ? phaseSummaryIn(all, filter, me.value, vacationStore.peopleById)
+        ? phaseSummaryIn(all, filter, me.value, peopleById.value)
         : phaseSummary(all),
     };
   }),
@@ -117,9 +129,9 @@ const rowStates = computed<Record<string, TaskRowState>>(() =>
     tasks.value.map((task) => [
       task.id,
       {
-        assignee: assigneeOf(task, vacationStore.peopleById),
-        rejecter: rejecterOf(task, vacationStore.peopleById),
-        mine: isTaskOf(task, me.value, vacationStore.peopleById),
+        assignee: assigneeOf(task, peopleById.value),
+        rejecter: rejecterOf(task, peopleById.value),
+        mine: isTaskOf(task, me.value, peopleById.value),
       },
     ]),
   ),
@@ -229,15 +241,15 @@ const shareSection = useTemplateRef<{ focusChangePeople: () => void }>(
   "shareSection",
 );
 
-/** The household's members who are not on the trip, with the name they
- * would get. */
-const absentMembers = computed<NewVacationPerson[]>(() =>
-  householdStore.members
-    .filter((member) => !people.value.some((p) => p.user_id === member.user_id))
-    .map((member) => ({
-      name: nameFromEmail(member.email),
-      user_id: member.user_id,
-    })),
+/** The household's members and children who are not on the trip, with the
+ * name they would get. The children only once they are loaded for this
+ * household. */
+const absentPeople = computed<NewVacationPerson[]>(() =>
+  peopleNotComing(
+    householdStore.members,
+    kidsStore.householdId === props.householdId ? kidsStore.children : [],
+    people.value,
+  ),
 );
 
 async function addPerson(person: NewVacationPerson) {
@@ -337,7 +349,7 @@ function confirmRemove() {
       <vacation-people
         v-if="editingPeople"
         :people="people"
-        :absent-members="absentMembers"
+        :absent-people="absentPeople"
         :me="me"
         :emails="emails"
         :add-error="addPersonError"

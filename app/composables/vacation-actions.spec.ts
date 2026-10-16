@@ -96,8 +96,8 @@ describe("createVacation", () => {
     const client = fakeClient({ rpc });
 
     const people = [
-      { id: "person-1", name: "alex", user_id: "user-1" },
-      { id: "person-2", name: "Mia", user_id: null },
+      { id: "person-1", name: "alex", user_id: "user-1", child_id: null },
+      { id: "person-2", name: "Mia", user_id: null, child_id: "child-1" },
     ];
     const result = await createVacation(
       client as never,
@@ -356,6 +356,7 @@ describe("insertVacationPerson", () => {
       householdId: "h1",
       name: "Mia",
       user_id: null,
+      child_id: null,
     });
 
     expect(result).toEqual(row);
@@ -367,6 +368,33 @@ describe("insertVacationPerson", () => {
         household_id: "h1",
         name: "Mia",
         user_id: null,
+        child_id: null,
+        created_by: "user-1",
+      },
+    ]);
+  });
+
+  it("inserts the child the person is", async () => {
+    const query = fakeQueryBuilder({ data: { id: "person-2" }, error: null });
+    const client = fakeClient({ userId: "user-1", from: () => query.builder });
+
+    await insertVacationPerson(client as never, {
+      id: "person-2",
+      vacationId: "vacation-1",
+      householdId: "h1",
+      name: "Mia",
+      user_id: null,
+      child_id: "child-1",
+    });
+
+    expect(query.calls.insert).toEqual([
+      {
+        id: "person-2",
+        vacation_id: "vacation-1",
+        household_id: "h1",
+        name: "Mia",
+        user_id: null,
+        child_id: "child-1",
         created_by: "user-1",
       },
     ]);
